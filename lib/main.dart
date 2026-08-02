@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
 
 void main() {
@@ -15,12 +16,16 @@ class LoncengUnmanApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final router = AppRouter.create(
+      authStatusProvider: StubAuthStatusProvider(),
+    );
+
     return MaterialApp.router(
       title: 'Lonceng UnMan',
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.system, // Default: follow system (DESIGN.md 5.4)
-      routerConfig: router, // GoRouter from lib/core/routes/app_router.dart
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
   }

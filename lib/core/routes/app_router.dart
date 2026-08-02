@@ -9,6 +9,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+// Route path constants (Task 1: centralized route names)
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+
 // Import feature pages
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
@@ -16,10 +19,10 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
 
 final GoRouter router = GoRouter(
-  initialLocation: '/login',
+  initialLocation: RouteNames.login,
   routes: <RouteBase>[
     GoRoute(
-      path: '/login',
+      path: RouteNames.login,
       builder: (BuildContext context, GoRouterState state) {
         return const LoginPage();
       },
@@ -31,19 +34,19 @@ final GoRouter router = GoRouter(
       },
       routes: <RouteBase>[
         GoRoute(
-          path: '/main/home',
+          path: RouteNames.home,
           builder: (BuildContext context, GoRouterState state) {
             return const HomePage();
           },
         ),
         GoRoute(
-          path: '/main/jadwal',
+          path: RouteNames.jadwal,
           builder: (BuildContext context, GoRouterState state) {
             return const JadwalPage();
           },
         ),
         GoRoute(
-          path: '/main/profile',
+          path: RouteNames.profile,
           builder: (BuildContext context, GoRouterState state) {
             return const ProfilePage();
           },
@@ -66,6 +69,23 @@ class _MainShellScaffold extends StatefulWidget {
 class _MainShellScaffoldState extends State<_MainShellScaffold> {
   int _currentIndex = 0;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final GoRouterState state = GoRouterState.of(context);
+    final String location = state.matchedLocation;
+    setState(() {
+      _currentIndex = _locationToIndex(location);
+    });
+  }
+
+  int _locationToIndex(String location) {
+    if (location.startsWith(RouteNames.home)) return 0;
+    if (location.startsWith(RouteNames.jadwal)) return 1;
+    if (location.startsWith(RouteNames.profile)) return 2;
+    return 0;
+  }
+
   void _onTap(int index) {
     setState(() {
       _currentIndex = index;
@@ -74,13 +94,13 @@ class _MainShellScaffoldState extends State<_MainShellScaffold> {
     // Navigate using go_router
     switch (index) {
       case 0:
-        context.go('/main/home');
+        context.go(RouteNames.home);
         break;
       case 1:
-        context.go('/main/jadwal');
+        context.go(RouteNames.jadwal);
         break;
       case 2:
-        context.go('/main/profile');
+        context.go(RouteNames.profile);
         break;
     }
   }

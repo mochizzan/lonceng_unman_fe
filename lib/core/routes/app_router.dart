@@ -12,11 +12,40 @@ import 'package:go_router/go_router.dart';
 // Route path constants (Task 1: centralized route names)
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 
+// Auth guard support (Task 6)
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+
 // Import feature pages
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
+
+/// Evaluates auth guard logic. Returns a redirect path or null (no redirect).
+///
+/// [matchedRoute] is the route's name (obtained from state.matchedRoute).
+/// This is a pure function — no GoRouterState dependency — for testability.
+String? authRedirect(
+  String? matchedRoute,
+  AuthStatusProvider authStatusProvider,
+) {
+  final status = authStatusProvider.currentStatus;
+
+  // Unknown: let routing proceed; pages show loading state.
+  if (status == AuthStatus.unknown) return null;
+
+  final isLogin = matchedRoute == RouteNames.login;
+
+  // Unauthenticated: block everything except /login.
+  if (status == AuthStatus.unauthenticated) {
+    return isLogin ? null : '/${RouteNames.login}';
+  }
+
+  // Authenticated: redirect away from /login to home.
+  if (isLogin) return '/${RouteNames.home}';
+
+  return null; // authenticated + not on login → allow
+}
 
 final GoRouter router = GoRouter(
   initialLocation: RouteNames.login,
@@ -120,10 +149,7 @@ class _MainShellScaffoldState extends State<_MainShellScaffold> {
 // Floating Bottom Navigation Bar (DESIGN.md section 3.6 & 4)
 // Fixed surface color #201B11 across both light and dark themes
 class _FloatingNavBar extends StatelessWidget {
-  const _FloatingNavBar({
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const _FloatingNavBar({required this.currentIndex, required this.onTap});
 
   final int currentIndex;
   final void Function(int) onTap;
@@ -149,8 +175,9 @@ class _FloatingNavBar extends StatelessWidget {
         currentIndex: currentIndex,
         onTap: onTap,
         backgroundColor: const Color(0xFF201B11), // Fixed navbar color
-        selectedItemColor:
-            const Color(0xFFFFFFFF), // On Navbar Surface fixed color
+        selectedItemColor: const Color(
+          0xFFFFFFFF,
+        ), // On Navbar Surface fixed color
         unselectedItemColor: const Color(0xFFFBEFDE), // On Navbar Surface
         selectedLabelStyle: const TextStyle(
           fontFamily: 'PlusJakartaSans',

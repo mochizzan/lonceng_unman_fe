@@ -1,14 +1,18 @@
-// RouteNames: centralized route path constants.
-//
-// Centralizing route strings in one place prevents drift and typos when paths
-// change. Every route literal should reference these constants rather than its
-// raw path string.
+/// Named route constants — single source of truth for all route names.
+/// Replaces hardcoded string paths in context.go() calls.
 class RouteNames {
-  RouteNames._();
+  // RouteNames is a constant utility class — do not instantiate.
+  // Throwing [TypeError] at runtime mirrors the pattern used by
+  // [AuthStatusProvider] (see auth_status.dart), keeping this type
+  // instantiable at the language level while failing loudly if someone
+  // attempts direct construction.
+  factory RouteNames() => throw TypeError();
 
-  static const String login = '/login';
-  static const String home = '/main/home';
-  static const String jadwal = '/main/jadwal';
-  static const String profile = '/main/profile';
-  static const String settings = '/main/profile/settings';
+  static const login = 'login';
+  static const home = 'home';
+  static const jadwal = 'jadwal';
+  static const profile = 'profile';
+  static const settings = 'settings';
+  static const setup = 'setup';
+  static const error = 'error';
 }

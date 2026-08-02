@@ -103,4 +103,4 @@ See [DESIGN.md](DESIGN.md) for the complete design specification.
 
 ## License
 
-This project is developed for academic purposes at Universitas Negeri Malang.
+This project is developed for academic purposes at Universitas Mandiri Subang.

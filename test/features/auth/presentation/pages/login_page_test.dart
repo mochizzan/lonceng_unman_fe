@@ -38,7 +38,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.notifications_none), findsOneWidget);
+    expect(find.byIcon(Icons.school), findsOneWidget);
     expect(find.text('Masuk ke Akun'), findsOneWidget);
     expect(find.text('Gunakan NPM aktif kamu'), findsOneWidget);
     expect(find.text('NPM'), findsOneWidget);

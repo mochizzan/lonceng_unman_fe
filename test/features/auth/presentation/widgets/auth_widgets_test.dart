@@ -47,13 +47,13 @@ void main() {
     expect(find.text('Content'), findsOneWidget);
   });
 
-  testWidgets('BellLogo renders bell icon', (tester) async {
+  testWidgets('BellLogo renders toga cap icon', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: lightTheme,
         home: const Scaffold(body: BellLogo()),
       ),
     );
-    expect(find.byIcon(Icons.notifications_none), findsOneWidget);
+    expect(find.byIcon(Icons.school), findsOneWidget);
   });
 }

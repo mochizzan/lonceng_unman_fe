@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
-/// App logo: bell icon in Primary Container circle, radius 28px, tilted 3deg.
+/// App logo: toga cap icon (Icons.school) in Primary Container circle, radius 28px.
 class BellLogo extends StatelessWidget {
   const BellLogo({super.key});
 
@@ -10,27 +9,24 @@ class BellLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Transform.rotate(
-      angle: 3 * math.pi / 180,
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          color: cs.primaryContainer,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0x0F000000),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.notifications_none,
-          size: 38,
-          color: cs.onPrimaryContainer,
-        ),
+    return Container(
+      width: sp(context, 80),
+      height: sp(context, 80),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(sp(context, 28)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            offset: Offset(0, sp(context, 4)),
+            blurRadius: sp(context, 12),
+          ),
+        ],
+      ),
+      child: Icon(
+        Icons.school,
+        size: sp(context, 38),
+        color: cs.onPrimaryContainer,
       ),
     );
   }

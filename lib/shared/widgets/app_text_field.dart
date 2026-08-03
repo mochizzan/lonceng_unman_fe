@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 /// Outlined text field — fill Surface Container Highest, radius 16px.
 /// Leading icon, optional widget (suffix slot), error state support.
@@ -37,22 +38,22 @@ class AppTextField extends StatelessWidget {
         labelText: label,
         labelStyle: TextStyle(color: cs.onSurfaceVariant),
         prefixIcon: icon != null
-            ? Icon(icon, color: cs.primary, size: 22)
+            ? Icon(icon, color: cs.primary, size: sp(context, 22.0))
             : null,
         suffixIcon: suffix,
         filled: true,
         fillColor: cs.surfaceContainerHighest,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(sp(context, 16.0)),
           borderSide: BorderSide(color: cs.outlineVariant, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(sp(context, 16.0)),
           borderSide: BorderSide(color: cs.primaryContainer, width: 2),
         ),
         errorText: errorText,
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(sp(context, 16.0)),
           borderSide: BorderSide(color: cs.error, width: 2),
         ),
       ),

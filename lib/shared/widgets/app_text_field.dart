@@ -39,7 +39,7 @@ class AppTextField extends StatelessWidget {
         prefixIcon: icon != null
             ? Icon(icon, color: cs.primary, size: 22)
             : null,
-        suffix: suffix,
+        suffixIcon: suffix,
         filled: true,
         fillColor: cs.surfaceContainerHighest,
         border: OutlineInputBorder(

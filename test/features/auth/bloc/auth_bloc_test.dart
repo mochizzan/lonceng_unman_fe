@@ -69,7 +69,7 @@ void main() {
         bloc.add(AuthPasswordChanged('wrong'));
         bloc.add(AuthSubmitted());
       },
-      expect: () => [const AuthError('NPM atau password salah')],
+      expect: () => [AuthLoading(), const AuthError('NPM atau password salah')],
     );
 
     blocTest<AuthBloc, AuthState>(

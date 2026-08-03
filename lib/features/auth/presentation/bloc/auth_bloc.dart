@@ -55,9 +55,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(const AuthError('NPM harus 11 digit angka'));
       return;
     }
+    emit(AuthLoading());
     try {
       final AuthEntity user = await _getAuth(npm: _npm, password: _password);
-      emit(AuthLoading());
       emit(AuthAuthenticated(user));
     } catch (e) {
       emit(const AuthError('NPM atau password salah'));

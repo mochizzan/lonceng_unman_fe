@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Background gradient: Surface -> Primary Container with decorative blobs.
-/// Primary Container is fixed (#FFC107) across themes (DESIGN.md §5.1).
+/// Uses theme-derived colorScheme values (DESIGN.md §5.1).
 class AuthBackground extends StatelessWidget {
   const AuthBackground({super.key, required this.child});
 

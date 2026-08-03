@@ -210,64 +210,78 @@ class HeroCountdownCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Lecturer
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: onPrimaryContainer.withValues(alpha: 0.10),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            size: 18,
-                            color: onPrimaryContainer,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              nextClass.lecturer ?? '-',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: onPrimaryContainer,
-                              ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: onPrimaryContainer.withValues(alpha: 0.10),
+                              shape: BoxShape.circle,
                             ),
-                            Text(
-                              'Dosen Pengampu',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: onPrimaryContainer.withValues(
-                                  alpha: 0.6,
+                            child: Icon(
+                              Icons.person,
+                              size: 18,
+                              color: onPrimaryContainer,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  nextClass.lecturer ?? '-',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: onPrimaryContainer,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
+                                Text(
+                                  'Dosen Pengampu',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: onPrimaryContainer.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                     // Location
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 18,
-                          color: onPrimaryContainer.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          nextClass.location ?? '-',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 18,
                             color: onPrimaryContainer.withValues(alpha: 0.8),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              nextClass.location ?? '-',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: onPrimaryContainer.withValues(
+                                  alpha: 0.8,
+                                ),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

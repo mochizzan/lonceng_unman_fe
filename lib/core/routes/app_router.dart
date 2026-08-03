@@ -13,6 +13,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
@@ -20,6 +21,10 @@ import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
 // Import feature pages
+import 'package:lonceng_unman_fe/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -93,7 +98,14 @@ final List<RouteBase> appRoutes = <RouteBase>[
   GoRoute(
     name: RouteNames.login,
     path: '/${RouteNames.login}',
-    builder: (context, state) => const LoginPage(),
+    builder: (context, state) => BlocProvider(
+      create: (_) => AuthBloc(
+        GetAuth(
+          AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource()),
+        ),
+      ),
+      child: const LoginPage(),
+    ),
   ),
 
   // --- Main app (bottom navigation shell) ---

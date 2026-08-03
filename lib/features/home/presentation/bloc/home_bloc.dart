@@ -1,1 +1,43 @@
 // home - BLoC
+//
+// Manages state for the home screen: fetches data via usecase,
+// computes the countdown timer, and emits state changes.
+// Follows the same pattern as auth's [AuthBloc].
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
+import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
+import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_state.dart';
+
+class HomeBloc extends Bloc<HomeEvent, HomeState> {
+  final GetHome _getHome;
+
+  HomeBloc(this._getHome) : super(const HomeInitial()) {
+    on<HomeFetchRequested>(_onFetchRequested);
+    on<HomeRefreshRequested>(_onRefreshRequested);
+  }
+
+  Future<void> _onFetchRequested(HomeFetchRequested event, Emitter emit) async {
+    emit(HomeLoading());
+    try {
+      final data = await _getHome();
+      final countdown = data.nextClass.timeRemaining(DateTime.now());
+      emit(HomeLoaded(data: data, countdown: countdown));
+    } catch (e) {
+      emit(const HomeError('Gagal memuat data beranda'));
+    }
+  }
+
+  Future<void> _onRefreshRequested(
+    HomeRefreshRequested event,
+    Emitter emit,
+  ) async {
+    try {
+      final data = await _getHome();
+      final countdown = data.nextClass.timeRemaining(DateTime.now());
+      emit(HomeLoaded(data: data, countdown: countdown));
+    } catch (e) {
+      emit(const HomeError('Gagal memuat data beranda'));
+    }
+  }
+}

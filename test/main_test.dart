@@ -28,7 +28,7 @@ void main() {
     await tester.pumpWidget(LoncengUnmanApp(authStatusNotifier: notifier));
     await tester.pumpAndSettle();
 
-    // Authenticated user should see the home page.
-    expect(find.text('Home Page - Countdown & Summary'), findsOneWidget);
+    // Authenticated user should see the home page with greeting.
+    expect(find.text('Halo, Aditya 👋'), findsOneWidget);
   });
 }

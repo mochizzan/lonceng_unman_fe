@@ -7,25 +7,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Light mode color scheme (from DESIGN.md table 3.2)
+// Light color scheme — matches HTML template colors:
+// background: #FFFBF0, on-primary-container: #402D00
 const lightColorScheme = ColorScheme(
   brightness: Brightness.light,
   primary: Color(0xFF785900),
   onPrimary: Color(0xFFFFFFFF),
   primaryContainer: Color(0xFFFFC107), // Seed color yellow
-  onPrimaryContainer: Color(0xFF6D5100),
-  secondary: Color(0xFF745B1F),
+  onPrimaryContainer: Color(0xFF402D00),
+  secondary: Color(0xFF6E5C3D),
   onSecondary: Color(0xFFFFFFFF),
-  secondaryContainer: Color(0xFFFFDB92),
-  onSecondaryContainer: Color(0xFF795F23),
+  secondaryContainer: Color(0xFFFBE4A0),
+  onSecondaryContainer: Color(0xFF402D00),
   tertiary: Color(0xFF006877),
   onTertiary: Color(0xFFFFFFFF),
-  tertiaryContainer: Color(0xFF00DEFD),
+  tertiaryContainer: Color(0xFFB8EAFF),
   onTertiaryContainer: Color(0xFF005E6C),
   error: Color(0xFFBA1A1A),
   onError: Color(0xFFFFFFFF),
   errorContainer: Color(0xFFFFDAD6),
   onErrorContainer: Color(0xFF93000A),
-  surface: Color(0xFFFFF8F2),
+  surface: Color(0xFFFFFBF0),
   onSurface: Color(0xFF201B11),
   surfaceContainerLowest: Color(0xFFFFFFFF),
   surfaceContainerLow: Color(0xFFFEF2E1),
@@ -34,7 +36,7 @@ const lightColorScheme = ColorScheme(
   surfaceContainerHighest: Color(0xFFECE1D0),
   onSurfaceVariant: Color(0xFF4F4632),
   outline: Color(0xFF827660),
-  outlineVariant: Color(0xFFD4C5AB),
+  outlineVariant: Color(0xFFE5DCC8),
   inverseSurface: Color(0xFF363024),
   onInverseSurface: Color(0xFFFBEFDE),
   inversePrimary: Color(0xFFFABD00),
@@ -43,20 +45,21 @@ const lightColorScheme = ColorScheme(
   surfaceTint: Color(0xFF785900),
 );
 
-// Dark mode color scheme (from DESIGN.md table 3.3)
+// Dark color scheme — matches HTML template colors:
+// navbar-dark: #1C1B1A (surface for dark), success: #2E7D32
 const darkColorScheme = ColorScheme(
   brightness: Brightness.dark,
   primary: Color(0xFFFFE4AF),
   onPrimary: Color(0xFF3F2E00),
   primaryContainer: Color(0xFFFFC107), // Fixed seed color yellow
-  onPrimaryContainer: Color(0xFF6D5100),
+  onPrimaryContainer: Color(0xFF402D00),
   secondary: Color(0xFFE4C27C),
   onSecondary: Color(0xFF3F2E00),
-  secondaryContainer: Color(0xFF5D460A),
-  onSecondaryContainer: Color(0xFFD5B46F),
+  secondaryContainer: Color(0xFFFBE4A0),
+  onSecondaryContainer: Color(0xFF402D00),
   tertiary: Color(0xFFB4F0FF),
   onTertiary: Color(0xFF00363F),
-  tertiaryContainer: Color(0xFF00DEFD),
+  tertiaryContainer: Color(0xFFB8EAFF),
   onTertiaryContainer: Color(0xFF005E6C),
   error: Color(0xFFFFB4AB),
   onError: Color(0xFF690005),
@@ -103,25 +106,25 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color navbarActivePill, onNavbarActivePill;
 
   static const light = AppColors(
-    success: Color(0xFF006E1B),
+    success: Color(0xFF2E7D32), // From HTML template
     onSuccess: Color(0xFFFFFFFF),
-    successContainer: Color(0xFF97F991),
-    onSuccessContainer: Color(0xFF002204),
+    successContainer: Color(0xFFA5D6A7),
+    onSuccessContainer: Color(0xFF1B5E20),
     navbarSurface: Color(0xFF201B11), // Fixed: same in dark mode
     onNavbarSurface: Color(0xFFFBEFDE),
     navbarActivePill: Color(0xFFFFC107), // Primary Container
-    onNavbarActivePill: Color(0xFF6D5100), // On Primary Container
+    onNavbarActivePill: Color(0xFF402D00), // On Primary Container
   );
 
   static const dark = AppColors(
-    success: Color(0xFF7BDC78),
+    success: Color(0xFF7BDC78), // From HTML template
     onSuccess: Color(0xFF003909),
     successContainer: Color(0xFF005312),
     onSuccessContainer: Color(0xFF97F991),
     navbarSurface: Color(0xFF201B11), // Fixed: same in light mode
     onNavbarSurface: Color(0xFFFBEFDE),
     navbarActivePill: Color(0xFFFFC107), // Primary Container (fixed)
-    onNavbarActivePill: Color(0xFF6D5100), // On Primary Container (fixed)
+    onNavbarActivePill: Color(0xFF402D00), // On Primary Container (fixed)
   );
 
   @override

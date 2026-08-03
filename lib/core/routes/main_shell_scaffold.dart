@@ -40,7 +40,9 @@ class MainShellScaffold extends StatelessWidget {
 }
 
 /// Floating Bottom Navigation Bar (DESIGN.md section 3.6 & 4)
-/// Fixed surface color #201B11 across both light and dark themes
+/// Fixed surface color #201B11 (#1C1B1A in HTML template) across both
+/// light and dark themes. Active icon sits inside a yellow primary-container
+/// pill, matching the HTML template design.
 class FloatingNavBar extends StatelessWidget {
   const FloatingNavBar({
     super.key,
@@ -51,12 +53,46 @@ class FloatingNavBar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
 
+  static const _navbarBg = Color(0xFF201B11);
+  static const _activeBg = Color(0xFFFFC107); // primary container
+  static const _inactiveColor = Color(0xFFFBEFDE);
+  static const _activeIconColor = Color(0xFF402D00); // on-primary-container
+
+  Widget _buildItem(IconData icon, int index) {
+    final isActive = currentIndex == index;
+    return SizedBox(
+      width: 64,
+      height: 56,
+      child: InkWell(
+        onTap: () => onTap(index),
+        borderRadius: BorderRadius.circular(999),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            width: isActive ? 52 : 44,
+            height: isActive ? 52 : 44,
+            decoration: BoxDecoration(
+              color: isActive ? _activeBg : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isActive ? _activeIconColor : _inactiveColor,
+              size: 26,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF201B11),
+        color: _navbarBg,
         borderRadius: BorderRadius.circular(999),
         boxShadow: const [
           BoxShadow(
@@ -66,34 +102,12 @@ class FloatingNavBar extends StatelessWidget {
           ),
         ],
       ),
-      child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: onTap,
-        backgroundColor: const Color(0xFF201B11),
-        selectedItemColor: const Color(0xFFFFFFFF),
-        unselectedItemColor: const Color(0xFFFBEFDE),
-        selectedLabelStyle: const TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          fontWeight: FontWeight.w500,
-        ),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_rounded),
-            label: 'Jadwal',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildItem(Icons.home_rounded, 0),
+          _buildItem(Icons.calendar_month_rounded, 1),
+          _buildItem(Icons.person_rounded, 2),
         ],
       ),
     );

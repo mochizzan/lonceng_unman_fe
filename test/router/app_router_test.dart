@@ -97,13 +97,13 @@ void main() {
       final provider = AuthStatusNotifier(AuthStatus.authenticated);
       final router = AppRouter.create(
         authStatusNotifier: provider,
-        initialLocation: '/login',
+        initialLocation: '/${RouteNames.login}',
       );
 
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
-      expect(find.text('Home Page - Countdown & Summary'), findsOneWidget);
+      expect(find.text('Halo, Aditya 👋'), findsOneWidget);
     });
   });
 }

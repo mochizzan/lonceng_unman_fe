@@ -1,4 +1,6 @@
-// Widget test for Lonceng UnMan app
+// test/widget_test.dart
+//
+// Widget test for LoncengUnMan app
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -52,7 +54,7 @@ void main() {
     await tester.pumpWidget(LoncengUnmanApp(authStatusNotifier: notifier));
     await tester.pumpAndSettle();
 
-    // Authenticated user should see the home page.
-    expect(find.text('Home Page - Countdown & Summary'), findsOneWidget);
+    // Authenticated user should see the new home page.
+    expect(find.text('Halo, Aditya 👋'), findsOneWidget);
   });
 }

@@ -20,7 +20,7 @@ void main() {
     expect(find.byType(FloatingNavBar), findsOneWidget);
   });
 
-  testWidgets('FloatingNavBar shows 3 items: Home, Jadwal, Profile', (
+  testWidgets('FloatingNavBar shows 3 icon buttons: Home, Jadwal, Profile', (
     WidgetTester tester,
   ) async {
     final capturedTaps = <int>[];
@@ -33,11 +33,12 @@ void main() {
       ),
     );
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Jadwal'), findsOneWidget);
-    expect(find.text('Profile'), findsOneWidget);
+    // The new design uses icon-only nav (no text labels).
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_month_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.person_rounded), findsOneWidget);
 
-    await tester.tap(find.text('Jadwal'));
+    await tester.tap(find.byIcon(Icons.calendar_month_rounded));
     expect(capturedTaps, [1]);
   });
 }

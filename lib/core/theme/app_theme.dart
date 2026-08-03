@@ -153,26 +153,35 @@ class AppColors extends ThemeExtension<AppColors> {
     return AppColors(
       success: Color.lerp(success, other.success, t)!,
       onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!,
-      successContainer:
-          Color.lerp(successContainer, other.successContainer, t)!,
-      onSuccessContainer:
-          Color.lerp(onSuccessContainer, other.onSuccessContainer, t)!,
+      successContainer: Color.lerp(
+        successContainer,
+        other.successContainer,
+        t,
+      )!,
+      onSuccessContainer: Color.lerp(
+        onSuccessContainer,
+        other.onSuccessContainer,
+        t,
+      )!,
       navbarSurface: Color.lerp(navbarSurface, other.navbarSurface, t)!,
       onNavbarSurface: Color.lerp(onNavbarSurface, other.onNavbarSurface, t)!,
-      navbarActivePill:
-          Color.lerp(navbarActivePill, other.navbarActivePill, t)!,
-      onNavbarActivePill:
-          Color.lerp(onNavbarActivePill, other.onNavbarActivePill, t)!,
+      navbarActivePill: Color.lerp(
+        navbarActivePill,
+        other.navbarActivePill,
+        t,
+      )!,
+      onNavbarActivePill: Color.lerp(
+        onNavbarActivePill,
+        other.onNavbarActivePill,
+        t,
+      )!,
     );
   }
 }
 
 // Build theme data (from DESIGN.md section 3.10)
 ThemeData buildTheme(ColorScheme scheme, AppColors appColors) {
-  final base = ThemeData(
-    useMaterial3: true,
-    colorScheme: scheme,
-  );
+  final base = ThemeData(useMaterial3: true, colorScheme: scheme);
   return base.copyWith(
     scaffoldBackgroundColor: scheme.surface,
     textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme).copyWith(
@@ -186,7 +195,5 @@ ThemeData buildTheme(ColorScheme scheme, AppColors appColors) {
 }
 
 // Pre-built theme instances
-final ThemeData lightTheme =
-    buildTheme(lightColorScheme, AppColors.light);
-final ThemeData darkTheme =
-    buildTheme(darkColorScheme, AppColors.dark);
+final ThemeData lightTheme = buildTheme(lightColorScheme, AppColors.light);
+final ThemeData darkTheme = buildTheme(darkColorScheme, AppColors.dark);

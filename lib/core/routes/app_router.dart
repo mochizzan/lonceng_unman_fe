@@ -1,161 +1,158 @@
-// Route configuration using go_router
-// Defines all app routes based on DESIGN.md navigation structure
+// lib/core/routes/app_router.dart
 //
-// Routes:
-// - /login → LoginPage (auth flow)
-// - /main → Bottom navigation shell (Home, Jadwal, Profile)
-// - /data-initialization → DataInitializationPage (post-login setup)
+// Route configuration using go_router.
+// Defines all app routes based on DESIGN.md navigation structure.
+//
+// Route Inventory (minimum 5 required):
+// - /login → LoginPage (auth flow, standalone)
+// - /home → HomePage (ShellRoute child, bottom nav)
+// - /jadwal → JadwalPage (ShellRoute child, bottom nav)
+// - /profile → ProfilePage (ShellRoute child, bottom nav)
+// - /settings → SettingsPage (standalone, not in bottom nav)
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
+import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
 // Import feature pages
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
+import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
 
-final GoRouter router = GoRouter(
-  initialLocation: '/login',
-  routes: <RouteBase>[
-    GoRoute(
-      path: '/login',
-      builder: (BuildContext context, GoRouterState state) {
-        return const LoginPage();
-      },
-    ),
-    // ShellRoute for bottom navigation
-    ShellRoute(
-      builder: (BuildContext context, GoRouterState state, Widget child) {
-        return _MainShellScaffold(child: child);
-      },
-      routes: <RouteBase>[
-        GoRoute(
-          path: '/main/home',
-          builder: (BuildContext context, GoRouterState state) {
-            return const HomePage();
-          },
-        ),
-        GoRoute(
-          path: '/main/jadwal',
-          builder: (BuildContext context, GoRouterState state) {
-            return const JadwalPage();
-          },
-        ),
-        GoRoute(
-          path: '/main/profile',
-          builder: (BuildContext context, GoRouterState state) {
-            return const ProfilePage();
-          },
-        ),
-      ],
-    ),
-  ],
-);
+/// Auth guard redirect logic. Returns a redirect path or null (no redirect).
+///
+/// [matchedRoute] is the route's name (obtained from state.topRoute?.name).
+/// This is a pure function — no GoRouterState dependency — for testability.
+String? authRedirect(
+  String? matchedRoute,
+  AuthStatusProvider authStatusProvider,
+) {
+  final status = authStatusProvider.currentStatus;
 
-// Floating Bottom Navigation Bar Shell (from DESIGN.md section 4)
-class _MainShellScaffold extends StatefulWidget {
-  const _MainShellScaffold({required this.child});
+  // Unknown: let routing proceed; pages show loading state.
+  if (status == AuthStatus.unknown) return null;
 
-  final Widget child;
+  final isLogin = matchedRoute == RouteNames.login;
 
-  @override
-  State<_MainShellScaffold> createState() => _MainShellScaffoldState();
-}
-
-class _MainShellScaffoldState extends State<_MainShellScaffold> {
-  int _currentIndex = 0;
-
-  void _onTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-
-    // Navigate using go_router
-    switch (index) {
-      case 0:
-        context.go('/main/home');
-        break;
-      case 1:
-        context.go('/main/jadwal');
-        break;
-      case 2:
-        context.go('/main/profile');
-        break;
-    }
+  // Unauthenticated: block everything except /login.
+  if (status == AuthStatus.unauthenticated) {
+    return isLogin ? null : '/${RouteNames.login}';
   }
 
+  // Authenticated: redirect away from /login to home.
+  if (isLogin) return '/${RouteNames.home}';
+
+  return null; // authenticated + not on login → allow
+}
+
+/// Converts a [Stream] into a [Listenable] for go_router 17.x.
+/// go_router 17.x removed GoRouterRefreshSink/GoRouterRefreshStream;
+/// this adapter provides the same behavior: listen to the stream and
+/// notify listeners on each event so GoRouter re-evaluates redirect.
+class _StreamListenable extends ChangeNotifier {
+  _StreamListenable(Stream<dynamic> stream) {
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: widget.child,
-      bottomNavigationBar: _FloatingNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTap,
-      ),
-    );
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }
 
-// Floating Bottom Navigation Bar (DESIGN.md section 3.6 & 4)
-// Fixed surface color #201B11 across both light and dark themes
-class _FloatingNavBar extends StatelessWidget {
-  const _FloatingNavBar({
-    required this.currentIndex,
-    required this.onTap,
-  });
+/// Maps a matched route name to a bottom-nav index.
+/// Returns 0 (Home) for any route outside the shell — safe fallback.
+int _indexForRoute(String? routeName) {
+  switch (routeName) {
+    case RouteNames.home:
+      return 0;
+    case RouteNames.jadwal:
+      return 1;
+    case RouteNames.profile:
+      return 2;
+    default:
+      return 0;
+  }
+}
 
-  final int currentIndex;
-  final void Function(int) onTap;
+/// Top-level route definitions.
+/// The [ShellRoute] wraps the three bottom-navigation children:
+/// home, jadwal, profile. /login and /settings are standalone.
+final List<RouteBase> appRoutes = <RouteBase>[
+  // --- Auth (standalone, no bottom nav) ---
+  GoRoute(
+    name: RouteNames.login,
+    path: '/${RouteNames.login}',
+    builder: (context, state) => const LoginPage(),
+  ),
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      decoration: BoxDecoration(
-        // Fixed Navbar Surface color from DESIGN.md
-        // Use fixed color regardless of theme (light/dark agnostic)
-        color: const Color(0xFF201B11),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x40000000), // rgba(0,0,0,0.25)
-            offset: Offset(0, 8),
-            blurRadius: 20,
-          ),
-        ],
+  // --- Main app (bottom navigation shell) ---
+  ShellRoute(
+    builder: (context, state, child) {
+      return MainShellScaffold(
+        currentIndex: _indexForRoute(state.topRoute?.name),
+        child: child,
+      );
+    },
+    routes: <RouteBase>[
+      GoRoute(
+        name: RouteNames.home,
+        path: '/${RouteNames.home}',
+        builder: (context, state) => const HomePage(),
       ),
-      child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: onTap,
-        backgroundColor: const Color(0xFF201B11), // Fixed navbar color
-        selectedItemColor:
-            const Color(0xFFFFFFFF), // On Navbar Surface fixed color
-        unselectedItemColor: const Color(0xFFFBEFDE), // On Navbar Surface
-        selectedLabelStyle: const TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          fontWeight: FontWeight.w500,
-        ),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_rounded),
-            label: 'Jadwal',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
+      GoRoute(
+        name: RouteNames.jadwal,
+        path: '/${RouteNames.jadwal}',
+        builder: (context, state) => const JadwalPage(),
       ),
+      GoRoute(
+        name: RouteNames.profile,
+        path: '/${RouteNames.profile}',
+        builder: (context, state) => const ProfilePage(),
+      ),
+    ],
+  ),
+
+  // --- Settings (standalone; accessible from Profile via pushNamed) ---
+  GoRoute(
+    name: RouteNames.settings,
+    path: '/${RouteNames.settings}',
+    builder: (context, state) => const SettingsPage(),
+  ),
+];
+
+/// Injectable router factory.
+/// Pass [StubAuthStatusProvider] for now; swap in real implementation
+/// when auth is implemented.
+final class AppRouter {
+  AppRouter._();
+
+  static GoRouter create({
+    required AuthStatusProvider authStatusProvider,
+    String initialLocation = '/${RouteNames.login}',
+    List<NavigatorObserver>? observers,
+  }) {
+    return GoRouter(
+      initialLocation: initialLocation,
+      refreshListenable: _StreamListenable(authStatusProvider.status),
+      redirect: (context, state) =>
+          authRedirect(state.topRoute?.name, authStatusProvider),
+      routes: appRoutes,
+      errorBuilder: (context, state) {
+        return AppErrorPage(state: state);
+      },
+      observers: observers ?? [],
+      debugLogDiagnostics: false,
     );
   }
 }

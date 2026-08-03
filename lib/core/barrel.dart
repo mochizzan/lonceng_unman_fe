@@ -6,4 +6,5 @@ export 'errors/barrel.dart';
 export 'network/barrel.dart';
 export 'models/barrel.dart';
 export 'routes/barrel.dart';
+export 'auth/barrel.dart';
 export 'di/barrel.dart';

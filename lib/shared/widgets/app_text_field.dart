@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Outlined text field — fill Surface Container Highest, radius 16px.
-/// Leading icon, optional password toggle (suffix), error state support.
+/// Leading icon, optional password toggle (suffixIcon), error state support.
 class AppTextField extends StatelessWidget {
   const AppTextField({
     super.key,

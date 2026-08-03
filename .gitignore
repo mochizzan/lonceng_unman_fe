@@ -67,4 +67,4 @@ CLAUDE.md
 .opencode/
 .omcli/
 .local/
-*.artifacts
+*.artifacts/docs/

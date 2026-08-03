@@ -2,13 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/main.dart';
 
 void main() {
   testWidgets('App uses AppRouter.create with injectable router', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const LoncengUnmanApp());
+    await tester.pumpWidget(
+      LoncengUnmanApp(authStatusNotifier: AuthStatusNotifier()),
+    );
 
     final MaterialApp materialApp =
         tester.widget(find.byType(MaterialApp)) as MaterialApp;
@@ -20,11 +23,12 @@ void main() {
   testWidgets('App authenticated user is redirected to home', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const LoncengUnmanApp());
+    final notifier = AuthStatusNotifier();
+    notifier.setStatus(AuthStatus.authenticated);
+    await tester.pumpWidget(LoncengUnmanApp(authStatusNotifier: notifier));
     await tester.pumpAndSettle();
 
-    // StubAuthStatusProvider returns authenticated, so /login redirects to /home
-    expect(find.text('Home'), findsWidgets);
+    // Authenticated user should see the home page.
     expect(find.text('Home Page - Countdown & Summary'), findsOneWidget);
   });
 }

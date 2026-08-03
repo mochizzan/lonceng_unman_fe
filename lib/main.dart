@@ -12,13 +12,16 @@ void main() {
 }
 
 class LoncengUnmanApp extends StatelessWidget {
-  const LoncengUnmanApp({super.key});
+  const LoncengUnmanApp({super.key, this.authStatusNotifier});
+
+  /// Injected for testing. When null, a new [AuthStatusNotifier] is created.
+  final AuthStatusNotifier? authStatusNotifier;
 
   @override
   Widget build(BuildContext context) {
-    final router = AppRouter.create(
-      authStatusProvider: StubAuthStatusProvider(),
-    );
+    final notifier = authStatusNotifier ?? AuthStatusNotifier();
+
+    final router = AppRouter.create(authStatusNotifier: notifier);
 
     return MaterialApp.router(
       title: 'Lonceng UnMan',

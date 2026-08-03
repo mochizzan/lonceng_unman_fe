@@ -8,16 +8,11 @@ class FakeRemoteDataSource implements AuthRemoteDataSource {
   final AuthModel result;
   bool wasCalled = false;
   String? receivedNpm;
-  String? receivedPassword;
   FakeRemoteDataSource(this.result);
   @override
-  Future<AuthModel> login({
-    required String npm,
-    required String password,
-  }) async {
+  Future<AuthModel> login({required String npm}) async {
     wasCalled = true;
     receivedNpm = npm;
-    receivedPassword = password;
     return result;
   }
 }
@@ -29,16 +24,12 @@ void main() {
       final model = AuthModel(npm: '21081010001', token: 'tok', expiresAt: now);
       final remote = FakeRemoteDataSource(model);
       final repository = AuthRepositoryImpl(remoteDataSource: remote);
-      final result = await repository.login(
-        npm: '21081010001',
-        password: 'pass',
-      );
+      final result = await repository.login(npm: '21081010001');
       expect(result.npm, '21081010001');
       expect(result.token, 'tok');
       expect(result.expiresAt, now);
       expect(remote.wasCalled, isTrue);
       expect(remote.receivedNpm, '21081010001');
-      expect(remote.receivedPassword, 'pass');
     });
 
     test('login returns AuthEntity (AuthModel is an AuthEntity)', () async {
@@ -50,10 +41,7 @@ void main() {
         ),
       );
       final repository = AuthRepositoryImpl(remoteDataSource: remote);
-      final result = await repository.login(
-        npm: '21081010002',
-        password: 'secret',
-      );
+      final result = await repository.login(npm: '21081010002');
       expect(result, isA<AuthEntity>());
     });
   });

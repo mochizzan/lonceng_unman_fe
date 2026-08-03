@@ -11,21 +11,8 @@ void main() {
       expect(AuthNpmChanged('123'), isNot(AuthNpmChanged('456')));
     });
 
-    test('AuthPasswordChanged has correct value and equality', () {
-      expect(AuthPasswordChanged('pass').password, 'pass');
-      expect(AuthPasswordChanged('pass'), AuthPasswordChanged('pass'));
-    });
-
     test('AuthSubmitted are equal', () {
       expect(AuthSubmitted(), AuthSubmitted());
-    });
-
-    test('AuthPasswordVisibilityToggled are equal', () {
-      expect(AuthPasswordVisibilityToggled(), AuthPasswordVisibilityToggled());
-    });
-
-    test('AuthRememberMeToggled has correct value', () {
-      expect(AuthRememberMeToggled(true).value, isTrue);
     });
 
     test('AuthLogoutRequested are equal', () {

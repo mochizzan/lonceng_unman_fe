@@ -23,49 +23,6 @@ class AuthNpmChanged extends AuthEvent {
   int get hashCode => npm.hashCode;
 }
 
-class AuthPasswordChanged extends AuthEvent {
-  final String password;
-  const AuthPasswordChanged(this.password);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AuthPasswordChanged &&
-          runtimeType == other.runtimeType &&
-          password == other.password;
-
-  @override
-  int get hashCode => password.hashCode;
-}
-
-class AuthPasswordVisibilityToggled extends AuthEvent {
-  const AuthPasswordVisibilityToggled();
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AuthPasswordVisibilityToggled &&
-          runtimeType == other.runtimeType;
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-}
-
-class AuthRememberMeToggled extends AuthEvent {
-  final bool value;
-  const AuthRememberMeToggled(this.value);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AuthRememberMeToggled &&
-          runtimeType == other.runtimeType &&
-          value == other.value;
-
-  @override
-  int get hashCode => value.hashCode;
-}
-
 class AuthSubmitted extends AuthEvent {
   const AuthSubmitted();
 

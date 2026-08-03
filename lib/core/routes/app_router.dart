@@ -90,76 +90,80 @@ int _indexForRoute(String? routeName) {
   }
 }
 
-/// Top-level route definitions.
-/// The [ShellRoute] wraps the three bottom-navigation children:
-/// home, jadwal, profile. /login and /settings are standalone.
-final List<RouteBase> appRoutes = <RouteBase>[
-  // --- Auth (standalone, no bottom nav) ---
-  GoRoute(
-    name: RouteNames.login,
-    path: '/${RouteNames.login}',
-    builder: (context, state) => BlocProvider(
-      create: (_) => AuthBloc(
-        GetAuth(
-          AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource()),
+/// Builds the route list, closing over [authStatusNotifier] so the login
+/// route can inject it into the [AuthBloc].
+List<RouteBase> _buildRoutes(AuthStatusNotifier authStatusNotifier) {
+  return <RouteBase>[
+    // --- Auth (standalone, no bottom nav) ---
+    GoRoute(
+      name: RouteNames.login,
+      path: '/${RouteNames.login}',
+      builder: (context, state) => BlocProvider(
+        create: (_) => AuthBloc(
+          GetAuth(
+            AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource()),
+          ),
+          authStatusNotifier,
         ),
+        child: const LoginPage(),
       ),
-      child: const LoginPage(),
     ),
-  ),
 
-  // --- Main app (bottom navigation shell) ---
-  ShellRoute(
-    builder: (context, state, child) {
-      return MainShellScaffold(
-        currentIndex: _indexForRoute(state.topRoute?.name),
-        child: child,
-      );
-    },
-    routes: <RouteBase>[
-      GoRoute(
-        name: RouteNames.home,
-        path: '/${RouteNames.home}',
-        builder: (context, state) => const HomePage(),
-      ),
-      GoRoute(
-        name: RouteNames.jadwal,
-        path: '/${RouteNames.jadwal}',
-        builder: (context, state) => const JadwalPage(),
-      ),
-      GoRoute(
-        name: RouteNames.profile,
-        path: '/${RouteNames.profile}',
-        builder: (context, state) => const ProfilePage(),
-      ),
-    ],
-  ),
+    // --- Main app (bottom navigation shell) ---
+    ShellRoute(
+      builder: (context, state, child) {
+        return MainShellScaffold(
+          currentIndex: _indexForRoute(state.topRoute?.name),
+          child: child,
+        );
+      },
+      routes: <RouteBase>[
+        GoRoute(
+          name: RouteNames.home,
+          path: '/${RouteNames.home}',
+          builder: (context, state) => const HomePage(),
+        ),
+        GoRoute(
+          name: RouteNames.jadwal,
+          path: '/${RouteNames.jadwal}',
+          builder: (context, state) => const JadwalPage(),
+        ),
+        GoRoute(
+          name: RouteNames.profile,
+          path: '/${RouteNames.profile}',
+          builder: (context, state) => const ProfilePage(),
+        ),
+      ],
+    ),
 
-  // --- Settings (standalone; accessible from Profile via pushNamed) ---
-  GoRoute(
-    name: RouteNames.settings,
-    path: '/${RouteNames.settings}',
-    builder: (context, state) => const SettingsPage(),
-  ),
-];
+    // --- Settings (standalone; accessible from Profile via pushNamed) ---
+    GoRoute(
+      name: RouteNames.settings,
+      path: '/${RouteNames.settings}',
+      builder: (context, state) => const SettingsPage(),
+    ),
+  ];
+}
 
 /// Injectable router factory.
-/// Pass [StubAuthStatusProvider] for now; swap in real implementation
-/// when auth is implemented.
+/// Pass an [AuthStatusNotifier] that the router and auth bloc share to
+/// coordinate auth-guard redirects. The same notifier is injected into
+/// the AuthBloc for the /login route so that successful login updates
+/// the auth guard and unblocks navigation to the home shell.
 final class AppRouter {
   AppRouter._();
 
   static GoRouter create({
-    required AuthStatusProvider authStatusProvider,
+    required AuthStatusNotifier authStatusNotifier,
     String initialLocation = '/${RouteNames.login}',
     List<NavigatorObserver>? observers,
   }) {
     return GoRouter(
       initialLocation: initialLocation,
-      refreshListenable: _StreamListenable(authStatusProvider.status),
+      refreshListenable: _StreamListenable(authStatusNotifier.status),
       redirect: (context, state) =>
-          authRedirect(state.topRoute?.name, authStatusProvider),
-      routes: appRoutes,
+          authRedirect(state.topRoute?.name, authStatusNotifier),
+      routes: _buildRoutes(authStatusNotifier),
       errorBuilder: (context, state) {
         return AppErrorPage(state: state);
       },

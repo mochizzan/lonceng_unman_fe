@@ -11,10 +11,9 @@ void main() {
   testWidgets('LoginPage renders on /login for unauthenticated user', (
     tester,
   ) async {
-    // Use a custom auth provider that returns unauthenticated.
-    final provider = _UnauthenticatedProvider();
+    final notifier = AuthStatusNotifier();
     final router = AppRouter.create(
-      authStatusProvider: provider,
+      authStatusNotifier: notifier,
       initialLocation: '/login',
     );
 
@@ -24,14 +23,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // LoginPage should be visible for unauthenticated user.
-    expect(find.text('Masuk ke Akun'), findsOneWidget);
+    expect(find.text('Masuk Akun'), findsOneWidget);
   });
-}
-
-class _UnauthenticatedProvider implements AuthStatusProvider {
-  @override
-  AuthStatus get currentStatus => AuthStatus.unauthenticated;
-
-  @override
-  final Stream<AuthStatus> status = const Stream.empty();
 }

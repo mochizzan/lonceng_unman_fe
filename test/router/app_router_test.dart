@@ -6,29 +6,15 @@ import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 
-class FakeProvider implements AuthStatusProvider {
-  FakeProvider(this._status);
-  AuthStatus _status;
-  @override
-  AuthStatus get currentStatus => _status;
-  @override
-  final Stream<AuthStatus> status = const Stream.empty();
-  set status(AuthStatus v) => _status = v;
-}
-
 void main() {
   group('AppRouter.create', () {
     test('returns a GoRouter instance', () {
-      final router = AppRouter.create(
-        authStatusProvider: StubAuthStatusProvider(),
-      );
+      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
       expect(router, isA<GoRouter>());
     });
 
     test('all routes are named (no unnamed routes)', () {
-      final router = AppRouter.create(
-        authStatusProvider: StubAuthStatusProvider(),
-      );
+      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
 
       for (final config in router.configuration.routes) {
         if (config is GoRoute) {
@@ -42,9 +28,7 @@ void main() {
     });
 
     test('ShellRoute contains exactly home, jadwal, profile', () {
-      final router = AppRouter.create(
-        authStatusProvider: StubAuthStatusProvider(),
-      );
+      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
 
       bool foundShell = false;
       for (final config in router.configuration.routes) {
@@ -60,9 +44,7 @@ void main() {
     });
 
     test('login and settings are standalone (not in ShellRoute)', () {
-      final router = AppRouter.create(
-        authStatusProvider: StubAuthStatusProvider(),
-      );
+      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
 
       final topLevelNames = router.configuration.routes
           .whereType<GoRoute>()
@@ -83,9 +65,7 @@ void main() {
     });
 
     test('initial location defaults to /login', () {
-      final router = AppRouter.create(
-        authStatusProvider: StubAuthStatusProvider(),
-      );
+      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
 
       // go_router 17.x: verify via currentMatch behavior —
       // initial location is tested through widget test below.
@@ -98,25 +78,25 @@ void main() {
     testWidgets(
       'unauthenticated user deep-linking to /home is redirected to /login',
       (tester) async {
-        final provider = FakeProvider(AuthStatus.unauthenticated);
+        final provider = AuthStatusNotifier(AuthStatus.unauthenticated);
         final router = AppRouter.create(
-          authStatusProvider: provider,
+          authStatusNotifier: provider,
           initialLocation: '/home',
         );
 
         await tester.pumpWidget(MaterialApp.router(routerConfig: router));
         await tester.pumpAndSettle();
 
-        expect(find.text('Masuk ke Akun'), findsOneWidget);
+        expect(find.text('Masuk Akun'), findsOneWidget);
       },
     );
 
     testWidgets('authenticated user on /login is redirected to /home', (
       tester,
     ) async {
-      final provider = FakeProvider(AuthStatus.authenticated);
+      final provider = AuthStatusNotifier(AuthStatus.authenticated);
       final router = AppRouter.create(
-        authStatusProvider: provider,
+        authStatusNotifier: provider,
         initialLocation: '/login',
       );
 

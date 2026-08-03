@@ -12,6 +12,6 @@ void main() {
     expect(AppErrorPage, isNotNull);
     expect(MainShellScaffold, isNotNull);
     expect(FloatingNavBar, isNotNull);
-    expect(StubAuthStatusProvider, isNotNull);
+    expect(AuthStatusNotifier, isNotNull);
   });
 }

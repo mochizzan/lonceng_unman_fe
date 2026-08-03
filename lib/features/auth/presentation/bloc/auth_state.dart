@@ -1,9 +1,3 @@
-/// AuthState hierarchy for the authentication BLoC.
-///
-/// Each state represents a distinct moment in the authentication flow
-/// lifecycle. Manual equality (`==` / `hashCode`) is implemented so that
-/// states can be compared for BLoC transitions without the `equatable`
-/// package.
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 
 abstract class AuthState {

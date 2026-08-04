@@ -1,4 +1,4 @@
-﻿// Login page - NPM authentication
+// Login page - NPM authentication
 // Implements the full DESIGN.md Â§5.1 layout, aligned with HTML reference.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -166,8 +166,8 @@ class _LoginCard extends StatelessWidget {
               return FilledButton(
                 onPressed: () => bloc.add(AuthSubmitted()),
                 style: FilledButton.styleFrom(
-                  backgroundColor: cs.primaryContainer,
-                  foregroundColor: cs.onPrimaryContainer,
+                  backgroundColor: cs.secondaryContainer,
+                  foregroundColor: cs.onSecondaryContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(sp(context, 20)),
                   ),
@@ -181,7 +181,7 @@ class _LoginCard extends StatelessWidget {
                     Text(
                       'Masuk',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.onPrimaryContainer,
+                        color: cs.onSecondaryContainer,
                         fontWeight: FontWeight.bold,
                         fontSize: responsiveFontSize(context, 14),
                       ),
@@ -190,7 +190,7 @@ class _LoginCard extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward,
                       size: sp(context, 20),
-                      color: cs.onPrimaryContainer,
+                      color: cs.onSecondaryContainer,
                     ),
                   ],
                 ),

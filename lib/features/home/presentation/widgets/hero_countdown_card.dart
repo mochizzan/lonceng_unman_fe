@@ -3,6 +3,8 @@
 // Displays the next class with a countdown timer.
 // Matches the HTML template's hero countdown section.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
@@ -31,32 +33,30 @@ class _PulsingDot extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Outer pulse ring
           TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 1200),
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 2000),
             curve: Curves.easeInOut,
             builder: (context, value, child) {
-              return Opacity(
-                opacity: 0.4 * value,
-                child: Transform.scale(
-                  scale: 0.6 + value * 1.0,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
+              final scale = 0.6 + (value * 0.8);
+              final opacity = (0.8 - value * 0.6).clamp(0.0, 1.0);
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: opacity),
+                    shape: BoxShape.circle,
                   ),
                 ),
               );
             },
+            onEnd: () {},
           ),
-          // Inner dot
           Container(
-            width: 8,
-            height: 8,
+            width: 10,
+            height: 10,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
         ],
@@ -65,23 +65,51 @@ class _PulsingDot extends StatelessWidget {
   }
 }
 
-class HeroCountdownCard extends StatelessWidget {
-  const HeroCountdownCard({
-    super.key,
-    required this.nextClass,
-    this.countdown,
-    this.onCtaTap,
-  });
+/// Hero countdown card with a live-updating countdown timer.
+/// The timer ticks every second via [Timer.periodic], so the displayed
+/// time decrements in real-time without requiring a page refresh.
+class HeroCountdownCard extends StatefulWidget {
+  const HeroCountdownCard({super.key, required this.nextClass, this.onCtaTap});
 
   final NextClassEntity nextClass;
-  final Duration? countdown;
   final VoidCallback? onCtaTap;
+
+  @override
+  State<HeroCountdownCard> createState() => _HeroCountdownCardState();
+}
+
+class _HeroCountdownCardState extends State<HeroCountdownCard> {
+  late Timer _timer;
+  late Duration _countdown;
+
+  @override
+  void initState() {
+    super.initState();
+    _countdown = widget.nextClass.timeRemaining(DateTime.now());
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _countdown = widget.nextClass.timeRemaining(DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(HeroCountdownCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nextClass != widget.nextClass) {
+      _countdown = widget.nextClass.timeRemaining(DateTime.now());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final now = DateTime.now();
-    final effectiveCountdown = countdown ?? nextClass.timeRemaining(now);
     final onPrimaryContainer = cs.onPrimaryContainer;
 
     return Container(
@@ -125,7 +153,7 @@ class HeroCountdownCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    nextClass.sks,
+                    widget.nextClass.sks,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -138,7 +166,7 @@ class HeroCountdownCard extends StatelessWidget {
             const SizedBox(height: 20),
             // Countdown time
             Text(
-              formatCountdown(effectiveCountdown),
+              formatCountdown(_countdown),
               style: TextStyle(
                 fontSize: 44,
                 fontWeight: FontWeight.w800,
@@ -149,7 +177,7 @@ class HeroCountdownCard extends StatelessWidget {
             const SizedBox(height: 4),
             // Course name
             Text(
-              nextClass.courseName,
+              widget.nextClass.courseName,
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.bold,
@@ -190,7 +218,7 @@ class HeroCountdownCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              nextClass.lecturer ?? '-',
+                              widget.nextClass.lecturer ?? '-',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -227,7 +255,7 @@ class HeroCountdownCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
-                          nextClass.location ?? '-',
+                          widget.nextClass.location ?? '-',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -242,16 +270,16 @@ class HeroCountdownCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            // CTA button
+            // CTA button — Tonal Button per DESIGN.md
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: onCtaTap,
+                onPressed: widget.onCtaTap,
                 style: FilledButton.styleFrom(
-                  backgroundColor: onPrimaryContainer,
-                  foregroundColor: cs.primaryContainer,
+                  backgroundColor: cs.secondaryContainer,
+                  foregroundColor: cs.onSecondaryContainer,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -269,7 +297,7 @@ class HeroCountdownCard extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward,
                       size: 18,
-                      color: cs.primaryContainer,
+                      color: cs.onSecondaryContainer,
                     ),
                   ],
                 ),

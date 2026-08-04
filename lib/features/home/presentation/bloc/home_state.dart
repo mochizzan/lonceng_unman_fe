@@ -32,25 +32,21 @@ class HomeLoading extends HomeState {
   int get hashCode => runtimeType.hashCode;
 }
 
-/// Loaded state with home screen data and a computed countdown.
+/// Loaded state with home screen data.
 class HomeLoaded extends HomeState {
-  const HomeLoaded({required this.data, required this.countdown});
+  const HomeLoaded({required this.data});
 
   final HomeEntity data;
-
-  /// Time remaining until the next class starts.
-  final Duration countdown;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is HomeLoaded &&
           runtimeType == other.runtimeType &&
-          data == other.data &&
-          countdown == other.countdown;
+          data == other.data;
 
   @override
-  int get hashCode => Object.hash(data, countdown);
+  int get hashCode => data.hashCode;
 }
 
 /// Error state when data fetch fails.

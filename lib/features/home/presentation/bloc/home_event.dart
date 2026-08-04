@@ -32,20 +32,3 @@ class HomeRefreshRequested extends HomeEvent {
   @override
   int get hashCode => runtimeType.hashCode;
 }
-
-/// Tick event to drive the countdown timer.
-class HomeCountdownTicked extends HomeEvent {
-  const HomeCountdownTicked(this.elapsed);
-
-  final Duration elapsed;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is HomeCountdownTicked &&
-          runtimeType == other.runtimeType &&
-          elapsed == other.elapsed;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, elapsed);
-}

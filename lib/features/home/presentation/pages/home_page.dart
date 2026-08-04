@@ -147,15 +147,14 @@ class _HomePageView extends StatelessWidget {
           ),
           // Main content
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+            ).copyWith(bottom: 80),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 16),
                 // Hero countdown card (next class + live timer)
-                HeroCountdownCard(
-                  nextClass: data.nextClass,
-                  countdown: state.countdown,
-                ),
+                HeroCountdownCard(nextClass: data.nextClass),
                 const SizedBox(height: 28),
                 // Quick stats (SKS, classes today, semester/IPK)
                 QuickStats(data: data),

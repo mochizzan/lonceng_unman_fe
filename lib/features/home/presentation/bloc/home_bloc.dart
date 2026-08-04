@@ -1,8 +1,9 @@
 // home - BLoC
 //
-// Manages state for the home screen: fetches data via usecase,
-// computes the countdown timer, and emits state changes.
-// Follows the same pattern as auth's [AuthBloc].
+// Manages state for the home screen: fetches data via usecase
+// and emits state changes. The countdown timer is computed
+// live in HeroCountdownCard via a Timer.periodic.
+// Follows the same pattern as auth's AuthBloc.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
@@ -21,8 +22,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(HomeLoading());
     try {
       final data = await _getHome();
-      final countdown = data.nextClass.timeRemaining(DateTime.now());
-      emit(HomeLoaded(data: data, countdown: countdown));
+      emit(HomeLoaded(data: data));
     } catch (e) {
       emit(const HomeError('Gagal memuat data beranda'));
     }
@@ -34,8 +34,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     try {
       final data = await _getHome();
-      final countdown = data.nextClass.timeRemaining(DateTime.now());
-      emit(HomeLoaded(data: data, countdown: countdown));
+      emit(HomeLoaded(data: data));
     } catch (e) {
       emit(const HomeError('Gagal memuat data beranda'));
     }

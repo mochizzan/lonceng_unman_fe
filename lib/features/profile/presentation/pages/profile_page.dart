@@ -13,8 +13,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lonceng_unman_fe/features/profile/data/datasources/profile_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
@@ -31,18 +31,13 @@ class ProfilePage extends StatelessWidget {
   /// When null, a stub implementation is used.
   final GetProfile? getProfile;
 
-  static GetProfile _defaultGetProfile() {
-    return GetProfile(
-      ProfileRepositoryImpl(remoteDataSource: StubProfileRemoteDataSource()),
-    );
-  }
+  static GetProfile _defaultGetProfile() => Services.get<GetProfile>();
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ProfileBloc(getProfile ?? _defaultGetProfile())
-            ..add(const ProfileFetchRequested()),
+      lazy: true,
+      create: (_) => ProfileBloc(getProfile ?? _defaultGetProfile()),
       child: const _ProfilePageView(),
     );
   }
@@ -53,6 +48,10 @@ class _ProfilePageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dispatch initial fetch when this widget first builds.
+    // The BLoC is lazy — it was not created in BlocProvider.create.
+    context.read<ProfileBloc>().add(const ProfileFetchRequested());
+
     return Scaffold(
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
@@ -88,8 +87,8 @@ class _ProfilePageView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 48, color: cs.error),
-          const SizedBox(height: 16),
+          Icon(Icons.error_outline, size: AppDimens.iconError, color: cs.error),
+          const SizedBox(height: AppDimens.space16),
           Text(message, style: TextStyle(color: cs.onSurface)),
         ],
       ),
@@ -106,54 +105,41 @@ class _ProfilePageView extends StatelessWidget {
       },
       child: CustomScrollView(
         slivers: [
-          // 1. App Bar (DESIGN.md §5.4 — title + edit + refresh)
+          // 1. App Bar (DESIGN.md §5.4 — title + edit)
           SliverAppBar(
-            title: const Text('Profil Saya'),
+            title: const Text(AppStrings.profileTitleFull),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {},
-                tooltip: 'Edit Profil',
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: Icon(Icons.edit_outlined, color: cs.onSurface),
                 onPressed: () {
-                  context.read<ProfileBloc>().add(
-                    const ProfileRefreshRequested(),
-                  );
+                  // TODO: Navigate to edit profile page
                 },
-                tooltip: 'Pembaruan Data',
+                tooltip: AppStrings.profileEditTooltip,
               ),
             ],
           ),
           // 2-5. Content cards (DESIGN.md §5.4 layout)
           SliverPadding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-            ).copyWith(bottom: 80),
+              horizontal: AppDimens.screenPaddingHorizontal,
+            ).copyWith(bottom: AppDimens.space80),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
                 // Profile Header Card (avatar + name + study program badge)
                 ProfileHeaderCard(data: data),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
                 // Info Akademik (NPM, Program Studi, Semester)
                 AcademicInfoSection(data: data),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
                 // Tab Section header
                 _buildTabSection(cs),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
                 // Tentang tab content (bio + SKS/IPK stat cards)
                 ProfileBioSection(data: data),
-                const SizedBox(height: 24),
-                // Action button — Perbarui Data
-                ProfileActionButton(
-                  onPressed: () {
-                    context.read<ProfileBloc>().add(
-                      const ProfileRefreshRequested(),
-                    );
-                  },
-                ),
+                const SizedBox(height: AppDimens.space24),
+                // Action button — Pengaturan
+                const ProfileActionButton(),
               ]),
             ),
           ),
@@ -169,15 +155,15 @@ class _ProfilePageView extends StatelessWidget {
         Expanded(
           child: Container(
             height: 1,
-            color: cs.outlineVariant.withValues(alpha: 0.5),
+            color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
           child: Text(
-            'Tentang',
+            AppStrings.profileTabAbout,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: AppDimens.textMD,
               fontWeight: FontWeight.bold,
               color: cs.primary,
             ),
@@ -186,7 +172,7 @@ class _ProfilePageView extends StatelessWidget {
         Expanded(
           child: Container(
             height: 1,
-            color: cs.outlineVariant.withValues(alpha: 0.5),
+            color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
           ),
         ),
       ],

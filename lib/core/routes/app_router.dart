@@ -13,22 +13,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
-// Import feature pages
-import 'package:lonceng_unman_fe/features/auth/data/datasources/auth_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
-import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
+// Import feature pages (public APIs only — no data/domain internals)
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
+import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
@@ -92,21 +88,17 @@ int _indexForRoute(String? routeName) {
 
 /// Builds the route list, closing over [authStatusNotifier] so the login
 /// route can inject it into the [AuthBloc].
-List<RouteBase> _buildRoutes(AuthStatusNotifier authStatusNotifier) {
+List<RouteBase> _buildRoutes(
+  AuthStatusNotifier authStatusNotifier,
+  ThemeNotifier themeNotifier,
+) {
   return <RouteBase>[
     // --- Auth (standalone, no bottom nav) ---
     GoRoute(
       name: RouteNames.login,
       path: '/${RouteNames.login}',
-      builder: (context, state) => BlocProvider(
-        create: (_) => AuthBloc(
-          GetAuth(
-            AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource()),
-          ),
-          authStatusNotifier,
-        ),
-        child: const LoginPage(),
-      ),
+      builder: (context, state) =>
+          LoginPage(authStatusNotifier: authStatusNotifier),
     ),
 
     // --- Main app (bottom navigation shell) ---
@@ -140,7 +132,7 @@ List<RouteBase> _buildRoutes(AuthStatusNotifier authStatusNotifier) {
     GoRoute(
       name: RouteNames.settings,
       path: '/${RouteNames.settings}',
-      builder: (context, state) => const SettingsPage(),
+      builder: (context, state) => SettingsPage(themeNotifier: themeNotifier),
     ),
   ];
 }
@@ -150,11 +142,15 @@ List<RouteBase> _buildRoutes(AuthStatusNotifier authStatusNotifier) {
 /// coordinate auth-guard redirects. The same notifier is injected into
 /// the AuthBloc for the /login route so that successful login updates
 /// the auth guard and unblocks navigation to the home shell.
+///
+/// Also accepts a [ThemeNotifier] to pass to the settings page for
+/// runtime theme switching.
 final class AppRouter {
   AppRouter._();
 
   static GoRouter create({
     required AuthStatusNotifier authStatusNotifier,
+    required ThemeNotifier themeNotifier,
     String initialLocation = '/${RouteNames.login}',
     List<NavigatorObserver>? observers,
   }) {
@@ -163,7 +159,7 @@ final class AppRouter {
       refreshListenable: _StreamListenable(authStatusNotifier.status),
       redirect: (context, state) =>
           authRedirect(state.topRoute?.name, authStatusNotifier),
-      routes: _buildRoutes(authStatusNotifier),
+      routes: _buildRoutes(authStatusNotifier, themeNotifier),
       errorBuilder: (context, state) {
         return AppErrorPage(state: state);
       },

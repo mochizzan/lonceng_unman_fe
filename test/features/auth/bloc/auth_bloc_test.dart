@@ -90,7 +90,10 @@ void main() {
         bloc.add(AuthNpmChanged('21081010001'));
         bloc.add(AuthSubmitted());
       },
-      expect: () => [AuthLoading(), const AuthError('NPM tidak terdaftar')],
+      expect: () => [
+        AuthLoading(),
+        const AuthError('Gagal terhubung ke server'),
+      ],
     );
   });
 }

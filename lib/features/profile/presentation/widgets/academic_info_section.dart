@@ -10,6 +10,7 @@
 // Matches DESIGN.md §5.4 "Info Akademik" + HTML template lines 50-78.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity.dart';
 
@@ -30,7 +31,7 @@ class AcademicInfoSection extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     // Icon badge(40) + gap(12) = offset where text and divider start.
-    const double _iconPlusGap = 52;
+    const double iconPlusGap = 52;
 
     return Container(
       width: double.infinity,
@@ -39,8 +40,8 @@ class AcademicInfoSection extends StatelessWidget {
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(sp(context, 20)),
         border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.5),
-          width: 1,
+          color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
+          width: AppDimens.borderWidthThin,
         ),
         boxShadow: [
           BoxShadow(
@@ -57,25 +58,25 @@ class AcademicInfoSection extends StatelessWidget {
           _buildInfoRow(
             context,
             icon: Icons.account_balance,
-            label: 'Program Studi',
+            label: AppStrings.profileProgramStudi,
             value: data.studyProgram,
-            iconOffset: _iconPlusGap,
+            iconOffset: iconPlusGap,
           ),
           SizedBox(height: sp(context, 16)),
           _buildInfoRow(
             context,
             icon: Icons.badge,
-            label: 'NPM',
+            label: AppStrings.loginNpmHint,
             value: data.npm,
-            iconOffset: _iconPlusGap,
+            iconOffset: iconPlusGap,
           ),
           SizedBox(height: sp(context, 16)),
           _buildInfoRow(
             context,
             icon: Icons.calendar_today,
-            label: 'Semester',
+            label: AppStrings.profileSemester,
             value: data.semester,
-            iconOffset: _iconPlusGap,
+            iconOffset: iconPlusGap,
             showDivider: false,
           ),
         ],
@@ -152,9 +153,11 @@ class AcademicInfoSection extends StatelessWidget {
                 SizedBox(width: sp(context, iconOffset)),
                 Expanded(
                   child: Divider(
-                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                    color: cs.outlineVariant.withValues(
+                      alpha: AppColors.opacityHigh,
+                    ),
                     height: 1,
-                    thickness: 1,
+                    thickness: AppDimens.borderWidthThin,
                   ),
                 ),
               ],

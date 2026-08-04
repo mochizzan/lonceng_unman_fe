@@ -4,6 +4,7 @@
 // Matches the HTML template's `<header>` section.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
@@ -27,7 +28,10 @@ class HomeHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       color: cs.surface.withValues(alpha: 0.95),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space20,
+        vertical: AppDimens.space16,
+      ),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -40,16 +44,16 @@ class HomeHeader extends StatelessWidget {
                 Text(
                   dateText,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppDimens.textBase,
                     fontWeight: FontWeight.w500,
                     color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppDimens.space2),
                 Text(
                   'Halo, $userName 👋',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: AppDimens.text5XL,
                     fontWeight: FontWeight.bold,
                     color: cs.onSurface,
                   ),
@@ -66,13 +70,16 @@ class HomeHeader extends StatelessWidget {
                   onPressed: onNotificationTap,
                   icon: Stack(
                     children: [
-                      const Icon(Icons.notifications_none, size: 22),
+                      const Icon(
+                        Icons.notifications_none,
+                        size: AppDimens.text5XL,
+                      ),
                       Positioned(
-                        top: 4,
-                        right: 4,
+                        top: AppDimens.space4,
+                        right: AppDimens.space4,
                         child: Container(
-                          width: 6,
-                          height: 6,
+                          width: AppDimens.dotXS,
+                          height: AppDimens.dotXS,
                           decoration: BoxDecoration(
                             color: cs.error,
                             shape: BoxShape.circle,
@@ -82,23 +89,26 @@ class HomeHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppDimens.space8),
                 // Profile avatar
                 GestureDetector(
                   onTap: onAvatarTap,
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: AppDimens.avatarMD,
+                    height: AppDimens.avatarMD,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: cs.primaryContainer, width: 2),
+                      border: Border.all(
+                        color: cs.primaryContainer,
+                        width: AppDimens.borderWidthMedium,
+                      ),
                     ),
                     child: ClipOval(
                       child: avatarUrl.isNotEmpty
                           ? Image.network(
                               avatarUrl,
-                              width: 44,
-                              height: 44,
+                              width: AppDimens.avatarMD,
+                              height: AppDimens.avatarMD,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   const Icon(Icons.person),

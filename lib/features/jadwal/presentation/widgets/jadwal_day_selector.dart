@@ -6,6 +6,7 @@
 // Matches DESIGN.md §5.3 day selector.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 
 class JadwalDaySelector extends StatelessWidget {
   const JadwalDaySelector({
@@ -28,8 +29,11 @@ class JadwalDaySelector extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: days.length,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space20,
+          vertical: AppDimens.space8,
+        ),
+        separatorBuilder: (_, _) => const SizedBox(width: AppDimens.space10),
         itemBuilder: (context, index) {
           final day = days[index];
           final isSelected = day == selectedDay;
@@ -40,10 +44,12 @@ class JadwalDaySelector extends StatelessWidget {
           return GestureDetector(
             onTap: () => onDaySelected(day),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space16,
+              ),
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
@@ -58,7 +64,7 @@ class JadwalDaySelector extends StatelessWidget {
               child: Text(
                 day,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppDimens.textBase,
                   fontWeight: FontWeight.bold,
                   color: textColor,
                 ),

@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/repositories/jadwal_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
@@ -33,9 +34,8 @@ class JadwalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          JadwalBloc(getJadwal ?? _defaultGetJadwal())
-            ..add(const JadwalFetchRequested()),
+      lazy: true,
+      create: (_) => JadwalBloc(getJadwal ?? _defaultGetJadwal()),
       child: const _JadwalPageView(),
     );
   }
@@ -60,6 +60,9 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       _selectedDay = state.data.selectedDay;
       _days = state.data.days;
     }
+    // Dispatch initial fetch when this widget first builds.
+    // The BLoC is lazy — it was not created in BlocProvider.create.
+    context.read<JadwalBloc>().add(const JadwalFetchRequested());
   }
 
   void _handleDaySelected(String day) {
@@ -113,8 +116,8 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 48, color: cs.error),
-          const SizedBox(height: 16),
+          Icon(Icons.error_outline, size: AppDimens.iconError, color: cs.error),
+          const SizedBox(height: AppDimens.space16),
           Text(message, style: TextStyle(color: cs.onSurface)),
         ],
       ),
@@ -129,19 +132,24 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
         context.read<JadwalBloc>().add(const JadwalRefreshRequested());
       },
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(top: 24, bottom: 32),
+        padding: const EdgeInsets.only(
+          top: AppDimens.space24,
+          bottom: AppDimens.space32,
+        ),
         child: Column(
           children: [
             // Day selector pills (horizontal scrollable)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space24,
+              ),
               child: JadwalDaySelector(
                 days: _days,
                 selectedDay: _selectedDay,
                 onDaySelected: _handleDaySelected,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppDimens.space24),
             // Timeline list — schedule cards
             JadwalTimeline(items: items),
           ],

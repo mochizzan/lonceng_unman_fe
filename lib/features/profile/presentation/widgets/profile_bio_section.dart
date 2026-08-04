@@ -6,6 +6,7 @@
 // Matches DESIGN.md §5.4 Profile Screen "Tentang" tab + HTML template lines 79-103.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity.dart';
 
@@ -58,7 +59,7 @@ class ProfileBioSection extends StatelessWidget {
             // IPK Terakhir
             Expanded(
               child: _StatCard(
-                label: 'IPK Terakhir',
+                label: AppStrings.homeIpkTerakhir,
                 value: data.gpa.toStringAsFixed(2),
               ),
             ),
@@ -87,7 +88,10 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(sp(context, 16)),
-        border: Border.all(color: cs.surfaceContainerHighest, width: 1),
+        border: Border.all(
+          color: cs.surfaceContainerHighest,
+          width: AppDimens.borderWidthThin,
+        ),
       ),
       child: Column(
         children: [

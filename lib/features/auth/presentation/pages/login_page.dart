@@ -2,8 +2,12 @@
 // Implements the full DESIGN.md Â§5.1 layout, aligned with HTML reference.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
@@ -13,7 +17,13 @@ import 'package:lonceng_unman_fe/shared/widgets/bell_logo.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, required this.authStatusNotifier, this.authBloc});
+
+  final AuthStatusNotifier authStatusNotifier;
+
+  /// Optional pre-built AuthBloc for testing.
+  /// When null, a new BLoC is created internally.
+  final AuthBloc? authBloc;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -32,31 +42,39 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: AuthBackground(
-        child: BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AuthAuthenticated) {
-              context.goNamed(RouteNames.home);
-            }
-          },
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: sp(context, 24)),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Logo & Greeting
-                    _buildGreeting(cs),
-                    SizedBox(height: sp(context, 32)),
-                    // Login Card
-                    _LoginCard(npmController: _npmController),
-                    SizedBox(height: sp(context, 24)),
-                    // Footer
-                    _buildFooter(cs),
-                  ],
+    // Use provided BLoC or create a new one.
+    final bloc =
+        widget.authBloc ??
+        AuthBloc(Services.get<GetAuth>(), widget.authStatusNotifier);
+
+    return BlocProvider.value(
+      value: bloc,
+      child: Scaffold(
+        body: AuthBackground(
+          child: BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthAuthenticated) {
+                context.goNamed(RouteNames.home);
+              }
+            },
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: sp(context, 24)),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo & Greeting
+                      _buildGreeting(cs),
+                      SizedBox(height: sp(context, 32)),
+                      // Login Card
+                      _LoginCard(npmController: _npmController),
+                      SizedBox(height: sp(context, 24)),
+                      // Footer
+                      _buildFooter(cs),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -72,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
         const BellLogo(),
         SizedBox(height: sp(context, 24)),
         Text(
-          'Halo Mahasiswa!',
+          AppStrings.loginGreeting,
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
             color: cs.onSurface,
             fontSize: responsiveFontSize(context, 34),
@@ -81,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         SizedBox(height: sp(context, 12)),
         Text(
-          'Masuk dengan NPM kamu untuk melihat jadwal & info perkuliahan.',
+          AppStrings.loginSubtitleDetail,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: cs.onSurfaceVariant,
             fontSize: responsiveFontSize(context, 14),
@@ -93,11 +111,19 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildFooter(ColorScheme cs) {
-    return Text(
-      'Butuh bantuan? Helpdesk IT',
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-        fontSize: responsiveFontSize(context, 12),
+    return Text.rich(
+      TextSpan(
+        text: AppStrings.loginHelpdesk,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: cs.onSurfaceVariant.withValues(alpha: AppColors.opacityMax),
+          fontSize: responsiveFontSize(context, 12),
+        ),
+        children: [
+          TextSpan(
+            text: AppStrings.loginHelpdeskLink,
+            style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
       textAlign: TextAlign.center,
     );
@@ -132,14 +158,14 @@ class _LoginCard extends StatelessWidget {
         children: [
           // Card Header
           Text(
-            'Masuk Akun',
+            AppStrings.loginButton,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontSize: responsiveFontSize(context, 20),
             ),
           ),
           SizedBox(height: sp(context, 8)),
           Text(
-            'Gunakan NPM aktif kamu',
+            AppStrings.loginNpmHelper,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
               fontSize: responsiveFontSize(context, 14),
@@ -154,7 +180,7 @@ class _LoginCard extends StatelessWidget {
               return AppTextField(
                 key: const Key('npm_field'),
                 controller: npmController,
-                label: 'NPM',
+                label: AppStrings.loginNpmHint,
                 icon: Icons.badge_outlined,
                 keyboardType: TextInputType.number,
                 errorText: errorText,
@@ -187,7 +213,7 @@ class _LoginCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Masuk',
+                      AppStrings.loginButton,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: cs.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
@@ -209,14 +235,14 @@ class _LoginCard extends StatelessWidget {
           // Helper text
           Text.rich(
             TextSpan(
-              text: 'NPM belum terdaftar? ',
+              text: AppStrings.loginNoAccount,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: cs.onSurfaceVariant,
                 fontSize: responsiveFontSize(context, 12),
               ),
               children: [
                 TextSpan(
-                  text: 'Hubungi Admin',
+                  text: AppStrings.loginContactAdmin,
                   style: TextStyle(
                     color: cs.primary,
                     fontWeight: FontWeight.bold,

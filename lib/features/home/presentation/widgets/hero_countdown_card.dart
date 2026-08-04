@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
 /// Formats a [Duration] as HH:MM:SS.
@@ -37,7 +38,7 @@ class _PulsingDotState extends State<_PulsingDot>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: AppDurations.countdown,
     )..repeat();
   }
 
@@ -50,8 +51,8 @@ class _PulsingDotState extends State<_PulsingDot>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 20,
-      height: 20,
+      width: AppDimens.dotXL,
+      height: AppDimens.dotXL,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -64,8 +65,8 @@ class _PulsingDotState extends State<_PulsingDot>
               return Transform.scale(
                 scale: scale,
                 child: Container(
-                  width: 20,
-                  height: 20,
+                  width: AppDimens.dotXL,
+                  height: AppDimens.dotXL,
                   decoration: BoxDecoration(
                     color: widget.color.withValues(alpha: opacity),
                     shape: BoxShape.circle,
@@ -75,8 +76,8 @@ class _PulsingDotState extends State<_PulsingDot>
             },
           ),
           Container(
-            width: 10,
-            height: 10,
+            width: AppDimens.dotMD,
+            height: AppDimens.dotMD,
             decoration: BoxDecoration(
               color: widget.color,
               shape: BoxShape.circle,
@@ -139,10 +140,10 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: cs.primaryContainer,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(AppDimens.cardHeroRadius),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppDimens.space24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -154,13 +155,15 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                 Row(
                   children: [
                     _PulsingDot(color: onPrimaryContainer),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppDimens.space8),
                     Text(
-                      'Kelas berikutnya dalam',
+                      AppStrings.homeNextClassIn,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppDimens.textBase,
                         fontWeight: FontWeight.w600,
-                        color: onPrimaryContainer.withValues(alpha: 0.6),
+                        color: onPrimaryContainer.withValues(
+                          alpha: AppColors.opacityVeryHigh,
+                        ),
                       ),
                     ),
                   ],
@@ -168,52 +171,58 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                 // SKS badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
+                    horizontal: AppDimens.space12,
+                    vertical: AppDimens.space4,
                   ),
                   decoration: BoxDecoration(
-                    color: onPrimaryContainer.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(999),
+                    color: onPrimaryContainer.withValues(
+                      alpha: AppColors.opacityLow,
+                    ),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                   ),
                   child: Text(
                     widget.nextClass.sks,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppDimens.textSM,
                       fontWeight: FontWeight.bold,
-                      color: onPrimaryContainer.withValues(alpha: 0.8),
+                      color: onPrimaryContainer.withValues(
+                        alpha: AppColors.opacityFull,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppDimens.space20),
             // Countdown time
             Text(
               formatCountdown(_countdown),
               style: TextStyle(
-                fontSize: 44,
+                fontSize: AppDimens.textHero,
                 fontWeight: FontWeight.w800,
                 color: onPrimaryContainer,
-                letterSpacing: -0.5,
+                letterSpacing: AppDimens.letterSpacingTight,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppDimens.space4),
             // Course name
             Text(
               widget.nextClass.courseName,
               style: TextStyle(
-                fontSize: 19,
+                fontSize: AppDimens.text3XL,
                 fontWeight: FontWeight.bold,
                 color: onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppDimens.space20),
             // Divider
             Container(
               height: 1,
-              color: onPrimaryContainer.withValues(alpha: 0.12),
+              color: onPrimaryContainer.withValues(
+                alpha: AppColors.opacityMedium,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppDimens.space20),
             // Lecturer + Location row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -223,19 +232,23 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                   child: Row(
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: AppDimens.iconXL,
+                        height: AppDimens.iconXL,
                         decoration: BoxDecoration(
-                          color: onPrimaryContainer.withValues(alpha: 0.08),
+                          color: onPrimaryContainer.withValues(
+                            alpha: AppColors.opacityLow,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.person,
-                          size: 18,
-                          color: onPrimaryContainer.withValues(alpha: 0.7),
+                          size: AppDimens.iconSM,
+                          color: onPrimaryContainer.withValues(
+                            alpha: AppColors.opacityMax,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: AppDimens.space10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,20 +256,20 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                             Text(
                               widget.nextClass.lecturer ?? '-',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppDimens.textBase,
                                 fontWeight: FontWeight.bold,
                                 color: onPrimaryContainer.withValues(
-                                  alpha: 0.85,
+                                  alpha: AppColors.opacityNearFull,
                                 ),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              'Dosen Pengampu',
+                              AppStrings.homeLecturerLabel,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppDimens.textXS,
                                 color: onPrimaryContainer.withValues(
-                                  alpha: 0.5,
+                                  alpha: AppColors.opacityHigh,
                                 ),
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -274,17 +287,21 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                     children: [
                       Icon(
                         Icons.location_on,
-                        size: 18,
-                        color: onPrimaryContainer.withValues(alpha: 0.6),
+                        size: AppDimens.iconSM,
+                        color: onPrimaryContainer.withValues(
+                          alpha: AppColors.opacityVeryHigh,
+                        ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: AppDimens.space6),
                       Flexible(
                         child: Text(
                           widget.nextClass.location ?? '-',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppDimens.textBase,
                             fontWeight: FontWeight.w500,
-                            color: onPrimaryContainer.withValues(alpha: 0.7),
+                            color: onPrimaryContainer.withValues(
+                              alpha: AppColors.opacityMax,
+                            ),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -294,7 +311,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppDimens.space20),
             // CTA button — Tonal Button per DESIGN.md
             SizedBox(
               width: double.infinity,
@@ -309,24 +326,26 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                   surfaceTintColor: Colors.transparent,
                   shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(AppDimens.radius3XL),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppDimens.space14,
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Lihat Materi Kelas',
+                      AppStrings.homeViewMaterials,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppDimens.textMD,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppDimens.space8),
                     Icon(
                       Icons.arrow_forward,
-                      size: 18,
+                      size: AppDimens.iconSM,
                       color: cs.primaryContainer,
                     ),
                   ],

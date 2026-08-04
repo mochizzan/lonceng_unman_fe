@@ -4,6 +4,7 @@
 // Matches the HTML template's jadwal hari ini section.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart' hide AppColors;
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
@@ -25,9 +26,9 @@ class TodaySchedule extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Jadwal Hari Ini',
+              AppStrings.homeScheduleTitle,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppDimens.text2XL,
                 fontWeight: FontWeight.bold,
                 color: cs.onSurface,
               ),
@@ -42,25 +43,29 @@ class TodaySchedule extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Lihat Semua',
+                    AppStrings.homeViewAll,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppDimens.textBase,
                       fontWeight: FontWeight.bold,
                       color: cs.primary,
                     ),
                   ),
-                  const SizedBox(width: 2),
-                  Icon(Icons.chevron_right, size: 16, color: cs.primary),
+                  const SizedBox(width: AppDimens.space2),
+                  Icon(
+                    Icons.chevron_right,
+                    size: AppDimens.textXL,
+                    color: cs.primary,
+                  ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppDimens.space16),
         // Timeline items
         if (items.isEmpty)
           Text(
-            'Tidak ada jadwal hari ini',
+            AppStrings.homeNoSchedule,
             style: TextStyle(color: cs.onSurfaceVariant),
           )
         else
@@ -98,10 +103,8 @@ class _PulsingDotState extends State<_PulsingDot>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..repeat();
+    _controller = AnimationController(vsync: this, duration: AppDurations.slow)
+      ..repeat();
   }
 
   @override
@@ -113,8 +116,8 @@ class _PulsingDotState extends State<_PulsingDot>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 14,
-      height: 14,
+      width: AppDimens.dotLG,
+      height: AppDimens.dotLG,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -128,8 +131,8 @@ class _PulsingDotState extends State<_PulsingDot>
               return Transform.scale(
                 scale: scale,
                 child: Container(
-                  width: 14,
-                  height: 14,
+                  width: AppDimens.dotLG,
+                  height: AppDimens.dotLG,
                   decoration: BoxDecoration(
                     color: widget.color.withValues(alpha: opacity),
                     shape: BoxShape.circle,
@@ -140,8 +143,8 @@ class _PulsingDotState extends State<_PulsingDot>
           ),
           // Inner dot
           Container(
-            width: 8,
-            height: 8,
+            width: AppDimens.dotSM,
+            height: AppDimens.dotSM,
             decoration: BoxDecoration(
               color: widget.color,
               shape: BoxShape.circle,
@@ -184,20 +187,25 @@ class _TimelineItem extends StatelessWidget {
       children: [
         // Timeline dot column (fixed width)
         SizedBox(
-          width: 24,
+          width: AppDimens.space24,
           child: Column(
             children: [
               _buildDot(cs, successColor, isOngoing),
               if (!isLast)
-                Expanded(child: Container(width: 2, color: cs.outlineVariant)),
+                Expanded(
+                  child: Container(
+                    width: AppDimens.borderWidthMedium,
+                    color: cs.outlineVariant,
+                  ),
+                ),
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppDimens.space12),
         // Content
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.only(bottom: AppDimens.space20),
             child: isOngoing
                 ? _buildOngoingCard(context, cs, successColor)
                 : _buildUpcomingCard(cs, index),
@@ -210,18 +218,21 @@ class _TimelineItem extends StatelessWidget {
   Widget _buildDot(ColorScheme cs, Color successColor, bool isOngoing) {
     if (isOngoing) {
       return SizedBox(
-        width: 14,
-        height: 14,
+        width: AppDimens.dotLG,
+        height: AppDimens.dotLG,
         child: _PulsingDot(color: successColor),
       );
     }
     return Container(
-      width: 14,
-      height: 14,
+      width: AppDimens.dotLG,
+      height: AppDimens.dotLG,
       decoration: BoxDecoration(
         color: cs.secondaryContainer,
         shape: BoxShape.circle,
-        border: Border.all(color: cs.outlineVariant, width: 1),
+        border: Border.all(
+          color: cs.outlineVariant,
+          width: AppDimens.borderWidthThin,
+        ),
       ),
     );
   }
@@ -234,10 +245,10 @@ class _TimelineItem extends StatelessWidget {
     final timeRange =
         '${_formatTime(item.startTime)} – ${_formatTime(item.endTime)}';
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppDimens.space14),
       decoration: BoxDecoration(
         color: successColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimens.radiusLG),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,48 +257,54 @@ class _TimelineItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Sedang Berlangsung',
+                AppStrings.homeStatusOngoing,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppDimens.textXS,
                   fontWeight: FontWeight.bold,
                   color: successColor,
-                  letterSpacing: 0.5,
+                  letterSpacing: AppDimens.letterSpacingWide,
                 ),
               ),
               Text(
                 timeRange,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppDimens.textSM,
                   fontWeight: FontWeight.w600,
                   color: cs.onSurfaceVariant,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDimens.space4),
           Text(
             item.courseName,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppDimens.textXL,
               fontWeight: FontWeight.bold,
               color: cs.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDimens.space4),
           Row(
             children: [
               Icon(Icons.location_on, size: 15, color: cs.onSurfaceVariant),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppDimens.space4),
               Text(
                 item.room,
-                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: AppDimens.textSM,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDimens.space12),
               Icon(Icons.groups, size: 15, color: cs.onSurfaceVariant),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppDimens.space4),
               Text(
                 item.group ?? '-',
-                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: AppDimens.textSM,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -309,10 +326,10 @@ class _TimelineItem extends StatelessWidget {
         : cs.onSurfaceVariant;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppDimens.space14),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimens.radiusLG),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,25 +339,25 @@ class _TimelineItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Segera',
+                  AppStrings.homeStatusUpcoming,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppDimens.textXS,
                     fontWeight: FontWeight.bold,
                     color: textColor,
-                    letterSpacing: 0.5,
+                    letterSpacing: AppDimens.letterSpacingWide,
                   ),
                 ),
                 Text(
                   timeStr,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w600,
                     color: textColor,
                   ),
                 ),
               ],
             ),
-          if (isSoon) const SizedBox(height: 4),
+          if (isSoon) const SizedBox(height: AppDimens.space4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -350,12 +367,12 @@ class _TimelineItem extends StatelessWidget {
                   Text(
                     item.courseName,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: AppDimens.textLG,
                       fontWeight: FontWeight.bold,
                       color: cs.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppDimens.space4),
                   Row(
                     children: [
                       Icon(
@@ -363,11 +380,11 @@ class _TimelineItem extends StatelessWidget {
                         size: 15,
                         color: cs.onSurfaceVariant,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppDimens.space4),
                       Text(
                         item.room,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppDimens.textSM,
                           color: cs.onSurfaceVariant,
                         ),
                       ),
@@ -379,7 +396,7 @@ class _TimelineItem extends StatelessWidget {
                 Text(
                   timeStr,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w600,
                     color: textColor,
                   ),

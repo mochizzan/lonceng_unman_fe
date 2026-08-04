@@ -8,6 +8,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
@@ -23,6 +24,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final data = await _getHome();
       emit(HomeLoaded(data: data));
+    } on NetworkException catch (e) {
+      emit(HomeError(e.message));
+    } on ServerException catch (e) {
+      emit(HomeError(e.message));
     } catch (e) {
       emit(const HomeError('Gagal memuat data beranda'));
     }
@@ -35,6 +40,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final data = await _getHome();
       emit(HomeLoaded(data: data));
+    } on NetworkException catch (e) {
+      emit(HomeError(e.message));
+    } on ServerException catch (e) {
+      emit(HomeError(e.message));
     } catch (e) {
       emit(const HomeError('Gagal memuat data beranda'));
     }

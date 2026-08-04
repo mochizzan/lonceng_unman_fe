@@ -18,8 +18,6 @@ void main() {
       RouteNames.jadwal,
       RouteNames.profile,
       RouteNames.settings,
-      RouteNames.setup,
-      RouteNames.error,
     ]) {
       expect(name.contains('/'), isFalse, reason: '$name contains a slash');
     }

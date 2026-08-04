@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
-import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/repositories/auth_repository.dart';
@@ -28,34 +26,37 @@ class FakeAuthRepository implements AuthRepository {
 
 void main() {
   testWidgets('LoginPage renders all DESIGN.md §5.1 elements', (tester) async {
+    final authNotifier = AuthStatusNotifier();
+    // Provide a custom authBloc to avoid DI resolution
     final completer = Completer<AuthEntity>();
+    final authBloc = AuthBloc(
+      GetAuth(FakeAuthRepository(completer)),
+      authNotifier,
+    );
     await tester.pumpWidget(
       MaterialApp(
         theme: lightTheme,
-        home: BlocProvider(
-          create: (_) => AuthBloc(
-            GetAuth(FakeAuthRepository(completer)),
-            AuthStatusNotifier(),
-          ),
-          child: const LoginPage(),
-        ),
+        home: LoginPage(authStatusNotifier: authNotifier, authBloc: authBloc),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.school), findsOneWidget);
-    expect(find.text('Masuk Akun'), findsOneWidget);
+    expect(find.text('Masuk Akun'), findsNWidgets(2)); // header + button
     expect(find.text('Gunakan NPM aktif kamu'), findsOneWidget);
     expect(find.text('NPM'), findsOneWidget);
     expect(find.byIcon(Icons.badge_outlined), findsOneWidget);
     expect(find.textContaining('Hubungi Admin'), findsOneWidget);
     expect(find.textContaining('Helpdesk IT'), findsOneWidget);
-    expect(find.text('Masuk'), findsOneWidget);
   });
 
   testWidgets('submit shows loading when pressed', (tester) async {
     final completer = Completer<AuthEntity>();
     final authStatusNotifier = AuthStatusNotifier();
+    final authBloc = AuthBloc(
+      GetAuth(FakeAuthRepository(completer)),
+      authStatusNotifier,
+    );
 
     final router = GoRouter(
       initialLocation: '/${RouteNames.login}',
@@ -63,12 +64,9 @@ void main() {
         GoRoute(
           path: '/${RouteNames.login}',
           name: RouteNames.login,
-          builder: (context, state) => BlocProvider(
-            create: (_) => AuthBloc(
-              GetAuth(FakeAuthRepository(completer)),
-              authStatusNotifier,
-            ),
-            child: const LoginPage(),
+          builder: (context, state) => LoginPage(
+            authStatusNotifier: authStatusNotifier,
+            authBloc: authBloc,
           ),
         ),
         GoRoute(
@@ -87,7 +85,7 @@ void main() {
     // Enter a valid 11-digit NPM
     await tester.enterText(find.byKey(const Key('npm_field')), '21081010001');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Masuk'));
+    await tester.tap(find.text('Masuk Akun').last);
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -107,9 +105,37 @@ void main() {
     tester,
   ) async {
     final authStatusNotifier = AuthStatusNotifier();
-    final router = AppRouter.create(
-      authStatusNotifier: authStatusNotifier,
+    // Use a pre-built authBloc that always succeeds
+    final completer = Completer<AuthEntity>();
+    completer.complete(
+      AuthEntity(
+        npm: '21081010001',
+        token: 'tok',
+        expiresAt: DateTime(2025, 1, 1),
+      ),
+    );
+    final authBloc = AuthBloc(
+      GetAuth(FakeAuthRepository(completer)),
+      authStatusNotifier,
+    );
+
+    final router = GoRouter(
       initialLocation: '/${RouteNames.login}',
+      routes: [
+        GoRoute(
+          path: '/${RouteNames.login}',
+          name: RouteNames.login,
+          builder: (context, state) => LoginPage(
+            authStatusNotifier: authStatusNotifier,
+            authBloc: authBloc,
+          ),
+        ),
+        GoRoute(
+          path: '/${RouteNames.home}',
+          name: RouteNames.home,
+          builder: (context, state) => const Scaffold(body: Text('Home')),
+        ),
+      ],
     );
 
     await tester.pumpWidget(
@@ -122,7 +148,7 @@ void main() {
     // Enter valid NPM
     await tester.enterText(find.byKey(const Key('npm_field')), '21081010001');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Masuk'));
+    await tester.tap(find.text('Masuk Akun').last);
     await tester.pumpAndSettle();
 
     // After successful login, user should be on home screen

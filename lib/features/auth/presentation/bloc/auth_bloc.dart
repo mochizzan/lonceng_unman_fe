@@ -4,6 +4,7 @@ import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -39,8 +40,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final AuthEntity user = await _getAuth(npm: _npm);
       _authStatusNotifier.setStatus(AuthStatus.authenticated);
       emit(AuthAuthenticated(user));
+    } on AuthException catch (e) {
+      emit(AuthError(e.message));
+    } on NetworkException catch (e) {
+      emit(AuthError(e.message));
+    } on ServerException catch (e) {
+      emit(AuthError(e.message));
     } catch (e) {
-      emit(const AuthError('NPM tidak terdaftar'));
+      emit(const AuthError('Gagal terhubung ke server'));
     }
   }
 

@@ -6,16 +6,25 @@ import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
+import '../helpers/test_di.dart';
 
 void main() {
+  setUpAll(registerTestDependencies);
+  tearDownAll(unregisterTestDependencies);
   group('AppRouter.create', () {
     test('returns a GoRouter instance', () {
-      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
+      final router = AppRouter.create(
+        authStatusNotifier: AuthStatusNotifier(),
+        themeNotifier: testThemeNotifier,
+      );
       expect(router, isA<GoRouter>());
     });
 
     test('all routes are named (no unnamed routes)', () {
-      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
+      final router = AppRouter.create(
+        authStatusNotifier: AuthStatusNotifier(),
+        themeNotifier: testThemeNotifier,
+      );
 
       for (final config in router.configuration.routes) {
         if (config is GoRoute) {
@@ -29,7 +38,10 @@ void main() {
     });
 
     test('ShellRoute contains exactly home, jadwal, profile', () {
-      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
+      final router = AppRouter.create(
+        authStatusNotifier: AuthStatusNotifier(),
+        themeNotifier: testThemeNotifier,
+      );
 
       bool foundShell = false;
       for (final config in router.configuration.routes) {
@@ -45,7 +57,10 @@ void main() {
     });
 
     test('login and settings are standalone (not in ShellRoute)', () {
-      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
+      final router = AppRouter.create(
+        authStatusNotifier: AuthStatusNotifier(),
+        themeNotifier: testThemeNotifier,
+      );
 
       final topLevelNames = router.configuration.routes
           .whereType<GoRoute>()
@@ -66,7 +81,10 @@ void main() {
     });
 
     test('initial location defaults to /login', () {
-      final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
+      final router = AppRouter.create(
+        authStatusNotifier: AuthStatusNotifier(),
+        themeNotifier: testThemeNotifier,
+      );
 
       // go_router 17.x: verify via navigatorKey
       // initial location is tested through widget test below.
@@ -82,6 +100,7 @@ void main() {
         final provider = AuthStatusNotifier(AuthStatus.unauthenticated);
         final router = AppRouter.create(
           authStatusNotifier: provider,
+          themeNotifier: testThemeNotifier,
           initialLocation: '/home',
         );
 
@@ -95,7 +114,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Masuk'), findsOneWidget);
+        expect(find.text('Masuk Akun'), findsNWidgets(2)); // header + button
       },
     );
 
@@ -105,6 +124,7 @@ void main() {
       final provider = AuthStatusNotifier(AuthStatus.authenticated);
       final router = AppRouter.create(
         authStatusNotifier: provider,
+        themeNotifier: testThemeNotifier,
         initialLocation: '/${RouteNames.login}',
       );
 
@@ -116,9 +136,12 @@ void main() {
           themeMode: ThemeMode.system,
         ),
       );
-      await tester.pumpAndSettle();
+      // Use pump() instead of pumpAndSettle() because home page has
+      // Timer.periodic countdown that never settles.
+      await tester.pump();
+      await tester.pump();
 
-      expect(find.text('Halo'), findsOneWidget);
+      expect(find.textContaining('Halo'), findsOneWidget);
     });
   });
 }

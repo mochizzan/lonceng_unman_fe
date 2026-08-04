@@ -7,6 +7,7 @@
 // Matches HTML template design spec.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 
 class JadwalCard extends StatelessWidget {
@@ -41,33 +42,35 @@ class JadwalCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppDimens.cardItemRadius),
         border: borderColor != null ? Border.all(color: borderColor) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: cs.shadow.withValues(alpha: AppColors.shadowLow),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppDimens.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status label (ongoing only)
             if (isOngoing) ...[
               Text(
-                'SEDANG BERLANGSUNG',
+                AppStrings.jadwalStatusOngoing,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppDimens.textSM,
                   fontWeight: FontWeight.bold,
-                  color: cs.onPrimaryContainer.withValues(alpha: 0.7),
-                  letterSpacing: 0.5,
+                  color: cs.onPrimaryContainer.withValues(
+                    alpha: AppColors.opacityMax,
+                  ),
+                  letterSpacing: AppDimens.letterSpacingWide,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppDimens.space12),
             ],
             // Course name + time badge
             Row(
@@ -76,14 +79,14 @@ class JadwalCard extends StatelessWidget {
                 // Accent bar (upcoming only)
                 if (accentColor != null) ...[
                   Container(
-                    width: 4,
+                    width: AppDimens.space4,
                     height: 48,
                     decoration: BoxDecoration(
                       color: accentColor,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusXS),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppDimens.space12),
                 ],
                 // Course info
                 Expanded(
@@ -93,20 +96,22 @@ class JadwalCard extends StatelessWidget {
                       Text(
                         item.courseName,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppDimens.text2XL,
                           fontWeight: FontWeight.w600,
                           color: isOngoing
                               ? cs.onPrimaryContainer
                               : cs.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppDimens.space4),
                       Text(
-                        item.lecturer ?? '-',
+                        item.lecturer ?? AppStrings.jadwalNullFallback,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppDimens.textMD,
                           color: isOngoing
-                              ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                              ? cs.onPrimaryContainer.withValues(
+                                  alpha: AppColors.opacityFull,
+                                )
                               : cs.onSurfaceVariant,
                         ),
                       ),
@@ -116,17 +121,17 @@ class JadwalCard extends StatelessWidget {
                 // Time badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: AppDimens.space12,
+                    vertical: AppDimens.space6,
                   ),
                   decoration: BoxDecoration(
                     color: timeBadgeBg,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                   ),
                   child: Text(
                     '${_formatTime(item.startTime)} - ${_formatTime(item.endTime)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppDimens.textSM,
                       fontWeight: FontWeight.w500,
                       color: timeBadgeText,
                     ),
@@ -134,7 +139,7 @@ class JadwalCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.space16),
             // Divider
             Container(
               height: 1,
@@ -142,41 +147,47 @@ class JadwalCard extends StatelessWidget {
                   ? cs.onPrimaryContainer.withValues(alpha: 0.1)
                   : cs.surfaceContainerHighest,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.space16),
             // Location + SKS row
             Row(
               children: [
                 Icon(
                   Icons.location_on,
-                  size: 18,
+                  size: AppDimens.iconSM,
                   color: isOngoing
-                      ? cs.onPrimaryContainer.withValues(alpha: 0.7)
+                      ? cs.onPrimaryContainer.withValues(
+                          alpha: AppColors.opacityMax,
+                        )
                       : cs.onSurfaceVariant,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppDimens.space6),
                 Text(
                   item.room,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w500,
                     color: isOngoing
-                        ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                        ? cs.onPrimaryContainer.withValues(
+                            alpha: AppColors.opacityFull,
+                          )
                         : cs.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppDimens.space16),
                 Icon(
                   Icons.confirmation_number,
-                  size: 18,
+                  size: AppDimens.iconSM,
                   color: isOngoing
-                      ? cs.onPrimaryContainer.withValues(alpha: 0.7)
+                      ? cs.onPrimaryContainer.withValues(
+                          alpha: AppColors.opacityMax,
+                        )
                       : cs.onSurfaceVariant,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppDimens.space6),
                 Text(
                   item.sks,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w500,
                     color: isOngoing
                         ? cs.onPrimaryContainer.withValues(alpha: 0.8)

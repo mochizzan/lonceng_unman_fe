@@ -70,3 +70,7 @@ CLAUDE.md
 *.artifacts/
 */docs/
 /docs/
+
+# Firebase config (sensitive)
+android/app/google-services.json
+lib/firebase_options.dart

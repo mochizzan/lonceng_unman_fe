@@ -45,6 +45,10 @@ dependencies:
   # Fonts
   google_fonts: ^8.2.1
 
+  # Firebase
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

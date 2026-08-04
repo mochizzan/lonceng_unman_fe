@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- FCM notification accent color — matches DESIGN.md seed color #FFC107 -->
+    <color name="fcm_notification_color">#FFC107</color>
+</resources>

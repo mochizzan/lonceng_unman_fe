@@ -1,6 +1,7 @@
 // lib/core/routes/app_error_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 
 /// Material 3 error page for 404 / unknown-route errors.
@@ -16,7 +17,7 @@ class AppErrorPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -25,13 +26,13 @@ class AppErrorPage extends StatelessWidget {
                 size: 64,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppDimens.space24),
               Text(
-                'Halaman Tidak Ditemukan',
+                AppStrings.errorNotFound,
                 style: theme.textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppDimens.space8),
               if (state?.error?.toString().isNotEmpty ?? false)
                 Text(
                   state!.error.toString(),
@@ -40,7 +41,7 @@ class AppErrorPage extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppDimens.space24),
               FilledButton(
                 onPressed: () {
                   final goRouter = GoRouter.maybeOf(context);
@@ -52,7 +53,7 @@ class AppErrorPage extends StatelessWidget {
                     ).pushReplacementNamed('/${RouteNames.home}');
                   }
                 },
-                child: const Text('Kembali ke Beranda'),
+                child: const Text(AppStrings.errorBackToHome),
               ),
             ],
           ),

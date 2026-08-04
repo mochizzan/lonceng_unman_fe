@@ -1,21 +1,21 @@
 // profile - Action button widget
 //
-// "Perbarui Data Terbaru" full-width tonal button (DESIGN.md §5.4:
+// "Pengaturan" full-width tonal button (DESIGN.md §5.4:
 // Secondary Container / On Secondary Container, radius 24).
-// Layout matches the HTML template: a full-width FilledButton with
-// tonal style wrapping an Icon(refresh) + Text row.
+// Navigates to SettingsPage.
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 
-/// Full-width tonal action button for refreshing academic profile data.
+/// Full-width tonal action button for navigating to settings.
 ///
 /// Uses `Secondary Container` / `On Secondary Container` colors via
 /// [Theme.of] (no hardcoded colors) with a 24px radius,
-/// per DESIGN.md §5.4 and the HTML template layout.
+/// per DESIGN.md §5.4.
 class ProfileActionButton extends StatelessWidget {
-  const ProfileActionButton({super.key, required this.onPressed});
-
-  final VoidCallback onPressed;
+  const ProfileActionButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +23,10 @@ class ProfileActionButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: FilledButton(
-        onPressed: onPressed,
+      child: FilledButton.icon(
+        onPressed: () {
+          context.pushNamed(RouteNames.settings);
+        },
         style: FilledButton.styleFrom(
           backgroundColor: cs.secondaryContainer,
           foregroundColor: cs.onSecondaryContainer,
@@ -33,16 +35,10 @@ class ProfileActionButton extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.refresh),
-            SizedBox(width: 8),
-            Text(
-              'Perbarui Data Terbaru',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
+        icon: const Icon(Icons.settings_outlined),
+        label: const Text(
+          AppStrings.profileSettingsButton,
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );

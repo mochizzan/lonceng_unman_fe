@@ -9,8 +9,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lonceng_unman_fe/features/home/data/datasources/home_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/home/data/repositories/home_repository_impl.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
@@ -27,18 +27,13 @@ class HomePage extends StatelessWidget {
   /// When null, a stub implementation is used.
   final GetHome? getHome;
 
-  static GetHome _defaultGetHome() {
-    return GetHome(
-      HomeRepositoryImpl(remoteDataSource: StubHomeRemoteDataSource()),
-    );
-  }
+  static GetHome _defaultGetHome() => Services.get<GetHome>();
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          HomeBloc(getHome ?? _defaultGetHome())
-            ..add(const HomeFetchRequested()),
+      lazy: true,
+      create: (_) => HomeBloc(getHome ?? _defaultGetHome()),
       child: const _HomePageView(),
     );
   }
@@ -50,27 +45,27 @@ class _HomePageView extends StatelessWidget {
   String _getDateText() {
     final now = DateTime.now();
     final dayNames = [
-      'Minggu',
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
+      AppStrings.daySunday,
+      AppStrings.dayMonday,
+      AppStrings.dayTuesday,
+      AppStrings.dayWednesday,
+      AppStrings.dayThursday,
+      AppStrings.dayFriday,
+      AppStrings.daySaturday,
     ];
     final monthNames = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
+      AppStrings.monthJanuary,
+      AppStrings.monthFebruary,
+      AppStrings.monthMarch,
+      AppStrings.monthApril,
+      AppStrings.monthMay,
+      AppStrings.monthJune,
+      AppStrings.monthJuly,
+      AppStrings.monthAugust,
+      AppStrings.monthSeptember,
+      AppStrings.monthOctober,
+      AppStrings.monthNovember,
+      AppStrings.monthDecember,
     ];
     final dayName = dayNames[now.weekday % 7];
     final monthName = monthNames[now.month - 1];
@@ -79,6 +74,10 @@ class _HomePageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dispatch initial fetch when this widget first builds.
+    // The BLoC is lazy — it was not created in BlocProvider.create.
+    context.read<HomeBloc>().add(const HomeFetchRequested());
+
     return Scaffold(
       body: BlocBuilder<HomeBloc, HomeState>(
         builder: (context, state) {
@@ -115,10 +114,10 @@ class _HomePageView extends StatelessWidget {
         children: [
           Icon(
             Icons.error_outline,
-            size: 48,
+            size: AppDimens.iconError,
             color: Theme.of(context).colorScheme.error,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDimens.space16),
           Text(
             message,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
@@ -148,17 +147,17 @@ class _HomePageView extends StatelessWidget {
           // Main content
           SliverPadding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-            ).copyWith(bottom: 80),
+              horizontal: AppDimens.screenPaddingHorizontal,
+            ).copyWith(bottom: AppDimens.space80),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
                 // Hero countdown card (next class + live timer)
                 HeroCountdownCard(nextClass: data.nextClass),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppDimens.space28),
                 // Quick stats (SKS, classes today, semester/IPK)
                 QuickStats(data: data),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppDimens.space28),
                 // Today's schedule timeline
                 TodaySchedule(items: data.scheduleItems),
               ]),

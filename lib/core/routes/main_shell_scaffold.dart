@@ -1,6 +1,7 @@
 // lib/core/routes/main_shell_scaffold.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart' hide AppColors;
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/widgets/barrel.dart';
@@ -137,17 +138,21 @@ class FloatingNavBar extends StatelessWidget {
     final isActive = currentIndex == index;
 
     return SizedBox(
-      width: 64,
-      height: 56,
+      width: AppDimens.navBarHeight,
+      height: AppDimens.navBarItemHeight,
       child: InkWell(
         onTap: () => onTap(index),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         child: Center(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: AppDurations.fast,
             curve: Curves.easeOut,
-            width: isActive ? 52 : 44,
-            height: isActive ? 52 : 44,
+            width: isActive
+                ? AppDimens.navBarPillWidth
+                : AppDimens.navBarPillHeight,
+            height: isActive
+                ? AppDimens.navBarPillWidth
+                : AppDimens.navBarPillHeight,
             decoration: BoxDecoration(
               color: isActive
                   ? Theme.of(context).extension<AppColors>()!.navbarActivePill
@@ -159,7 +164,7 @@ class FloatingNavBar extends StatelessWidget {
               color: isActive
                   ? Theme.of(context).extension<AppColors>()!.onNavbarActivePill
                   : Theme.of(context).extension<AppColors>()!.onNavbarSurface,
-              size: 26,
+              size: AppDimens.iconLG,
             ),
           ),
         ),
@@ -170,16 +175,24 @@ class FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(left: 24, right: 24, bottom: 20, top: 12),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      margin: const EdgeInsets.only(
+        left: AppDimens.navBarMarginHorizontal,
+        right: AppDimens.navBarMarginHorizontal,
+        bottom: AppDimens.navBarMarginBottom,
+        top: AppDimens.space12,
+      ),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppDimens.navBarPaddingVertical,
+        horizontal: AppDimens.navBarPaddingHorizontal,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).extension<AppColors>()!.navbarSurface,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
-            offset: Offset(0, 8),
-            blurRadius: 20,
+            offset: Offset(0, AppDimens.shadowNavBarOffsetY),
+            blurRadius: AppDimens.shadowNavBarBlurRadius,
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_card.dart';
 
@@ -12,7 +13,7 @@ class JadwalTimeline extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
       child: Column(
         children: List.generate(items.length, (index) {
           return IntrinsicHeight(
@@ -32,11 +33,11 @@ class JadwalTimeline extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppDimens.space16),
                 // Card content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.only(bottom: AppDimens.space16),
                     child: JadwalCard(item: items[index], index: index),
                   ),
                 ),
@@ -69,8 +70,8 @@ class JadwalTimeline extends StatelessWidget {
       ),
       child: Center(
         child: Container(
-          width: 8,
-          height: 8,
+          width: AppDimens.dotSM,
+          height: AppDimens.dotSM,
           decoration: BoxDecoration(color: cs.surface, shape: BoxShape.circle),
         ),
       ),
@@ -95,7 +96,7 @@ class _PulsingDotState extends State<_PulsingDot>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppDurations.verySlow,
     )..repeat();
   }
 
@@ -135,8 +136,8 @@ class _PulsingDotState extends State<_PulsingDot>
           ),
           // Inner dot
           Container(
-            width: 10,
-            height: 10,
+            width: AppDimens.dotMD,
+            height: AppDimens.dotMD,
             decoration: BoxDecoration(
               color: widget.color,
               shape: BoxShape.circle,

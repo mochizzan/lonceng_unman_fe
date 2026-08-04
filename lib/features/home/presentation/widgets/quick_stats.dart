@@ -4,6 +4,7 @@
 // Matches the HTML template's quick stats section.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
 class QuickStats extends StatelessWidget {
@@ -26,39 +27,39 @@ class QuickStats extends StatelessWidget {
                 icon: Icons.auto_stories,
                 iconColor: cs.primary,
                 iconBg: cs.surfaceContainerHighest,
-                label: 'SKS Semester Ini',
+                label: AppStrings.homeSksSemester,
                 labelColor: cs.onSurfaceVariant,
                 value: data.sksTaken.toString(),
                 valueColor: cs.onSurface,
-                footnote: ' / ${data.sksTotal}',
+                footnote: ' / ${data.sksTotal} ${AppStrings.homeSksUnit}',
                 footnoteColor: cs.onSurfaceVariant,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppDimens.space12),
             // Kuliah Hari Ini
             Expanded(
               child: _StatCard(
                 icon: Icons.calendar_today,
                 iconColor: cs.primary,
                 iconBg: cs.surfaceContainerHighest,
-                label: 'Kuliah Hari Ini',
+                label: AppStrings.homeKuliahHariIni,
                 labelColor: cs.onSurfaceVariant,
                 value: '${data.todayClassCount}',
                 valueColor: cs.onSurface,
-                footnote: ' Kelas',
+                footnote: ' ${AppStrings.homeClassUnit}',
                 footnoteColor: cs.onSurfaceVariant,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppDimens.space12),
         // Semester + IPK card (full width) — secondary container
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppDimens.space16),
           decoration: BoxDecoration(
             color: cs.secondaryContainer.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppDimens.radius2XL),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -67,26 +68,26 @@ class QuickStats extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: AppDimens.avatarMD,
+                    height: AppDimens.avatarMD,
                     decoration: BoxDecoration(
                       color: cs.secondaryContainer,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusLG),
                     ),
                     child: Icon(
                       Icons.school,
-                      size: 20,
+                      size: AppDimens.iconMD,
                       color: cs.onSecondaryContainer,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppDimens.space12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         data.semester,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppDimens.textLG,
                           fontWeight: FontWeight.bold,
                           color: cs.onSecondaryContainer,
                         ),
@@ -94,8 +95,10 @@ class QuickStats extends StatelessWidget {
                       Text(
                         data.studyProgram,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                          fontSize: AppDimens.textSM,
+                          color: cs.onSecondaryContainer.withValues(
+                            alpha: AppColors.opacityMax,
+                          ),
                         ),
                       ),
                     ],
@@ -107,16 +110,18 @@ class QuickStats extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'IPK Terakhir',
+                    AppStrings.homeIpkTerakhir,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                      fontSize: AppDimens.textXS,
+                      color: cs.onSecondaryContainer.withValues(
+                        alpha: AppColors.opacityMax,
+                      ),
                     ),
                   ),
                   Text(
                     data.gpa.toStringAsFixed(2),
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppDimens.textXL,
                       fontWeight: FontWeight.bold,
                       color: cs.onSecondaryContainer,
                     ),
@@ -159,10 +164,10 @@ class _StatCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppDimens.radius2XL),
         boxShadow: [
           BoxShadow(
             color: cs.shadow.withValues(alpha: 0.05),
@@ -175,18 +180,21 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: AppDimens.avatarSM,
+            height: AppDimens.avatarSM,
             margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-            child: Icon(icon, size: 18, color: iconColor),
+            child: Icon(icon, size: AppDimens.iconSM, color: iconColor),
           ),
-          Text(label, style: TextStyle(fontSize: 12, color: labelColor)),
+          Text(
+            label,
+            style: TextStyle(fontSize: AppDimens.textSM, color: labelColor),
+          ),
           const SizedBox(height: 2),
           RichText(
             text: TextSpan(
               style: TextStyle(
-                fontSize: 20,
+                fontSize: AppDimens.text4XL,
                 fontWeight: FontWeight.bold,
                 color: valueColor,
               ),
@@ -195,7 +203,7 @@ class _StatCard extends StatelessWidget {
                 TextSpan(
                   text: footnote,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppDimens.textBase,
                     fontWeight: FontWeight.w500,
                     color: footnoteColor,
                   ),

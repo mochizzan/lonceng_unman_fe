@@ -13,6 +13,4 @@ class RouteNames {
   static const jadwal = 'jadwal';
   static const profile = 'profile';
   static const settings = 'settings';
-  static const setup = 'setup';
-  static const error = 'error';
 }

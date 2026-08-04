@@ -1,10 +1,10 @@
 // profile - Academic Info Section widget
 //
-// Academic info card: NPM, Program Studi, Semester rows.
-// Each row: a 10x10 rounded-full icon badge (bg = surfaceContainerHighest, icon =
+// Academic info card: Program Studi, NPM, Semester rows.
+// Each row: a 40x40 circular icon badge (bg = surfaceContainerHighest, icon =
 // primary), a secondary label (onSurfaceVariant, 12pt) and a bold value
 // (onSurface, 14pt), separated by a outlineVariant/50 divider.
-// Container bg = surface, shadow [0,4,12,rgba(0,0,0,0.06)],
+// Container bg = surfaceContainer, shadow [0,4,12,rgba(0,0,0,0.06)],
 // border = outlineVariant/50.
 // All colors via Theme.of(context).colorScheme — no hardcoded color values.
 // Matches DESIGN.md §5.4 "Info Akademik" + HTML template lines 50-78.
@@ -15,7 +15,7 @@ import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity
 
 /// Academic info card for the profile screen.
 ///
-/// Renders a [Container] with three labeled rows (NPM, Program Studi,
+/// Renders a [Container] with three labeled rows (Program Studi, NPM,
 /// Semester). Each row begins with a circular icon badge whose background
 /// is [ColorScheme.surfaceContainerHighest] and whose icon uses [ColorScheme.primary];
 /// a secondary label ([ColorScheme.onSurfaceVariant]) sits above a bold value
@@ -29,11 +29,14 @@ class AcademicInfoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
+    // Icon badge(40) + gap(12) = offset where text and divider start.
+    const double _iconPlusGap = 52;
+
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(sp(context, 24)),
+      padding: EdgeInsets.all(sp(context, 20)),
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(sp(context, 20)),
         border: Border.all(
           color: cs.outlineVariant.withValues(alpha: 0.5),
@@ -48,25 +51,32 @@ class AcademicInfoSection extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoRow(
-            context,
-            icon: Icons.badge,
-            label: 'NPM',
-            value: data.npm,
-          ),
           _buildInfoRow(
             context,
             icon: Icons.account_balance,
             label: 'Program Studi',
             value: data.studyProgram,
+            iconOffset: _iconPlusGap,
           ),
+          SizedBox(height: sp(context, 16)),
+          _buildInfoRow(
+            context,
+            icon: Icons.badge,
+            label: 'NPM',
+            value: data.npm,
+            iconOffset: _iconPlusGap,
+          ),
+          SizedBox(height: sp(context, 16)),
           _buildInfoRow(
             context,
             icon: Icons.calendar_today,
             label: 'Semester',
             value: data.semester,
+            iconOffset: _iconPlusGap,
+            showDivider: false,
           ),
         ],
       ),
@@ -75,7 +85,7 @@ class AcademicInfoSection extends StatelessWidget {
 
   /// A single labeled info row: circular icon badge + label/value + divider.
   ///
-  /// The icon badge is 10x10 (scaled), rounded-full, with a background of
+  /// The icon badge is 40x40 (scaled), circular, with a background of
   /// [ColorScheme.surfaceContainerHighest] and an icon colored [ColorScheme.primary].
   /// The label uses [ColorScheme.onSurfaceVariant] at 12pt; the value uses
   /// [ColorScheme.onSurface] at 14pt, semibold. Rows are separated by a
@@ -85,15 +95,16 @@ class AcademicInfoSection extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    required double iconOffset,
     bool showDivider = true,
   }) {
     final cs = Theme.of(context).colorScheme;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Circular icon badge
             Container(
@@ -111,6 +122,7 @@ class AcademicInfoSection extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     label,
@@ -134,14 +146,18 @@ class AcademicInfoSection extends StatelessWidget {
         ),
         if (showDivider)
           Padding(
-            padding: EdgeInsets.only(
-              top: sp(context, 12),
-              left: sp(context, 52),
-            ),
-            child: Divider(
-              color: cs.outlineVariant.withValues(alpha: 0.5),
-              height: 1,
-              thickness: 1,
+            padding: EdgeInsets.only(top: sp(context, 12)),
+            child: Row(
+              children: [
+                SizedBox(width: sp(context, iconOffset)),
+                Expanded(
+                  child: Divider(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                    height: 1,
+                    thickness: 1,
+                  ),
+                ),
+              ],
             ),
           ),
       ],

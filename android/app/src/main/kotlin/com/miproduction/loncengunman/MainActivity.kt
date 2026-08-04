@@ -1,4 +1,4 @@
-package com.example.lonceng_unman_fe
+package com.miproduction.loncengunman
 
 import io.flutter.embedding.android.FlutterActivity
 

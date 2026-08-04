@@ -43,12 +43,14 @@ class _LoginPageState extends State<LoginPage> {
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: sp(context, 24)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo & Greeting (outside card, matches HTML)
+                    // Logo & Greeting
                     _buildGreeting(cs),
-                    SizedBox(height: sp(context, 24)),
+                    SizedBox(height: sp(context, 32)),
                     // Login Card
                     _LoginCard(npmController: _npmController),
                     SizedBox(height: sp(context, 24)),
@@ -113,7 +115,6 @@ class _LoginCard extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: sp(context, 24)),
       padding: EdgeInsets.all(sp(context, 28)),
       decoration: BoxDecoration(
         color: cs.surface,
@@ -146,14 +147,21 @@ class _LoginCard extends StatelessWidget {
           ),
           SizedBox(height: sp(context, 24)),
 
-          // NPM Field
-          AppTextField(
-            key: const Key('npm_field'),
-            controller: npmController,
-            label: 'NPM',
-            icon: Icons.badge_outlined,
-            keyboardType: TextInputType.number,
-            onChanged: (v) => context.read<AuthBloc>().add(AuthNpmChanged(v)),
+          // NPM Field (error shown inline on the field)
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              final errorText = state is AuthError ? state.message : null;
+              return AppTextField(
+                key: const Key('npm_field'),
+                controller: npmController,
+                label: 'NPM',
+                icon: Icons.badge_outlined,
+                keyboardType: TextInputType.number,
+                errorText: errorText,
+                onChanged: (v) =>
+                    context.read<AuthBloc>().add(AuthNpmChanged(v)),
+              );
+            },
           ),
           SizedBox(height: sp(context, 24)),
           // Submit Button
@@ -195,27 +203,6 @@ class _LoginCard extends StatelessWidget {
                   ],
                 ),
               );
-            },
-          ),
-
-          // Error message
-          BlocBuilder<AuthBloc, AuthState>(
-            buildWhen: (previous, current) => current is AuthError,
-            builder: (context, state) {
-              if (state is AuthError) {
-                return Padding(
-                  padding: EdgeInsets.only(top: sp(context, 8)),
-                  child: Text(
-                    state.message,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.error,
-                      fontSize: responsiveFontSize(context, 12),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
             },
           ),
 

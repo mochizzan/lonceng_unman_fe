@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
 
 /// Stateless shell scaffold for the bottom-navigation group.
 /// The [currentIndex] is derived externally from router state,
@@ -55,13 +56,9 @@ class FloatingNavBar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
 
-  static const _navbarBg = Color(0xFF201B11);
-  static const _activeBg = Color(0xFFFFC107); // primary container
-  static const _inactiveColor = Color(0xFFFBEFDE);
-  static const _activeIconColor = Color(0xFF402D00); // on-primary-container
-
-  Widget _buildItem(IconData icon, int index) {
+  Widget _buildItem(BuildContext context, IconData icon, int index) {
     final isActive = currentIndex == index;
+
     return SizedBox(
       width: 64,
       height: 56,
@@ -75,12 +72,16 @@ class FloatingNavBar extends StatelessWidget {
             width: isActive ? 52 : 44,
             height: isActive ? 52 : 44,
             decoration: BoxDecoration(
-              color: isActive ? _activeBg : Colors.transparent,
+              color: isActive
+                  ? Theme.of(context).extension<AppColors>()!.navbarActivePill
+                  : Colors.transparent,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: isActive ? _activeIconColor : _inactiveColor,
+              color: isActive
+                  ? Theme.of(context).extension<AppColors>()!.onNavbarActivePill
+                  : Theme.of(context).extension<AppColors>()!.onNavbarSurface,
               size: 26,
             ),
           ),
@@ -92,9 +93,10 @@ class FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      margin: const EdgeInsets.only(left: 24, right: 24, bottom: 20, top: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: _navbarBg,
+        color: Theme.of(context).extension<AppColors>()!.navbarSurface,
         borderRadius: BorderRadius.circular(999),
         boxShadow: const [
           BoxShadow(
@@ -107,9 +109,9 @@ class FloatingNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildItem(Icons.home_rounded, 0),
-          _buildItem(Icons.calendar_month_rounded, 1),
-          _buildItem(Icons.person_rounded, 2),
+          _buildItem(context, Icons.home_rounded, 0),
+          _buildItem(context, Icons.calendar_month_rounded, 1),
+          _buildItem(context, Icons.person_rounded, 2),
         ],
       ),
     );

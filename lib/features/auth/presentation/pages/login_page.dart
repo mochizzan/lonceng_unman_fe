@@ -166,10 +166,10 @@ class _LoginCard extends StatelessWidget {
               return FilledButton(
                 onPressed: () => bloc.add(AuthSubmitted()),
                 style: FilledButton.styleFrom(
-                  backgroundColor: cs.secondaryContainer,
-                  foregroundColor: cs.onSecondaryContainer,
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.onPrimaryContainer,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(sp(context, 20)),
+                    borderRadius: BorderRadius.circular(sp(context, 24)),
                   ),
                   padding: EdgeInsets.symmetric(vertical: sp(context, 16)),
                   elevation: 0,
@@ -181,7 +181,7 @@ class _LoginCard extends StatelessWidget {
                     Text(
                       'Masuk',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.onSecondaryContainer,
+                        color: cs.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
                         fontSize: responsiveFontSize(context, 14),
                       ),
@@ -190,7 +190,7 @@ class _LoginCard extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward,
                       size: sp(context, 20),
-                      color: cs.onSecondaryContainer,
+                      color: cs.onPrimaryContainer,
                     ),
                   ],
                 ),

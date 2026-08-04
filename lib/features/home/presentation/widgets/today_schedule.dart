@@ -66,10 +66,12 @@ class TodaySchedule extends StatelessWidget {
         else
           Column(
             children: List.generate(items.length, (index) {
-              return _TimelineItem(
-                item: items[index],
-                isFirst: index == 0,
-                isLast: index == items.length - 1,
+              return IntrinsicHeight(
+                child: _TimelineItem(
+                  item: items[index],
+                  isFirst: index == 0,
+                  isLast: index == items.length - 1,
+                ),
               );
             }),
           ),

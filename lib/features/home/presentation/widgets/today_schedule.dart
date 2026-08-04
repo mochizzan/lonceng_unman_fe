@@ -179,12 +179,12 @@ class _TimelineItem extends StatelessWidget {
       padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
       child: Stack(
         children: [
-          // Vertical line (hidden for last item)
+          // Vertical line (hidden for last item) - extend into padding gap
           if (!isLast)
             Positioned(
               left: 11, // center of 24px column - 1px (half of 2px line)
               top: 20, // below dot (4px top + 14px dot + 2px gap)
-              bottom: 0,
+              bottom: -20, // extend 20px below Stack into padding gap
               child: Container(width: 2, color: cs.outlineVariant),
             ),
           // Dot (positioned absolutely on left)

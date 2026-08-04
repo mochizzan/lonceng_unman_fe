@@ -66,15 +66,10 @@ class TodaySchedule extends StatelessWidget {
         else
           Column(
             children: List.generate(items.length, (index) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < items.length - 1 ? 20 : 0,
-                ),
-                child: _TimelineItem(
-                  item: items[index],
-                  isFirst: index == 0,
-                  isLast: index == items.length - 1,
-                ),
+              return _TimelineItem(
+                item: items[index],
+                isFirst: index == 0,
+                isLast: index == items.length - 1,
               );
             }),
           ),
@@ -180,32 +175,35 @@ class _TimelineItem extends StatelessWidget {
     final isOngoing = item.status == ScheduleStatus.ongoing;
 
     // Use Stack to position dot and line absolutely, matching HTML template
-    return Stack(
-      children: [
-        // Vertical line (hidden for last item)
-        if (!isLast)
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
+      child: Stack(
+        children: [
+          // Vertical line (hidden for last item)
+          if (!isLast)
+            Positioned(
+              left: 11, // center of 24px column - 1px (half of 2px line)
+              top: 20, // below dot (4px top + 14px dot + 2px gap)
+              bottom: 0,
+              child: Container(width: 2, color: cs.outlineVariant),
+            ),
+          // Dot (positioned absolutely on left)
           Positioned(
-            left: 11, // center of 24px column - 1px (half of 2px line)
-            top: 20, // below dot (4px top + 14px dot + 2px gap)
-            bottom: 0,
-            child: Container(width: 2, color: cs.outlineVariant),
+            left: 5, // center of 24px column - 7px (half of 14px dot)
+            top: isOngoing ? 6 : 4,
+            child: _buildDot(cs, successColor, isOngoing),
           ),
-        // Dot (positioned absolutely on left)
-        Positioned(
-          left: 5, // center of 24px column - 7px (half of 14px dot)
-          top: isOngoing ? 6 : 4,
-          child: _buildDot(cs, successColor, isOngoing),
-        ),
-        // Content (padded left to make room for dot + line)
-        Padding(
-          padding: const EdgeInsets.only(
-            left: 36,
-          ), // 24 (dot column) + 12 (gap)
-          child: isOngoing
-              ? _buildOngoingCard(context, cs, successColor)
-              : _buildCompactItem(cs),
-        ),
-      ],
+          // Content (padded left to make room for dot + line)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 36,
+            ), // 24 (dot column) + 12 (gap)
+            child: isOngoing
+                ? _buildOngoingCard(context, cs, successColor)
+                : _buildCompactItem(cs),
+          ),
+        ],
+      ),
     );
   }
 

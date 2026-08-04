@@ -24,11 +24,11 @@ class JadwalDaySelector extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return SizedBox(
-      height: 44,
+      height: 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: days.length,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final day = days[index];

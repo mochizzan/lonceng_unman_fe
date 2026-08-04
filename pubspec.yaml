@@ -52,12 +52,23 @@ dependencies:
   # Local storage
   shared_preferences: ^2.5.0
 
+  # Local notifications (offline, app-killed support)
+  flutter_local_notifications: ^22.2.0
+  timezone: ^0.11.0
+  hive_ce_flutter: ^2.3.4
+  workmanager: ^0.10.7
+  intl: ^0.20.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   # BLoC testing
   bloc_test: ^10.0.0
+
+  # Hive code generation (Hive CE — Dart 3 compatible fork)
+  hive_ce_generator: ^1.10.0
+  build_runner: ^2.15.1
 
   # The "flutter_lints" package below contains a set of recommended lints
   # encourage good coding practices. The lint set provided by the package is

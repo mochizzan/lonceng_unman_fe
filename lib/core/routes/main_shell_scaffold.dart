@@ -30,6 +30,7 @@ class MainShellScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: child,
       bottomNavigationBar: FloatingNavBar(
         currentIndex: currentIndex,

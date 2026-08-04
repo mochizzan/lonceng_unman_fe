@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
-import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
+import 'package:lonceng_unman_fe/core/theme/theme.dart';
 
 void main() {
   runApp(const LoncengUnmanApp());

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
-import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
+import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';

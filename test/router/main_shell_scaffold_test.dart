@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
-import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
+import 'package:lonceng_unman_fe/core/theme/theme.dart';
 
 void main() {
   testWidgets('MainShellScaffold renders child and FloatingNavBar', (

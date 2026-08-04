@@ -4,7 +4,7 @@
 // Matches the HTML template's jadwal hari ini section.
 
 import 'package:flutter/material.dart';
-import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
+import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
 class TodaySchedule extends StatelessWidget {

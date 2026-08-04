@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
-import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
+import 'package:lonceng_unman_fe/core/theme/theme.dart';
 
 /// Stateless shell scaffold for the bottom-navigation group.
 /// The [currentIndex] is derived externally from router state,

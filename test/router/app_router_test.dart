@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
 
 void main() {
   group('AppRouter.create', () {
@@ -67,7 +68,7 @@ void main() {
     test('initial location defaults to /login', () {
       final router = AppRouter.create(authStatusNotifier: AuthStatusNotifier());
 
-      // go_router 17.x: verify via currentMatch behavior —
+      // go_router 17.x: verify via navigatorKey
       // initial location is tested through widget test below.
       // Here we verify the router was constructed without error.
       expect(router, isNotNull);
@@ -84,10 +85,17 @@ void main() {
           initialLocation: '/home',
         );
 
-        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpWidget(
+          MaterialApp.router(
+            routerConfig: router,
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: ThemeMode.system,
+          ),
+        );
         await tester.pumpAndSettle();
 
-        expect(find.text('Masuk Akun'), findsOneWidget);
+        expect(find.text('Masuk'), findsOneWidget);
       },
     );
 
@@ -100,10 +108,17 @@ void main() {
         initialLocation: '/${RouteNames.login}',
       );
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        MaterialApp.router(
+          routerConfig: router,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.system,
+        ),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.text('Halo, Aditya 👋'), findsOneWidget);
+      expect(find.text('Halo'), findsOneWidget);
     });
   });
 }

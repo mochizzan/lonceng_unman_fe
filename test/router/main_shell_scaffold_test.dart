@@ -1,14 +1,15 @@
-// test/router/main_shell_scaffold_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
+import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
 
 void main() {
   testWidgets('MainShellScaffold renders child and FloatingNavBar', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+        theme: lightTheme,
         home: MainShellScaffold(
           currentIndex: 0,
           child: Center(child: Text('Child Content')),
@@ -27,6 +28,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: lightTheme,
         home: Scaffold(
           body: FloatingNavBar(currentIndex: 0, onTap: capturedTaps.add),
         ),

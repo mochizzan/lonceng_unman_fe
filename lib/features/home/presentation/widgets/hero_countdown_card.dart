@@ -18,12 +18,34 @@ String formatCountdown(Duration duration) {
 }
 
 /// A pulsing dot indicator matching the HTML `animate-ping` effect.
-/// Uses [TweenAnimationBuilder] for a smooth pulse that does not block
-/// `pumpAndSettle` in tests.
-class _PulsingDot extends StatelessWidget {
+/// Uses [AnimationController] with `.repeat()` for an infinite pulse cycle.
+class _PulsingDot extends StatefulWidget {
   const _PulsingDot({required this.color});
 
   final Color color;
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +55,10 @@ class _PulsingDot extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 2000),
-            curve: Curves.easeInOut,
-            builder: (context, value, child) {
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final value = _controller.value;
               final scale = 0.6 + (value * 0.8);
               final opacity = (0.8 - value * 0.6).clamp(0.0, 1.0);
               return Transform.scale(
@@ -46,18 +67,20 @@ class _PulsingDot extends StatelessWidget {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: opacity),
+                    color: widget.color.withValues(alpha: opacity),
                     shape: BoxShape.circle,
                   ),
                 ),
               );
             },
-            onEnd: () {},
           ),
           Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
+            ),
           ),
         ],
       ),
@@ -276,8 +299,8 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
               child: FilledButton(
                 onPressed: widget.onCtaTap,
                 style: FilledButton.styleFrom(
-                  backgroundColor: cs.secondaryContainer,
-                  foregroundColor: cs.onSecondaryContainer,
+                  backgroundColor: cs.onPrimaryContainer,
+                  foregroundColor: cs.primaryContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -297,7 +320,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                     Icon(
                       Icons.arrow_forward,
                       size: 18,
-                      color: cs.onSecondaryContainer,
+                      color: cs.primaryContainer,
                     ),
                   ],
                 ),

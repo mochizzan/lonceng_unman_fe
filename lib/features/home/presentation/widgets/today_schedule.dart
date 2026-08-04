@@ -193,9 +193,8 @@ class _TimelineItem extends StatelessWidget {
     }
     return Container(
       width: 14,
-      height: 14,
       decoration: BoxDecoration(
-        color: cs.primaryContainer,
+        color: cs.secondaryContainer,
         shape: BoxShape.circle,
         border: Border.all(color: cs.outlineVariant, width: 1),
       ),

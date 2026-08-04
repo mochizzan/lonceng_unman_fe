@@ -84,10 +84,33 @@ class TodaySchedule extends StatelessWidget {
 }
 
 /// A pulsing dot for "sedang berlangsung" items.
-class _PulsingDot extends StatelessWidget {
+class _PulsingDot extends StatefulWidget {
   const _PulsingDot({required this.color});
 
   final Color color;
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,22 +121,20 @@ class _PulsingDot extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           // Outer pulse ring
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeIn,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: 0.4 * value,
-                child: Transform.scale(
-                  scale: 0.6 + value * 1.0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final value = _controller.value;
+              final scale = 0.6 + (value * 0.8);
+              final opacity = (0.8 - value * 0.6).clamp(0.0, 1.0);
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: opacity),
+                    shape: BoxShape.circle,
                   ),
                 ),
               );
@@ -121,9 +142,12 @@ class _PulsingDot extends StatelessWidget {
           ),
           // Inner dot
           Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
+            ),
           ),
         ],
       ),
@@ -158,7 +182,7 @@ class _TimelineItem extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Timeline dot column (fixed width)
+        // Timeline dot column (fixed width) with vertical line
         SizedBox(
           width: 24,
           child: Column(
@@ -169,6 +193,14 @@ class _TimelineItem extends StatelessWidget {
               else
                 const SizedBox(height: 4),
               _buildDot(cs, successColor, isOngoing),
+              // Vertical line (hidden for last item)
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 40,
+                  margin: const EdgeInsets.only(top: 4),
+                  color: cs.outlineVariant,
+                ),
             ],
           ),
         ),

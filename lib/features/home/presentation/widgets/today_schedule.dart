@@ -174,36 +174,33 @@ class _TimelineItem extends StatelessWidget {
     final successColor = _getSuccessColor(context);
     final isOngoing = item.status == ScheduleStatus.ongoing;
 
-    // Use Stack to position dot and line absolutely, matching HTML template
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
-      child: Stack(
-        children: [
-          // Vertical line (hidden for last item) - extend into padding gap
-          if (!isLast)
-            Positioned(
-              left: 11, // center of 24px column - 1px (half of 2px line)
-              top: 20, // below dot (4px top + 14px dot + 2px gap)
-              bottom: -20, // extend 20px below Stack into padding gap
-              child: Container(width: 2, color: cs.outlineVariant),
-            ),
-          // Dot (positioned absolutely on left)
-          Positioned(
-            left: 5, // center of 24px column - 7px (half of 14px dot)
-            top: isOngoing ? 6 : 4,
-            child: _buildDot(cs, successColor, isOngoing),
+    // Standard Flutter timeline pattern: Row with dot column + content
+    // Line uses Expanded to follow content height automatically
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Timeline dot column (fixed width)
+        SizedBox(
+          width: 24,
+          child: Column(
+            children: [
+              _buildDot(cs, successColor, isOngoing),
+              if (!isLast)
+                Expanded(child: Container(width: 2, color: cs.outlineVariant)),
+            ],
           ),
-          // Content (padded left to make room for dot + line)
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 36,
-            ), // 24 (dot column) + 12 (gap)
+        ),
+        const SizedBox(width: 12),
+        // Content
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
             child: isOngoing
                 ? _buildOngoingCard(context, cs, successColor)
                 : _buildCompactItem(cs),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

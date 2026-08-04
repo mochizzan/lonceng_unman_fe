@@ -179,34 +179,28 @@ class _TimelineItem extends StatelessWidget {
     final successColor = _getSuccessColor(context);
     final isOngoing = item.status == ScheduleStatus.ongoing;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Use Stack to position dot and line absolutely, matching HTML template
+    return Stack(
       children: [
-        // Timeline dot column (fixed width) with vertical line
-        SizedBox(
-          width: 24,
-          child: Column(
-            children: [
-              // Dot
-              if (isOngoing)
-                const SizedBox(height: 6)
-              else
-                const SizedBox(height: 4),
-              _buildDot(cs, successColor, isOngoing),
-              // Vertical line (hidden for last item)
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 40,
-                  margin: const EdgeInsets.only(top: 4),
-                  color: cs.outlineVariant,
-                ),
-            ],
+        // Vertical line (hidden for last item)
+        if (!isLast)
+          Positioned(
+            left: 11, // center of 24px column - 1px (half of 2px line)
+            top: 20, // below dot (4px top + 14px dot + 2px gap)
+            bottom: 0,
+            child: Container(width: 2, color: cs.outlineVariant),
           ),
+        // Dot (positioned absolutely on left)
+        Positioned(
+          left: 5, // center of 24px column - 7px (half of 14px dot)
+          top: isOngoing ? 6 : 4,
+          child: _buildDot(cs, successColor, isOngoing),
         ),
-        const SizedBox(width: 12),
-        // Content
-        Expanded(
+        // Content (padded left to make room for dot + line)
+        Padding(
+          padding: const EdgeInsets.only(
+            left: 36,
+          ), // 24 (dot column) + 12 (gap)
           child: isOngoing
               ? _buildOngoingCard(context, cs, successColor)
               : _buildCompactItem(cs),
@@ -225,6 +219,7 @@ class _TimelineItem extends StatelessWidget {
     }
     return Container(
       width: 14,
+      height: 14,
       decoration: BoxDecoration(
         color: cs.secondaryContainer,
         shape: BoxShape.circle,

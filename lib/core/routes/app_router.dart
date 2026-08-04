@@ -132,7 +132,7 @@ List<RouteBase> _buildRoutes(
     GoRoute(
       name: RouteNames.settings,
       path: '/${RouteNames.settings}',
-      builder: (context, state) => SettingsPage(themeNotifier: themeNotifier),
+      builder: (context, state) => SettingsPage(notifier: themeNotifier),
     ),
   ];
 }

@@ -74,7 +74,7 @@ Future<void> main() async {
   runApp(const LoncengUnmanApp());
 }
 
-class LoncengUnmanApp extends StatelessWidget {
+class LoncengUnmanApp extends StatefulWidget {
   const LoncengUnmanApp({
     super.key,
     this.authStatusNotifier,
@@ -88,22 +88,48 @@ class LoncengUnmanApp extends StatelessWidget {
   final ThemeNotifier? themeNotifier;
 
   @override
-  Widget build(BuildContext context) {
-    final authNotifier = authStatusNotifier ?? AuthStatusNotifier();
-    final themeNotifierValue = themeNotifier ?? ThemeNotifier();
+  State<LoncengUnmanApp> createState() => _LoncengUnmanAppState();
+}
 
+class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
+  late final AuthStatusNotifier _authNotifier;
+  late final ThemeNotifier _themeNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _authNotifier = widget.authStatusNotifier ?? AuthStatusNotifier();
+    _themeNotifier = widget.themeNotifier ?? ThemeNotifier();
+  }
+
+  @override
+  void dispose() {
+    // Only dispose if we created it (not injected)
+    if (widget.themeNotifier == null) {
+      _themeNotifier.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = AppRouter.create(
-      authStatusNotifier: authNotifier,
-      themeNotifier: themeNotifierValue,
+      authStatusNotifier: _authNotifier,
+      themeNotifier: _themeNotifier,
     );
 
-    return MaterialApp.router(
-      title: 'Lonceng UnMan',
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: themeNotifierValue.themeMode,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return ListenableBuilder(
+      listenable: _themeNotifier,
+      builder: (context, child) {
+        return MaterialApp.router(
+          title: 'Lonceng UnMan',
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: _themeNotifier.themeMode,
+          routerConfig: router,
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

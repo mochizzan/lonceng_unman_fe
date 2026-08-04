@@ -9,19 +9,17 @@ import 'package:lonceng_unman_fe/features/settings/presentation/widgets/settings
 
 /// Settings page — surfaces theme & reminder controls.
 ///
-/// Accepts an optional [themeNotifier] for testing. When null,
-/// a new [ThemeNotifier] is created internally (not recommended in production —
-/// pass the same instance used by [MaterialApp]).
+/// Requires [themeNotifier] — the same instance used by [MaterialApp]
+/// so theme switches reflect globally.
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, this.themeNotifier});
+  const SettingsPage({super.key, required this.notifier});
 
-  /// Optional theme notifier for testing.
-  final ThemeNotifier? themeNotifier;
+  /// Theme notifier — must be the same instance driving the app theme.
+  final ThemeNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final notifier = themeNotifier ?? ThemeNotifier();
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.settingsTitle)),

@@ -1,199 +1,197 @@
 // jadwal - Jadwal Card widget
 //
 // Individual schedule item card for the weekly timeline.
-// Ongoing class → bg = primaryContainer / text = onPrimaryContainer, badge = successColor
-// Upcoming/Completed → bg = surfaceContainer / border = surfaceContainerHighest
-// All colors come from Theme.of(context).colorScheme or AppColors extension —
-// no hardcoded color values.
-// Matches DESIGN.md §5.3 timeline list cards.
+// Ongoing class → bg = primaryContainer / text = onPrimaryContainer
+// Upcoming → bg = surface / border = surfaceContainerHighest / accent bar
+// All colors come from Theme.of(context).colorScheme — no hardcoded values.
+// Matches HTML template design spec.
 
 import 'package:flutter/material.dart';
-import 'package:lonceng_unman_fe/core/theme/app_theme.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 
 class JadwalCard extends StatelessWidget {
-  const JadwalCard({super.key, required this.item});
+  const JadwalCard({super.key, required this.item, required this.index});
 
   final JadwalScheduleItem item;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final appColors = Theme.of(context).extension<AppColors>();
     final isOngoing = item.status == JadwalScheduleStatus.ongoing;
 
-    // All colors routed through the theme — never hardcoded.
-    // Ongoing (HTML template: bg=primaryContainer yellow)
-    final bgColor = isOngoing ? cs.primaryContainer : cs.surfaceContainer;
-    final textColor = isOngoing ? cs.onPrimaryContainer : cs.onSurface;
-    final borderColor = isOngoing ? Colors.transparent : cs.outlineVariant;
-    final successColor = appColors?.success ?? cs.primary;
+    // Background and border
+    final bgColor = isOngoing ? cs.primaryContainer : cs.surface;
+    final borderColor = isOngoing ? null : cs.surfaceContainerHighest;
+
+    // Accent bar color (upcoming only): tertiary for index 1, secondary for 2+
+    Color? accentColor;
+    if (!isOngoing) {
+      accentColor = index == 1 ? cs.tertiary : cs.secondary;
+    }
+
+    // Time badge colors
+    final timeBadgeBg = isOngoing
+        ? cs.onPrimaryContainer.withValues(alpha: 0.15)
+        : cs.surfaceContainerHigh;
+    final timeBadgeText = isOngoing
+        ? cs.onPrimaryContainer
+        : cs.onSurfaceVariant;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1),
+        border: borderColor != null ? Border.all(color: borderColor) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top row: status badge + time range
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatusBadge(context, isOngoing, successColor, cs),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status label (ongoing only)
+            if (isOngoing) ...[
               Text(
-                '${_formatTime(item.startTime)} – ${_formatTime(item.endTime)}',
+                'SEDANG BERLANGSUNG',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: textColor.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.bold,
+                  color: cs.onPrimaryContainer.withValues(alpha: 0.7),
+                  letterSpacing: 0.5,
                 ),
               ),
+              const SizedBox(height: 12),
             ],
-          ),
-          const SizedBox(height: 10),
-          // Timeline dot + course name
-          Row(
-            children: [
-              _buildTimelineDot(isOngoing, cs),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  item.courseName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+            // Course name + time badge
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Accent bar (upcoming only)
+                if (accentColor != null) ...[
+                  Container(
+                    width: 4,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                // Course info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.courseName,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: isOngoing
+                              ? cs.onPrimaryContainer
+                              : cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.lecturer ?? '-',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isOngoing
+                              ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Room
-          Row(
-            children: [
-              Icon(Icons.location_on, size: 15, color: textColor),
-              const SizedBox(width: 4),
-              Text(
-                item.room,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: textColor.withValues(alpha: 0.85),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Lecturer
-          if (item.lecturer != null)
-            Row(
-              children: [
-                Icon(Icons.person, size: 15, color: textColor),
-                const SizedBox(width: 4),
-                Expanded(
+                // Time badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: timeBadgeBg,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                   child: Text(
-                    item.lecturer!,
+                    '${_formatTime(item.startTime)} - ${_formatTime(item.endTime)}',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: textColor.withValues(alpha: 0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: timeBadgeText,
                     ),
                   ),
                 ),
               ],
             ),
-          if (item.lecturer != null) const SizedBox(height: 6),
-          // SKS badge
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isOngoing
-                    ? textColor.withValues(alpha: 0.2)
-                    : cs.surfaceContainerHighest.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                item.sks,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
+            const SizedBox(height: 16),
+            // Divider
+            Container(
+              height: 1,
+              color: isOngoing
+                  ? cs.onPrimaryContainer.withValues(alpha: 0.1)
+                  : cs.surfaceContainerHighest,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            // Location + SKS row
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 18,
+                  color: isOngoing
+                      ? cs.onPrimaryContainer.withValues(alpha: 0.7)
+                      : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  item.room,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isOngoing
+                        ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                        : cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.confirmation_number,
+                  size: 18,
+                  color: isOngoing
+                      ? cs.onPrimaryContainer.withValues(alpha: 0.7)
+                      : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  item.sks,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isOngoing
+                        ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                        : cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
-}
 
-/// Status badge: ongoing → success container; upcoming/completed → outline.
-Widget _buildStatusBadge(
-  BuildContext context,
-  bool isOngoing,
-  Color successColor,
-  ColorScheme cs,
-) {
-  final label = switch (isOngoing) {
-    true => 'Sedang Berlangsung',
-    false => 'Mendatang',
-  };
-
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: isOngoing ? successColor : Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
-      border: isOngoing ? null : Border.all(color: cs.outlineVariant, width: 1),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: isOngoing
-            ? (Theme.of(context).extension<AppColors>()?.onSuccess ??
-                  cs.onPrimary)
-            : cs.onSurfaceVariant,
-      ),
-    ),
-  );
-}
-
-/// Timeline dot indicator at the start of each card.
-/// Matches HTML template:
-/// - Ongoing: 24px circle, bg=primary, 4px border-background, inner 8px pulsing dot bg=on-primary
-/// - Upcoming: 24px circle, bg=outline-variant, 4px border-background, inner 8px dot bg=surface
-Widget _buildTimelineDot(bool isOngoing, ColorScheme cs) {
-  return Container(
-    width: 24,
-    height: 24,
-    decoration: BoxDecoration(
-      color: isOngoing ? cs.primary : cs.outlineVariant,
-      shape: BoxShape.circle,
-      border: Border.all(color: cs.surface, width: 4),
-    ),
-    child: Center(
-      child: Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          color: isOngoing ? cs.onPrimary : cs.surface,
-          shape: BoxShape.circle,
-        ),
-      ),
-    ),
-  );
-}
-
-String _formatTime(DateTime dt) {
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '$h:$m';
+  String _formatTime(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
 }

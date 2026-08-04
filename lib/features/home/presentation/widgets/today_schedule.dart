@@ -166,11 +166,9 @@ class _TimelineItem extends StatelessWidget {
   final bool isLast;
   final int index;
 
-  static const _fallbackSuccess = Color(0xFF2E7D32);
-
   Color _getSuccessColor(BuildContext context) {
     final appColors = Theme.of(context).extension<AppColors>();
-    return appColors?.success ?? _fallbackSuccess;
+    return appColors?.success ?? Theme.of(context).colorScheme.primary;
   }
 
   @override

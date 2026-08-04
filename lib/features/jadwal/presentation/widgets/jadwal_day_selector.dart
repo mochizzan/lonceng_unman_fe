@@ -1,9 +1,8 @@
 // jadwal - Day Selector widget
 //
 // Horizontal scrollable row of day pills.
-// Active day uses primaryContainer / onPrimaryContainer;
-// inactive days use surfaceContainerHighest / onSurfaceVariant
-// with an outlineVariant border.
+// Active day uses primary / onPrimary with shadow;
+// inactive days use surfaceContainerHighest / onSurfaceVariant.
 // Matches DESIGN.md §5.3 day selector.
 
 import 'package:flutter/material.dart';
@@ -35,12 +34,8 @@ class JadwalDaySelector extends StatelessWidget {
           final day = days[index];
           final isSelected = day == selectedDay;
 
-          final bgColor = isSelected
-              ? cs.primaryContainer
-              : cs.surfaceContainerHighest;
-          final textColor = isSelected
-              ? cs.onPrimaryContainer
-              : cs.onSurfaceVariant;
+          final bgColor = isSelected ? cs.primary : cs.surfaceContainerHighest;
+          final textColor = isSelected ? cs.onPrimary : cs.onSurfaceVariant;
 
           return GestureDetector(
             onTap: () => onDaySelected(day),
@@ -49,10 +44,15 @@ class JadwalDaySelector extends StatelessWidget {
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: isSelected ? bgColor : cs.outlineVariant,
-                  width: isSelected ? 0 : 1,
-                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: cs.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               alignment: Alignment.center,
               child: Text(

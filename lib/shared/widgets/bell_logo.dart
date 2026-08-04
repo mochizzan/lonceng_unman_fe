@@ -17,7 +17,7 @@ class BellLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(sp(context, 28)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0x0F000000),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.06),
             offset: Offset(0, sp(context, 4)),
             blurRadius: sp(context, 12),
           ),

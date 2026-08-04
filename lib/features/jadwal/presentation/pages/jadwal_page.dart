@@ -14,8 +14,8 @@ import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
-import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_card.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_day_selector.dart';
+import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_timeline.dart';
 
 class JadwalPage extends StatelessWidget {
   const JadwalPage({super.key, this.getJadwal});
@@ -52,6 +52,16 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
   String _selectedDay = '';
   List<String> _days = [];
 
+  @override
+  void initState() {
+    super.initState();
+    final state = context.read<JadwalBloc>().state;
+    if (state is JadwalLoaded) {
+      _selectedDay = state.data.selectedDay;
+      _days = state.data.days;
+    }
+  }
+
   void _handleDaySelected(String day) {
     setState(() => _selectedDay = day);
   }
@@ -59,24 +69,32 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<JadwalBloc, JadwalState>(
-        builder: (context, state) {
-          if (state is JadwalLoading || state is JadwalInitial) {
-            return _buildLoading(context);
-          }
-
-          if (state is JadwalError) {
-            return _buildError(context, state.message);
-          }
-
+      body: BlocListener<JadwalBloc, JadwalState>(
+        listener: (context, state) {
           if (state is JadwalLoaded) {
-            _selectedDay = state.data.selectedDay;
-            _days = state.data.days;
-            return _buildContent(context, state);
+            setState(() {
+              _selectedDay = state.data.selectedDay;
+              _days = state.data.days;
+            });
           }
-
-          return _buildLoading(context);
         },
+        child: BlocBuilder<JadwalBloc, JadwalState>(
+          builder: (context, state) {
+            if (state is JadwalLoading || state is JadwalInitial) {
+              return _buildLoading(context);
+            }
+
+            if (state is JadwalError) {
+              return _buildError(context, state.message);
+            }
+
+            if (state is JadwalLoaded) {
+              return _buildContent(context, state);
+            }
+
+            return _buildLoading(context);
+          },
+        ),
       ),
     );
   }
@@ -110,54 +128,20 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       onRefresh: () async {
         context.read<JadwalBloc>().add(const JadwalRefreshRequested());
       },
-      child: CustomScrollView(
-        slivers: [
-          // 1. App Bar (DESIGN.md §5.3 — title + calendar icon)
-          SliverAppBar(
-            title: const Text('Jadwal Kuliah'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.calendar_today),
-                onPressed: () {},
-              ),
-            ],
-          ),
-          // 2. Day selector pills (horizontal scrollable)
-          SliverToBoxAdapter(
+      child: Column(
+        children: [
+          // Day selector pills (horizontal scrollable)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: JadwalDaySelector(
               days: _days,
               selectedDay: _selectedDay,
               onDaySelected: _handleDaySelected,
             ),
           ),
-          // 3. Timeline list — schedule cards (same bottom padding as home)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-            ).copyWith(bottom: 80),
-            sliver: items.isEmpty
-                ? SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 40),
-                      child: Center(
-                        child: Text(
-                          'Tidak ada jadwal pada hari ini',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => JadwalCard(item: items[index]),
-                      childCount: items.length,
-                    ),
-                  ),
-          ),
+          const SizedBox(height: 24),
+          // Timeline list — schedule cards
+          Expanded(child: JadwalTimeline(items: items)),
         ],
       ),
     );

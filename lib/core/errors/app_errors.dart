@@ -43,3 +43,11 @@ final class AuthException extends AppException {
 final class ValidationException extends AppException {
   const ValidationException(super.message, {super.code = 'VALIDATION_ERROR'});
 }
+
+/// Notification scheduling or display errors.
+final class NotificationException extends AppException {
+  const NotificationException(
+    super.message, {
+    super.code = 'NOTIFICATION_ERROR',
+  });
+}

@@ -55,17 +55,14 @@ class _ThemeSegmentedControlState extends State<ThemeSegmentedControl> {
         ButtonSegment<AppThemeMode>(
           value: AppThemeMode.light,
           label: Text(AppStrings.settingsThemeLight),
-          icon: Icon(Icons.light_mode_outlined, size: 18),
         ),
         ButtonSegment<AppThemeMode>(
           value: AppThemeMode.dark,
           label: Text(AppStrings.settingsThemeDark),
-          icon: Icon(Icons.dark_mode_outlined, size: 18),
         ),
         ButtonSegment<AppThemeMode>(
           value: AppThemeMode.system,
           label: Text(AppStrings.settingsThemeSystem),
-          icon: Icon(Icons.brightness_auto_outlined, size: 18),
         ),
       ],
       selected: {widget.notifier.currentMode},

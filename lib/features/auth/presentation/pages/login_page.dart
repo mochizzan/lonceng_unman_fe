@@ -120,7 +120,7 @@ class _LoginCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(sp(context, 32)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0x0F000000),
+            color: cs.shadow.withValues(alpha: 0.06),
             offset: Offset(0, sp(context, 4)),
             blurRadius: sp(context, 12),
           ),

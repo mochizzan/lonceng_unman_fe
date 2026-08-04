@@ -160,7 +160,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: onPrimaryContainer.withValues(alpha: 0.7),
+                        color: onPrimaryContainer.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -172,7 +172,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: onPrimaryContainer.withValues(alpha: 0.10),
+                    color: onPrimaryContainer.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -180,7 +180,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: onPrimaryContainer,
+                      color: onPrimaryContainer.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
@@ -211,7 +211,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
             // Divider
             Container(
               height: 1,
-              color: onPrimaryContainer.withValues(alpha: 0.15),
+              color: onPrimaryContainer.withValues(alpha: 0.12),
             ),
             const SizedBox(height: 20),
             // Lecturer + Location row
@@ -226,13 +226,13 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: onPrimaryContainer.withValues(alpha: 0.10),
+                          color: onPrimaryContainer.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.person,
                           size: 18,
-                          color: onPrimaryContainer,
+                          color: onPrimaryContainer.withValues(alpha: 0.7),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -245,7 +245,9 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: onPrimaryContainer,
+                                color: onPrimaryContainer.withValues(
+                                  alpha: 0.85,
+                                ),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -254,7 +256,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                               style: TextStyle(
                                 fontSize: 11,
                                 color: onPrimaryContainer.withValues(
-                                  alpha: 0.6,
+                                  alpha: 0.5,
                                 ),
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -273,7 +275,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                       Icon(
                         Icons.location_on,
                         size: 18,
-                        color: onPrimaryContainer.withValues(alpha: 0.8),
+                        color: onPrimaryContainer.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 6),
                       Flexible(
@@ -282,7 +284,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: onPrimaryContainer.withValues(alpha: 0.8),
+                            color: onPrimaryContainer.withValues(alpha: 0.7),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),

@@ -85,6 +85,11 @@ class ScrollHideController {
   bool handleScroll(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification &&
         notification.dragDetails != null) {
+      // Only respond to vertical scrolling — ignore horizontal scrolls
+      if (notification.metrics.axis != Axis.vertical) {
+        return false;
+      }
+
       final pixels = notification.metrics.pixels;
       final delta = pixels - _lastPixels;
       _lastPixels = pixels;

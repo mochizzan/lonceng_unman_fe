@@ -1,7 +1,7 @@
 // profile - Action button widget
 //
-// "Perbarui Data Terbaru" full-width tonal button (DESIGN.md §6.3:
-// Secondary Container / On Secondary Container, radius full/999).
+// "Perbarui Data Terbaru" full-width tonal button (DESIGN.md §5.4:
+// Secondary Container / On Secondary Container, radius 24).
 // Layout matches the HTML template: a full-width FilledButton with
 // tonal style wrapping an Icon(refresh) + Text row.
 
@@ -10,8 +10,8 @@ import 'package:flutter/material.dart';
 /// Full-width tonal action button for refreshing academic profile data.
 ///
 /// Uses `Secondary Container` / `On Secondary Container` colors via
-/// [Theme.of] (no hardcoded colors) with a full pill radius (999),
-/// per DESIGN.md §6.3 and the HTML template layout.
+/// [Theme.of] (no hardcoded colors) with a 24px radius,
+/// per DESIGN.md §5.4 and the HTML template layout.
 class ProfileActionButton extends StatelessWidget {
   const ProfileActionButton({super.key, required this.onPressed});
 
@@ -29,7 +29,7 @@ class ProfileActionButton extends StatelessWidget {
           backgroundColor: cs.secondaryContainer,
           foregroundColor: cs.onSecondaryContainer,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(24),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),

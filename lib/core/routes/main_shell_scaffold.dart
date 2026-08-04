@@ -29,8 +29,9 @@ class MainShellScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surfaceColor = Theme.of(context).colorScheme.surface;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: surfaceColor,
       body: child,
       bottomNavigationBar: FloatingNavBar(
         currentIndex: currentIndex,

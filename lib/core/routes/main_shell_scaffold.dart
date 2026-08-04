@@ -98,9 +98,9 @@ class FloatingNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).extension<AppColors>()!.navbarSurface,
         borderRadius: BorderRadius.circular(999),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
             offset: Offset(0, 8),
             blurRadius: 20,
           ),

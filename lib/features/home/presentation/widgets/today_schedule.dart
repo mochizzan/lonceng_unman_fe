@@ -300,13 +300,14 @@ class _TimelineItem extends StatelessWidget {
 
   Widget _buildUpcomingCard(ColorScheme cs, int index) {
     final timeStr = _formatTime(item.startTime);
-    // Index 1: primaryContainer (segera), Index 2+: surfaceContainerHighest (akan datang)
+    // Index 1: secondaryContainer (segera) - softer than primaryContainer
+    // Index 2+: surfaceContainerHighest (akan datang)
     final bool isSoon = index == 1;
     final Color bgColor = isSoon
-        ? cs.primaryContainer
+        ? cs.secondaryContainer
         : cs.surfaceContainerHighest;
     final Color textColor = isSoon
-        ? cs.onPrimaryContainer
+        ? cs.onSecondaryContainer
         : cs.onSurfaceVariant;
 
     return Container(
@@ -315,40 +316,77 @@ class _TimelineItem extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.courseName,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface,
+          if (isSoon)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Segera',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Row(
+                Text(
+                  timeStr,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          if (isSoon) const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.location_on, size: 15, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 4),
                   Text(
-                    item.room,
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    item.courseName,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 15,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.room,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+              if (!isSoon)
+                Text(
+                  timeStr,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
             ],
-          ),
-          Text(
-            timeStr,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-            ),
           ),
         ],
       ),

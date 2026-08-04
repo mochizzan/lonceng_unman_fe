@@ -88,14 +88,14 @@ class _PulsingDot extends StatefulWidget {
 
 class _PulsingDotState extends State<_PulsingDot>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1200),
     )..repeat();
   }
 
@@ -107,28 +107,43 @@ class _PulsingDotState extends State<_PulsingDot>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: widget.color.withValues(alpha: 0.2),
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Outer pulse ring
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final value = _controller.value;
+              final scale = 0.6 + (value * 0.8);
+              final opacity = (0.8 - value * 0.6).clamp(0.0, 1.0);
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: opacity),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            },
           ),
-          child: Center(
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.color,
-              ),
+          // Inner dot
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

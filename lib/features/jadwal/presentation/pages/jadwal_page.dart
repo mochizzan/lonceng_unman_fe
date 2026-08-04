@@ -129,7 +129,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
         context.read<JadwalBloc>().add(const JadwalRefreshRequested());
       },
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.only(top: 24, bottom: 32),
         child: Column(
           children: [
             // Day selector pills (horizontal scrollable)

@@ -128,21 +128,24 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       onRefresh: () async {
         context.read<JadwalBloc>().add(const JadwalRefreshRequested());
       },
-      child: Column(
-        children: [
-          // Day selector pills (horizontal scrollable)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: JadwalDaySelector(
-              days: _days,
-              selectedDay: _selectedDay,
-              onDaySelected: _handleDaySelected,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: [
+            // Day selector pills (horizontal scrollable)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: JadwalDaySelector(
+                days: _days,
+                selectedDay: _selectedDay,
+                onDaySelected: _handleDaySelected,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          // Timeline list — schedule cards
-          Expanded(child: JadwalTimeline(items: items)),
-        ],
+            const SizedBox(height: 24),
+            // Timeline list — schedule cards
+            JadwalTimeline(items: items),
+          ],
+        ),
       ),
     );
   }

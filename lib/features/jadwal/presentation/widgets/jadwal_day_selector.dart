@@ -1,7 +1,7 @@
 // jadwal - Day Selector widget
 //
 // Horizontal scrollable row of day pills.
-// Active day uses secondaryContainer / onSecondaryContainer;
+// Active day uses primaryContainer / onPrimaryContainer;
 // inactive days use surfaceContainerHighest / onSurfaceVariant
 // with an outlineVariant border.
 // Matches DESIGN.md §5.3 day selector.
@@ -36,10 +36,10 @@ class JadwalDaySelector extends StatelessWidget {
           final isSelected = day == selectedDay;
 
           final bgColor = isSelected
-              ? cs.secondaryContainer
+              ? cs.primaryContainer
               : cs.surfaceContainerHighest;
           final textColor = isSelected
-              ? cs.onSecondaryContainer
+              ? cs.onPrimaryContainer
               : cs.onSurfaceVariant;
 
           return GestureDetector(

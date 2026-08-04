@@ -301,6 +301,8 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                 style: FilledButton.styleFrom(
                   backgroundColor: cs.onPrimaryContainer,
                   foregroundColor: cs.primaryContainer,
+                  disabledBackgroundColor: cs.onPrimaryContainer,
+                  disabledForegroundColor: cs.primaryContainer,
                   elevation: 0,
                   surfaceTintColor: Colors.transparent,
                   shadowColor: Colors.transparent,

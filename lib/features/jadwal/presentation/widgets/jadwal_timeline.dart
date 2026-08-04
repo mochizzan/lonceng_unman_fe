@@ -11,39 +11,45 @@ class JadwalTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: List.generate(items.length, (index) {
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Timeline dot column
-                SizedBox(
-                  width: 24,
-                  child: Column(
-                    children: [
-                      _buildDot(cs, items[index]),
-                      if (index < items.length - 1)
-                        Expanded(
-                          child: Container(width: 2, color: cs.outlineVariant),
-                        ),
-                    ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: List.generate(items.length, (index) {
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Timeline dot column
+                  SizedBox(
+                    width: 24,
+                    child: Column(
+                      children: [
+                        _buildDot(cs, items[index]),
+                        if (index < items.length - 1)
+                          Expanded(
+                            child: Container(
+                              width: 2,
+                              color: cs.outlineVariant,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                // Card content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: JadwalCard(item: items[index], index: index),
+                  const SizedBox(width: 16),
+                  // Card content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: JadwalCard(item: items[index], index: index),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          }),
+        ),
       ),
     );
   }

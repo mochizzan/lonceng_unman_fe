@@ -3,19 +3,75 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
+import 'package:lonceng_unman_fe/core/widgets/barrel.dart';
 
-/// Stateless shell scaffold for the bottom-navigation group.
-/// The [currentIndex] is derived externally from router state,
-/// fixing the deep-link index desync bug in the original StatefulWidget.
-class MainShellScaffold extends StatelessWidget {
+/// Shell scaffold for the bottom-navigation group.
+///
+/// The [currentIndex] is derived externally from router state.
+/// The navbar auto-hides on scroll-down and reappears on scroll-up via
+/// [ScrollHideController]. The controller is reset to visible on tab switch.
+class MainShellScaffold extends StatefulWidget {
   const MainShellScaffold({
     super.key,
     required this.currentIndex,
     required this.child,
+    this.scrollHideConfig,
   });
 
   final int currentIndex;
   final Widget child;
+
+  /// Optional scroll-hide configuration. Uses [ScrollHideConfig.defaults]
+  /// when null.
+  final ScrollHideConfig? scrollHideConfig;
+
+  @override
+  State<MainShellScaffold> createState() => _MainShellScaffoldState();
+}
+
+class _MainShellScaffoldState extends State<MainShellScaffold>
+    with SingleTickerProviderStateMixin {
+  late final ScrollHideController _scrollHide;
+  final _navBarKey = GlobalKey();
+  double _navBarHeight = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollHide = ScrollHideController(
+      vsync: this,
+      config: widget.scrollHideConfig ?? ScrollHideConfig.defaults,
+    );
+    // Measure the rendered navbar height after the first frame so the
+    // slide distance matches the actual widget, not a magic number.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureNavBar());
+  }
+
+  @override
+  void didUpdateWidget(MainShellScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset navbar to visible when the user switches tabs.
+    if (widget.currentIndex != oldWidget.currentIndex) {
+      _scrollHide.show();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollHide.dispose();
+    super.dispose();
+  }
+
+  /// Read the FloatingNavBar's rendered height (+ margins) and use it as
+  /// the slide-off distance. Falls back to 0 on first frame if unmounted.
+  void _measureNavBar() {
+    final box = _navBarKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && mounted) {
+      // The FloatingNavBar Container has vertical margin 12+20 = 32px
+      // outside its RenderBox. Add it so the slide clears the viewport.
+      setState(() => _navBarHeight = box.size.height + 32);
+    }
+  }
 
   void _onTap(BuildContext context, int index) {
     switch (index) {
@@ -33,10 +89,31 @@ class MainShellScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: true,
-      body: child,
-      bottomNavigationBar: FloatingNavBar(
-        currentIndex: currentIndex,
-        onTap: (index) => _onTap(context, index),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _scrollHide.handleScroll,
+        child: widget.child,
+      ),
+      bottomNavigationBar: AnimatedBuilder(
+        animation: _scrollHide.animation,
+        builder: (_, child) {
+          return Transform.translate(
+            offset: Offset(0, _scrollHide.value * _navBarHeight),
+            child: Opacity(
+              opacity: 1.0 - _scrollHide.value,
+              child: IgnorePointer(
+                ignoring: _scrollHide.isIgnored,
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: _navBarKey,
+          child: FloatingNavBar(
+            currentIndex: widget.currentIndex,
+            onTap: (index) => _onTap(context, index),
+          ),
+        ),
       ),
     );
   }

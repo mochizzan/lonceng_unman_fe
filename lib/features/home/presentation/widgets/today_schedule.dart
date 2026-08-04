@@ -71,6 +71,7 @@ class TodaySchedule extends StatelessWidget {
                   item: items[index],
                   isFirst: index == 0,
                   isLast: index == items.length - 1,
+                  index: index,
                 ),
               );
             }),
@@ -157,11 +158,13 @@ class _TimelineItem extends StatelessWidget {
     required this.item,
     required this.isFirst,
     required this.isLast,
+    required this.index,
   });
 
   final ScheduleItemEntity item;
   final bool isFirst;
   final bool isLast;
+  final int index;
 
   static const _fallbackSuccess = Color(0xFF2E7D32);
 
@@ -199,7 +202,7 @@ class _TimelineItem extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 20),
             child: isOngoing
                 ? _buildOngoingCard(context, cs, successColor)
-                : _buildCompactItem(cs),
+                : _buildUpcomingCard(cs, index),
           ),
         ),
       ],
@@ -295,13 +298,23 @@ class _TimelineItem extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactItem(ColorScheme cs) {
+  Widget _buildUpcomingCard(ColorScheme cs, int index) {
     final timeStr = _formatTime(item.startTime);
-    final isPast = item.status == ScheduleStatus.completed;
-    final opacity = isPast ? 0.55 : 1.0;
+    // Index 1: primaryContainer (segera), Index 2+: surfaceContainerHighest (akan datang)
+    final bool isSoon = index == 1;
+    final Color bgColor = isSoon
+        ? cs.primaryContainer
+        : cs.surfaceContainerHighest;
+    final Color textColor = isSoon
+        ? cs.onPrimaryContainer
+        : cs.onSurfaceVariant;
 
-    return Opacity(
-      opacity: opacity,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -316,7 +329,7 @@ class _TimelineItem extends StatelessWidget {
                   color: cs.onSurface,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(Icons.location_on, size: 15, color: cs.onSurfaceVariant),
@@ -334,7 +347,7 @@ class _TimelineItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: cs.onSurfaceVariant,
+              color: textColor,
             ),
           ),
         ],

@@ -3,8 +3,6 @@
 // Displays the next class with a countdown timer.
 // Matches the HTML template's hero countdown section.
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
@@ -18,8 +16,8 @@ String formatCountdown(Duration duration) {
 }
 
 /// A pulsing dot indicator matching the HTML `animate-ping` effect.
-/// Uses a self-animated builder so it does not require an external
-/// AnimationController or Timer, keeping it test-friendly.
+/// Uses [TweenAnimationBuilder] for a smooth pulse that does not block
+/// `pumpAndSettle` in tests.
 class _PulsingDot extends StatelessWidget {
   const _PulsingDot({required this.color});
 
@@ -36,8 +34,8 @@ class _PulsingDot extends StatelessWidget {
           // Outer pulse ring
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeIn,
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeInOut,
             builder: (context, value, child) {
               return Opacity(
                 opacity: 0.4 * value,
@@ -102,12 +100,8 @@ class HeroCountdownCard extends StatelessWidget {
             height: 192,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: onPrimaryContainer.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                child: const SizedBox.expand(),
               ),
             ),
           ),
@@ -118,12 +112,8 @@ class HeroCountdownCard extends StatelessWidget {
             height: 160,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.10),
+                color: onPrimaryContainer.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                child: const SizedBox.expand(),
               ),
             ),
           ),
@@ -140,11 +130,7 @@ class HeroCountdownCard extends StatelessWidget {
                     // Live indicator
                     Row(
                       children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: _PulsingDot(color: Color(0xFF402D00)),
-                        ),
+                        _PulsingDot(color: onPrimaryContainer),
                         const SizedBox(width: 8),
                         Text(
                           'Kelas berikutnya dalam',

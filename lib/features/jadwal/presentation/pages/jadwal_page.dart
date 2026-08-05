@@ -18,6 +18,7 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_day_selector.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_timeline.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
@@ -41,6 +42,7 @@ class JadwalPage extends StatelessWidget {
       create: (_) => NotificationCubit(
         scheduler: Services.get<NotificationScheduler>(),
         repository: Services.get<NotificationRepository>(),
+        notificationService: Services.get<NotificationService>(),
       )..loadNotifications(),
       child: BlocProvider(
         lazy: true,

@@ -8,18 +8,21 @@ class NotificationState {
     this.notifications = const [],
     this.reminderIntervalMinutes = 5,
     this.errorMessage,
+    this.notificationPermissionDenied = false,
   });
 
   final NotificationStatus status;
   final List<ScheduledNotificationEntity> notifications;
   final int reminderIntervalMinutes;
   final String? errorMessage;
+  final bool notificationPermissionDenied;
 
   NotificationState copyWith({
     NotificationStatus? status,
     List<ScheduledNotificationEntity>? notifications,
     int? reminderIntervalMinutes,
     String? errorMessage,
+    bool? notificationPermissionDenied,
   }) {
     return NotificationState(
       status: status ?? this.status,
@@ -27,6 +30,8 @@ class NotificationState {
       reminderIntervalMinutes:
           reminderIntervalMinutes ?? this.reminderIntervalMinutes,
       errorMessage: errorMessage,
+      notificationPermissionDenied:
+          notificationPermissionDenied ?? this.notificationPermissionDenied,
     );
   }
 
@@ -38,9 +43,15 @@ class NotificationState {
           status == other.status &&
           notifications == other.notifications &&
           reminderIntervalMinutes == other.reminderIntervalMinutes &&
-          errorMessage == other.errorMessage;
+          errorMessage == other.errorMessage &&
+          notificationPermissionDenied == other.notificationPermissionDenied;
 
   @override
-  int get hashCode =>
-      Object.hash(status, notifications, reminderIntervalMinutes, errorMessage);
+  int get hashCode => Object.hash(
+    status,
+    notifications,
+    reminderIntervalMinutes,
+    errorMessage,
+    notificationPermissionDenied,
+  );
 }

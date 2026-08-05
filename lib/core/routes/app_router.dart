@@ -26,6 +26,7 @@ import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dar
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
@@ -141,6 +142,7 @@ List<RouteBase> _buildRoutes(
         create: (_) => NotificationCubit(
           scheduler: Services.get<NotificationScheduler>(),
           repository: Services.get<NotificationRepository>(),
+          notificationService: Services.get<NotificationService>(),
         )..loadNotifications(),
         child: SettingsPage(notifier: themeNotifier),
       ),

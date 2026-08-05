@@ -53,4 +53,7 @@ class _FakeNotificationCubit extends Cubit<NotificationState>
 
   @override
   Future<void> cancelAll() async => throw UnimplementedError('fake');
+
+  @override
+  Future<bool> checkPermission() async => true;
 }

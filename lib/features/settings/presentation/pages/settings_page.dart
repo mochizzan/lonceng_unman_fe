@@ -63,30 +63,64 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: AppDimens.space8),
           BlocBuilder<NotificationCubit, NotificationState>(
             builder: (context, notifState) {
-              return _SettingsCard(
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.notifications_outlined,
-                    color: cs.onSurface,
-                    size: 22,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (notifState.notificationPermissionDenied)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.amber.shade900,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Izin notifikasi belum diberikan. Aktifkan di Pengaturan Sistem.',
+                              style: TextStyle(
+                                color: Colors.amber.shade900,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  _SettingsCard(
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.notifications_outlined,
+                        color: cs.onSurface,
+                        size: 22,
+                      ),
+                      title: Text(
+                        AppStrings.settingsReminderLabel,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
+                      ),
+                      trailing: ReminderIntervalTile(
+                        intervalMinutes: notifState.reminderIntervalMinutes,
+                      ),
+                      onTap: () {
+                        _showReminderIntervalPicker(
+                          context,
+                          notifState.reminderIntervalMinutes,
+                        );
+                      },
+                    ),
                   ),
-                  title: Text(
-                    AppStrings.settingsReminderLabel,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
-                  ),
-                  trailing: ReminderIntervalTile(
-                    intervalMinutes: notifState.reminderIntervalMinutes,
-                  ),
-                  onTap: () {
-                    _showReminderIntervalPicker(
-                      context,
-                      notifState.reminderIntervalMinutes,
-                    );
-                  },
-                ),
+                ],
               );
             },
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
@@ -14,17 +15,30 @@ class NotificationCubit extends Cubit<NotificationState> {
   NotificationCubit({
     required NotificationScheduler scheduler,
     required NotificationRepository repository,
+    required NotificationService notificationService,
   }) : _scheduler = scheduler,
        _repository = repository,
+       _notificationService = notificationService,
        super(const NotificationState());
 
   final NotificationScheduler _scheduler;
   final NotificationRepository _repository;
+  final NotificationService _notificationService;
+
+  /// Check if notification permission is granted.
+  /// Emits [notificationPermissionDenied] on the state if denied.
+  /// Returns `true` if permission is granted, `false` otherwise.
+  Future<bool> checkPermission() async {
+    final enabled = await _notificationService.areNotificationsEnabled();
+    emit(state.copyWith(notificationPermissionDenied: !enabled));
+    return enabled;
+  }
 
   /// Load all scheduled notifications and current reminder interval.
   Future<void> loadNotifications() async {
     emit(state.copyWith(status: NotificationStatus.loading));
     try {
+      await checkPermission();
       final notifications = await _repository.getAll();
       final interval = _repository.getReminderInterval();
       emit(
@@ -47,9 +61,21 @@ class NotificationCubit extends Cubit<NotificationState> {
   /// Schedule notifications for all classes in [jadwal].
   ///
   /// Called when JadwalBloc emits JadwalLoaded.
+  /// Checks notification permission first — if denied, emits error and returns
+  /// early to avoid scheduling notifications that will never display.
   Future<void> scheduleFromJadwal(JadwalEntity jadwal) async {
     emit(state.copyWith(status: NotificationStatus.loading));
     try {
+      final hasPermission = await checkPermission();
+      if (!hasPermission) {
+        emit(
+          state.copyWith(
+            status: NotificationStatus.error,
+            errorMessage: 'Izin notifikasi belum diberikan.',
+          ),
+        );
+        return;
+      }
       await _scheduler.scheduleForDay(jadwal);
       final notifications = await _repository.getAll();
       emit(

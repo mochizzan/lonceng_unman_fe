@@ -1,5 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
@@ -72,15 +75,50 @@ class MockNotificationScheduler implements NotificationScheduler {
   Future<void> rescheduleAllWithNewOffset(int newOffsetMinutes) async {}
 }
 
+// Minimal mock notification service
+class MockNotificationService implements NotificationService {
+  bool enabled = true;
+
+  @override
+  Future<bool> areNotificationsEnabled() async => enabled;
+
+  @override
+  Future<void> cancel(int id) async {}
+
+  @override
+  Future<void> cancelAll() async {}
+
+  @override
+  Future<bool> canScheduleExactNotifications() async => true;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {}
+}
+
 void main() {
   late MockNotificationRepository mockRepo;
   late MockNotificationScheduler mockScheduler;
+  late MockNotificationService mockService;
   late NotificationCubit cubit;
 
   setUp(() {
     mockRepo = MockNotificationRepository();
     mockScheduler = MockNotificationScheduler();
-    cubit = NotificationCubit(scheduler: mockScheduler, repository: mockRepo);
+    mockService = MockNotificationService();
+    cubit = NotificationCubit(
+      scheduler: mockScheduler,
+      repository: mockRepo,
+      notificationService: mockService,
+    );
   });
 
   tearDown(() => cubit.close());

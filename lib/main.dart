@@ -25,6 +25,13 @@ import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart
 import 'package:lonceng_unman_fe/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
+import 'package:hive_ce_flutter/hive_ce_flutter.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
+import 'package:lonceng_unman_fe/features/notification/data/models/scheduled_notification_model.dart';
+import 'package:lonceng_unman_fe/features/notification/data/repositories/notification_repository_impl.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 
 /// Background message handler — must be top-level (not inside a class).
 /// Registered before runApp() so it works even when the app is terminated.
@@ -53,7 +60,76 @@ Future<void> main() async {
     },
   );
 
-  // Register dependencies
+  // ── Hive local persistence (with corruption recovery, EH-3) ──
+  late Box<ScheduledNotificationModel> notificationsBox;
+  late Box<int> settingsBox;
+  try {
+    await Hive.initFlutter();
+    Hive.registerAdapter(ScheduledNotificationModelAdapter());
+    notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
+      'scheduled_notifications',
+    );
+    settingsBox = await Hive.openBox<int>('notification_settings');
+  } catch (e) {
+    developer.log(
+      'Hive init failed, attempting corruption recovery: $e',
+      name: 'main',
+    );
+    // Best-effort cleanup of corrupted boxes before retrying
+    try {
+      await Hive.initFlutter();
+      await Hive.deleteBoxFromDisk('scheduled_notifications');
+      await Hive.deleteBoxFromDisk('notification_settings');
+    } catch (_) {
+      // Ignore — fresh start if disk cleanup also fails
+    }
+    Hive.registerAdapter(ScheduledNotificationModelAdapter());
+    notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
+      'scheduled_notifications',
+    );
+    settingsBox = await Hive.openBox<int>('notification_settings');
+  }
+
+  // ── Notification local data source ──
+  Services.register<NotificationLocalDataSource>(
+    NotificationLocalDataSource(
+      notificationsBox: notificationsBox,
+      settingsBox: settingsBox,
+    ),
+  );
+
+  // ── NotificationService (with error handling, EH-4) ──
+  final notificationService = NotificationService();
+  Services.register<NotificationService>(notificationService);
+  var notificationServiceReady = false;
+  try {
+    await notificationService.initialize();
+    notificationServiceReady = true;
+  } catch (e) {
+    developer.log(
+      'NotificationService init failed, local alarms disabled: $e',
+      name: 'main',
+    );
+  }
+
+  // ── Notification repository ──
+  Services.register<NotificationRepository>(
+    NotificationRepositoryImpl(
+      localDataSource: Services.get<NotificationLocalDataSource>(),
+    ),
+  );
+
+  // ── Notification scheduler (only when platform alarms are available) ──
+  if (notificationServiceReady) {
+    Services.register<NotificationScheduler>(
+      NotificationScheduler(
+        repository: Services.get<NotificationRepository>(),
+        notificationService: Services.get<NotificationService>(),
+      ),
+    );
+  }
+
+  // Register existing dependencies
   Services.register<GetAuth>(
     GetAuth(AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource())),
   );

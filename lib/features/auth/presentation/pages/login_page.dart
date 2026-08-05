@@ -14,7 +14,6 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bell_logo.dart';
-import 'package:lonceng_unman_fe/shared/widgets/notification_test_button.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
@@ -90,8 +89,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            // Fixed-position test notification button
-            const NotificationTestButton(),
           ],
         ),
       ),

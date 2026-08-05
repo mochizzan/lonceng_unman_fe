@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
-import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_state.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';

@@ -1,4 +1,5 @@
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 
 enum NotificationStatus { initial, loading, loaded, error }
 
@@ -6,7 +7,7 @@ class NotificationState {
   const NotificationState({
     this.status = NotificationStatus.initial,
     this.notifications = const [],
-    this.reminderIntervalMinutes = 5,
+    this.reminderIntervalMinutes = NotificationConfig.defaultReminderMinutes,
     this.errorMessage,
     this.notificationPermissionDenied = false,
   });
@@ -29,7 +30,7 @@ class NotificationState {
       notifications: notifications ?? this.notifications,
       reminderIntervalMinutes:
           reminderIntervalMinutes ?? this.reminderIntervalMinutes,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? this.errorMessage,
       notificationPermissionDenied:
           notificationPermissionDenied ?? this.notificationPermissionDenied,
     );

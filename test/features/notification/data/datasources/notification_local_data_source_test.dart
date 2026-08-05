@@ -15,10 +15,15 @@ void main() {
   });
 
   setUp(() async {
+    // Use unique box names per test to avoid state leakage
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
     notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
-      'test_notifications',
+      'test_notifications_$timestamp',
     );
-    settingsBox = await Hive.openBox<int>('test_settings');
+    settingsBox = await Hive.openBox<int>('test_settings_$timestamp');
+    // Clear any stale data from previous test runs
+    await notificationsBox.clear();
+    await settingsBox.clear();
     dataSource = NotificationLocalDataSource(
       notificationsBox: notificationsBox,
       settingsBox: settingsBox,

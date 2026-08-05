@@ -1,5 +1,7 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:lonceng_unman_fe/core/utils/day_name_mapper.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
@@ -129,15 +131,6 @@ class NotificationScheduler {
       Duration(minutes: entity.reminderOffset),
     );
 
-    // Skip if trigger time is in the past
-    if (triggerTime.isBefore(DateTime.now())) {
-      developer.log(
-        'Skipping past notification: ${entity.courseName} at $triggerTime',
-        name: 'NotificationScheduler',
-      );
-      return;
-    }
-
     // Defensive timezone conversion — fallback to device time if tz data unavailable
     tz.TZDateTime tzTrigger;
     try {
@@ -168,7 +161,9 @@ class NotificationScheduler {
       id: entity.id,
       title: entity.courseName,
       body: _buildBody(entity),
+      channel: NotificationChannel.classReminders,
       scheduledDate: tzTrigger,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
   }
 

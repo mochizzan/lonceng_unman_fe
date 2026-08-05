@@ -8,28 +8,26 @@ import 'package:lonceng_unman_fe/features/notification/domain/repositories/notif
 /// Translates between domain entities and Hive models, delegates
 /// storage operations to [NotificationLocalDataSource].
 class NotificationRepositoryImpl implements NotificationRepository {
-  NotificationRepositoryImpl({
-    required NotificationLocalDataSource localDataSource,
-  }) : _localDataSource = localDataSource;
+  NotificationRepositoryImpl({required this.localDataSource});
 
-  final NotificationLocalDataSource _localDataSource;
+  final NotificationLocalDataSource localDataSource;
 
   @override
   Future<List<ScheduledNotificationEntity>> getAll() async {
-    final models = _localDataSource.getAll();
+    final models = localDataSource.getAll();
     return models.map((m) => m.toEntity()).toList();
   }
 
   @override
   Future<ScheduledNotificationEntity?> getById(int id) async {
-    final model = _localDataSource.getById(id);
+    final model = localDataSource.getById(id);
     return model?.toEntity();
   }
 
   @override
   Future<void> save(ScheduledNotificationEntity notification) async {
     final model = ScheduledNotificationModel.fromEntity(notification);
-    await _localDataSource.save(model);
+    await localDataSource.save(model);
   }
 
   @override
@@ -37,26 +35,26 @@ class NotificationRepositoryImpl implements NotificationRepository {
     final models = notifications
         .map((e) => ScheduledNotificationModel.fromEntity(e))
         .toList();
-    await _localDataSource.saveAll(models);
+    await localDataSource.saveAll(models);
   }
 
   @override
   Future<void> delete(int id) async {
-    await _localDataSource.delete(id);
+    await localDataSource.delete(id);
   }
 
   @override
   Future<void> deleteAll() async {
-    await _localDataSource.deleteAll();
+    await localDataSource.deleteAll();
   }
 
   @override
   int getReminderInterval() {
-    return _localDataSource.getReminderInterval();
+    return localDataSource.getReminderInterval();
   }
 
   @override
   void setReminderInterval(int minutes) {
-    _localDataSource.setReminderInterval(minutes);
+    localDataSource.setReminderInterval(minutes);
   }
 }

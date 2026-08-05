@@ -9,7 +9,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/repositories/jadwal_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
@@ -18,9 +17,6 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_day_selector.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_timeline.dart';
-import 'package:lonceng_unman_fe/core/services/notification_service.dart';
-import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
-import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 
 class JadwalPage extends StatelessWidget {
@@ -39,16 +35,9 @@ class JadwalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NotificationCubit(
-        scheduler: Services.get<NotificationScheduler>(),
-        repository: Services.get<NotificationRepository>(),
-        notificationService: Services.get<NotificationService>(),
-      )..loadNotifications(),
-      child: BlocProvider(
-        lazy: true,
-        create: (_) => JadwalBloc(getJadwal ?? _defaultGetJadwal()),
-        child: const _JadwalPageView(),
-      ),
+      lazy: true,
+      create: (_) => JadwalBloc(getJadwal ?? _defaultGetJadwal()),
+      child: const _JadwalPageView(),
     );
   }
 }

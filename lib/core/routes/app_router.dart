@@ -110,9 +110,16 @@ List<RouteBase> _buildRoutes(
     // --- Main app (bottom navigation shell) ---
     ShellRoute(
       builder: (context, state, child) {
-        return MainShellScaffold(
-          currentIndex: _indexForRoute(state.topRoute?.name),
-          child: child,
+        return BlocProvider(
+          create: (_) => NotificationCubit(
+            scheduler: Services.get<NotificationScheduler>(),
+            repository: Services.get<NotificationRepository>(),
+            notificationService: Services.get<NotificationService>(),
+          )..loadNotifications(),
+          child: MainShellScaffold(
+            currentIndex: _indexForRoute(state.topRoute?.name),
+            child: child,
+          ),
         );
       },
       routes: <RouteBase>[

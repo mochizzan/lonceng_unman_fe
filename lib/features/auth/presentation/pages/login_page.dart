@@ -14,6 +14,7 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bell_logo.dart';
+import 'package:lonceng_unman_fe/shared/widgets/notification_test_button.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
@@ -31,10 +32,20 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _npmController = TextEditingController();
+  late final AuthBloc _authBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _authBloc =
+        widget.authBloc ??
+        AuthBloc(Services.get<GetAuth>(), widget.authStatusNotifier);
+  }
 
   @override
   void dispose() {
     _npmController.dispose();
+    _authBloc.close();
     super.dispose();
   }
 
@@ -42,43 +53,46 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    // Use provided BLoC or create a new one.
-    final bloc =
-        widget.authBloc ??
-        AuthBloc(Services.get<GetAuth>(), widget.authStatusNotifier);
-
     return BlocProvider.value(
-      value: bloc,
+      value: _authBloc,
       child: Scaffold(
-        body: AuthBackground(
-          child: BlocListener<AuthBloc, AuthState>(
-            listener: (context, state) {
-              if (state is AuthAuthenticated) {
-                context.goNamed(RouteNames.home);
-              }
-            },
-            child: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: sp(context, 24)),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Logo & Greeting
-                      _buildGreeting(cs),
-                      SizedBox(height: sp(context, 32)),
-                      // Login Card
-                      _LoginCard(npmController: _npmController),
-                      SizedBox(height: sp(context, 24)),
-                      // Footer
-                      _buildFooter(cs),
-                    ],
+        body: Stack(
+          children: [
+            AuthBackground(
+              child: BlocListener<AuthBloc, AuthState>(
+                listener: (context, state) {
+                  if (state is AuthAuthenticated) {
+                    context.goNamed(RouteNames.home);
+                  }
+                },
+                child: SafeArea(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: sp(context, 24),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Logo & Greeting
+                          _buildGreeting(cs),
+                          SizedBox(height: sp(context, 32)),
+                          // Login Card
+                          _LoginCard(npmController: _npmController),
+                          SizedBox(height: sp(context, 24)),
+                          // Footer
+                          _buildFooter(cs),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            // Fixed-position test notification button
+            const NotificationTestButton(),
+          ],
         ),
       ),
     );

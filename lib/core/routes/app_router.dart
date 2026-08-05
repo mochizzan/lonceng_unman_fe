@@ -13,8 +13,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
@@ -24,6 +26,9 @@ import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dar
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
 
@@ -132,7 +137,13 @@ List<RouteBase> _buildRoutes(
     GoRoute(
       name: RouteNames.settings,
       path: '/${RouteNames.settings}',
-      builder: (context, state) => SettingsPage(notifier: themeNotifier),
+      builder: (context, state) => BlocProvider(
+        create: (_) => NotificationCubit(
+          scheduler: Services.get<NotificationScheduler>(),
+          repository: Services.get<NotificationRepository>(),
+        )..loadNotifications(),
+        child: SettingsPage(notifier: themeNotifier),
+      ),
     ),
   ];
 }

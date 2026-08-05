@@ -3,8 +3,11 @@
 // Uses ThemeNotifier for runtime theme switching.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_state.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/widgets/settings_widgets.dart';
 
 /// Settings page — surfaces theme & reminder controls.
@@ -58,25 +61,34 @@ class SettingsPage extends StatelessWidget {
           // ── Section: Notifications ──
           _SectionHeader(title: AppStrings.settingsSectionNotification),
           const SizedBox(height: AppDimens.space8),
-          _SettingsCard(
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.notifications_outlined,
-                color: cs.onSurface,
-                size: 22,
-              ),
-              title: Text(
-                AppStrings.settingsReminderLabel,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
-              ),
-              trailing: const ReminderIntervalTile(),
-              onTap: () {
-                // TODO: Implement reminder interval picker
-              },
-            ),
+          BlocBuilder<NotificationCubit, NotificationState>(
+            builder: (context, notifState) {
+              return _SettingsCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.notifications_outlined,
+                    color: cs.onSurface,
+                    size: 22,
+                  ),
+                  title: Text(
+                    AppStrings.settingsReminderLabel,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
+                  ),
+                  trailing: ReminderIntervalTile(
+                    intervalMinutes: notifState.reminderIntervalMinutes,
+                  ),
+                  onTap: () {
+                    _showReminderIntervalPicker(
+                      context,
+                      notifState.reminderIntervalMinutes,
+                    );
+                  },
+                ),
+              );
+            },
           ),
           const SizedBox(height: AppDimens.space24),
 
@@ -113,6 +125,45 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Shows a bottom sheet for selecting the reminder interval.
+void _showReminderIntervalPicker(BuildContext context, int currentInterval) {
+  final cubit = context.read<NotificationCubit>();
+
+  showModalBottomSheet(
+    context: context,
+    builder: (context) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                AppStrings.settingsReminderLabel,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            for (final minutes in [5, 10, 15, 30, 60])
+              ListTile(
+                title: Text(minutes >= 60 ? '1 jam' : '$minutes menit'),
+                trailing: minutes == currentInterval
+                    ? Icon(
+                        Icons.check,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
+                onTap: () {
+                  cubit.updateReminderInterval(minutes);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 /// Section header with label.

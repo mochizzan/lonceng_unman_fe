@@ -100,9 +100,12 @@ class _ThemeSegmentedControlState extends State<ThemeSegmentedControl> {
 }
 
 /// Reminder interval display widget.
-/// Shows current reminder interval with chevron for future settings.
+/// Shows current reminder interval with chevron for settings.
 class ReminderIntervalTile extends StatelessWidget {
-  const ReminderIntervalTile({super.key});
+  const ReminderIntervalTile({super.key, required this.intervalMinutes});
+
+  /// Current reminder interval in minutes (from NotificationCubit state).
+  final int intervalMinutes;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +121,7 @@ class ReminderIntervalTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            AppStrings.settingsReminderValue,
+            _formatInterval(intervalMinutes),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: cs.onSurface),
@@ -128,5 +131,10 @@ class ReminderIntervalTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatInterval(int minutes) {
+    if (minutes >= 60) return '${minutes ~/ 60} jam';
+    return '$minutes menit';
   }
 }

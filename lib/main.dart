@@ -2,6 +2,7 @@
 // Initializes app with Material 3 theme and go_router navigation
 // Based on DESIGN.md theme configuration (section 3.10)
 
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,6 +13,7 @@ import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:lonceng_unman_fe/firebase_options.dart';
 import 'package:lonceng_unman_fe/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/auth/data/repositories/auth_repository_impl.dart';
@@ -42,112 +44,153 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Global error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    developer.log(
+      'FlutterError: ${details.exceptionAsString()}',
+      name: 'ErrorHandler',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+  };
 
-  // Initialize Firebase before using any Firebase services.
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Register the background message handler.
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      // Initialize Firebase before using any Firebase services.
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-  // Initialize FCM for foreground message handling.
-  // Notification taps are handled by the router via GoRouter's redirect.
-  await FcmService.instance.initialize(
-    onNotificationTap: (message) {
-      // Handle navigation based on message data type.
-      // Example: if message.data['type'] == 'jadwal_update', navigate to jadwal.
-      developer.log('Notification tap: ${message.data}', name: 'FCM');
+      // Register the background message handler.
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
+
+      // Initialize FCM for foreground message handling.
+      // Notification taps are handled by the router via GoRouter's redirect.
+      await FcmService.instance.initialize(
+        onNotificationTap: (message) {
+          // Handle navigation based on message data type.
+          // Example: if message.data['type'] == 'jadwal_update', navigate to jadwal.
+          developer.log('Notification tap: ${message.data}', name: 'FCM');
+        },
+      );
+
+      // ── Hive local persistence (with corruption recovery, EH-3) ──
+      late Box<ScheduledNotificationModel> notificationsBox;
+      late Box<int> settingsBox;
+      try {
+        await Hive.initFlutter();
+        Hive.registerAdapter(ScheduledNotificationModelAdapter());
+        notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
+          NotificationConfig.scheduledNotificationsBox,
+        );
+        settingsBox = await Hive.openBox<int>(
+          NotificationConfig.notificationSettingsBox,
+        );
+      } catch (e) {
+        developer.log(
+          'Hive init failed, attempting corruption recovery: $e',
+          name: 'main',
+        );
+        // Best-effort cleanup of corrupted boxes before retrying
+        try {
+          await Hive.initFlutter();
+          await Hive.deleteBoxFromDisk(
+            NotificationConfig.scheduledNotificationsBox,
+          );
+          await Hive.deleteBoxFromDisk(
+            NotificationConfig.notificationSettingsBox,
+          );
+        } catch (_) {
+          // Ignore — fresh start if disk cleanup also fails
+        }
+        Hive.registerAdapter(ScheduledNotificationModelAdapter());
+        notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
+          NotificationConfig.scheduledNotificationsBox,
+        );
+        settingsBox = await Hive.openBox<int>(
+          NotificationConfig.notificationSettingsBox,
+        );
+      }
+
+      // ── Notification local data source ──
+      Services.register<NotificationLocalDataSource>(
+        NotificationLocalDataSource(
+          notificationsBox: notificationsBox,
+          settingsBox: settingsBox,
+        ),
+      );
+
+      // ── NotificationService (with error handling, EH-4) ──
+      final notificationService = NotificationService();
+      Services.register<NotificationService>(notificationService);
+      var notificationServiceReady = false;
+      try {
+        await notificationService.initialize();
+        notificationServiceReady = true;
+      } catch (e) {
+        developer.log(
+          'NotificationService init failed, local alarms disabled: $e',
+          name: 'main',
+        );
+      }
+
+      // ── Notification repository ──
+      Services.register<NotificationRepository>(
+        NotificationRepositoryImpl(
+          localDataSource: Services.get<NotificationLocalDataSource>(),
+        ),
+      );
+
+      // ── Notification scheduler (only when platform alarms are available) ──
+      if (notificationServiceReady) {
+        Services.register<NotificationScheduler>(
+          NotificationScheduler(
+            repository: Services.get<NotificationRepository>(),
+            notificationService: Services.get<NotificationService>(),
+          ),
+        );
+      }
+
+      // Register existing dependencies
+      Services.register<GetAuth>(
+        GetAuth(
+          AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource()),
+        ),
+      );
+      Services.register<GetHome>(
+        GetHome(
+          HomeRepositoryImpl(remoteDataSource: StubHomeRemoteDataSource()),
+        ),
+      );
+      Services.register<GetJadwal>(
+        GetJadwal(
+          JadwalRepositoryImpl(remoteDataSource: StubJadwalRemoteDataSource()),
+        ),
+      );
+      Services.register<GetProfile>(
+        GetProfile(
+          ProfileRepositoryImpl(
+            remoteDataSource: StubProfileRemoteDataSource(),
+          ),
+        ),
+      );
+
+      runApp(const LoncengUnmanApp());
+    },
+    (error, stackTrace) {
+      developer.log(
+        'Uncaught error: $error',
+        name: 'ErrorHandler',
+        error: error,
+        stackTrace: stackTrace,
+      );
     },
   );
-
-  // ── Hive local persistence (with corruption recovery, EH-3) ──
-  late Box<ScheduledNotificationModel> notificationsBox;
-  late Box<int> settingsBox;
-  try {
-    await Hive.initFlutter();
-    Hive.registerAdapter(ScheduledNotificationModelAdapter());
-    notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
-      'scheduled_notifications',
-    );
-    settingsBox = await Hive.openBox<int>('notification_settings');
-  } catch (e) {
-    developer.log(
-      'Hive init failed, attempting corruption recovery: $e',
-      name: 'main',
-    );
-    // Best-effort cleanup of corrupted boxes before retrying
-    try {
-      await Hive.initFlutter();
-      await Hive.deleteBoxFromDisk('scheduled_notifications');
-      await Hive.deleteBoxFromDisk('notification_settings');
-    } catch (_) {
-      // Ignore — fresh start if disk cleanup also fails
-    }
-    Hive.registerAdapter(ScheduledNotificationModelAdapter());
-    notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
-      'scheduled_notifications',
-    );
-    settingsBox = await Hive.openBox<int>('notification_settings');
-  }
-
-  // ── Notification local data source ──
-  Services.register<NotificationLocalDataSource>(
-    NotificationLocalDataSource(
-      notificationsBox: notificationsBox,
-      settingsBox: settingsBox,
-    ),
-  );
-
-  // ── NotificationService (with error handling, EH-4) ──
-  final notificationService = NotificationService();
-  Services.register<NotificationService>(notificationService);
-  var notificationServiceReady = false;
-  try {
-    await notificationService.initialize();
-    notificationServiceReady = true;
-  } catch (e) {
-    developer.log(
-      'NotificationService init failed, local alarms disabled: $e',
-      name: 'main',
-    );
-  }
-
-  // ── Notification repository ──
-  Services.register<NotificationRepository>(
-    NotificationRepositoryImpl(
-      localDataSource: Services.get<NotificationLocalDataSource>(),
-    ),
-  );
-
-  // ── Notification scheduler (only when platform alarms are available) ──
-  if (notificationServiceReady) {
-    Services.register<NotificationScheduler>(
-      NotificationScheduler(
-        repository: Services.get<NotificationRepository>(),
-        notificationService: Services.get<NotificationService>(),
-      ),
-    );
-  }
-
-  // Register existing dependencies
-  Services.register<GetAuth>(
-    GetAuth(AuthRepositoryImpl(remoteDataSource: StubAuthRemoteDataSource())),
-  );
-  Services.register<GetHome>(
-    GetHome(HomeRepositoryImpl(remoteDataSource: StubHomeRemoteDataSource())),
-  );
-  Services.register<GetJadwal>(
-    GetJadwal(
-      JadwalRepositoryImpl(remoteDataSource: StubJadwalRemoteDataSource()),
-    ),
-  );
-  Services.register<GetProfile>(
-    GetProfile(
-      ProfileRepositoryImpl(remoteDataSource: StubProfileRemoteDataSource()),
-    ),
-  );
-
-  runApp(const LoncengUnmanApp());
 }
 
 class LoncengUnmanApp extends StatefulWidget {

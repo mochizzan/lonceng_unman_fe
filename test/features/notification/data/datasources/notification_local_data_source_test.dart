@@ -39,7 +39,7 @@ void main() {
     await Hive.deleteFromDisk();
   });
 
-  ScheduledNotificationModel _createModel(int id) {
+  ScheduledNotificationModel createTestModel(int id) {
     return ScheduledNotificationModel(
       id: id,
       courseName: 'Course $id',
@@ -57,7 +57,7 @@ void main() {
     });
 
     test('save stores notification and getAll retrieves it', () async {
-      final model = _createModel(1);
+      final model = createTestModel(1);
       await dataSource.save(model);
       final result = dataSource.getAll();
       expect(result, hasLength(1));
@@ -65,8 +65,8 @@ void main() {
     });
 
     test('getById returns correct notification', () async {
-      await dataSource.save(_createModel(1));
-      await dataSource.save(_createModel(2));
+      await dataSource.save(createTestModel(1));
+      await dataSource.save(createTestModel(2));
       final result = dataSource.getById(2);
       expect(result, isNotNull);
       expect(result!.id, 2);
@@ -77,7 +77,7 @@ void main() {
     });
 
     test('save overwrites existing notification with same ID', () async {
-      await dataSource.save(_createModel(1));
+      await dataSource.save(createTestModel(1));
       final updated = ScheduledNotificationModel(
         id: 1,
         courseName: 'Updated Course',
@@ -95,23 +95,23 @@ void main() {
 
     test('saveAll stores multiple notifications', () async {
       await dataSource.saveAll([
-        _createModel(1),
-        _createModel(2),
-        _createModel(3),
+        createTestModel(1),
+        createTestModel(2),
+        createTestModel(3),
       ]);
       expect(dataSource.getAll(), hasLength(3));
     });
 
     test('delete removes notification by ID', () async {
-      await dataSource.save(_createModel(1));
-      await dataSource.save(_createModel(2));
+      await dataSource.save(createTestModel(1));
+      await dataSource.save(createTestModel(2));
       await dataSource.delete(1);
       expect(dataSource.getById(1), isNull);
       expect(dataSource.getById(2), isNotNull);
     });
 
     test('deleteAll clears all notifications', () async {
-      await dataSource.saveAll([_createModel(1), _createModel(2)]);
+      await dataSource.saveAll([createTestModel(1), createTestModel(2)]);
       await dataSource.deleteAll();
       expect(dataSource.getAll(), isEmpty);
     });

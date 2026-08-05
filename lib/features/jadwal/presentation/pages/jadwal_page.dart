@@ -9,8 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/jadwal/data/repositories/jadwal_repository_impl.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
@@ -20,23 +19,13 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_tim
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 
 class JadwalPage extends StatelessWidget {
-  const JadwalPage({super.key, this.getJadwal});
-
-  /// Optional usecase injection for testing.
-  /// When null, a stub implementation is used.
-  final GetJadwal? getJadwal;
-
-  static GetJadwal _defaultGetJadwal() {
-    return GetJadwal(
-      JadwalRepositoryImpl(remoteDataSource: StubJadwalRemoteDataSource()),
-    );
-  }
+  const JadwalPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       lazy: true,
-      create: (_) => JadwalBloc(getJadwal ?? _defaultGetJadwal()),
+      create: (_) => JadwalBloc(Services.get<GetJadwal>()),
       child: const _JadwalPageView(),
     );
   }

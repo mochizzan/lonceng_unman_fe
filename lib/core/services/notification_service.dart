@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 
@@ -17,23 +18,38 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin;
 
-  static const _channelId = 'lonceng_unman_class_reminders';
-  static const _channelName = 'Pengingat Kelas';
-  static const _channelDescription =
-      'Notifikasi pengingat sebelum kelas dimulai';
+  /// Build [NotificationDetails] for a given [channel].
+  static NotificationDetails _detailsFor(NotificationChannel channel) =>
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          channel.id,
+          channel.name,
+          channelDescription: channel.description,
+          importance: channel.importance,
+          priority: Priority.high,
+          icon: NotificationConfig.icon,
+          color: const Color(NotificationConfig.accentColorValue),
+          enableVibration: channel.enableVibration,
+          enableLights: channel.enableLights,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
 
-  /// Initialize the plugin, create notification channel, and request permissions.
+  /// Initialize the plugin, create ALL notification channels, and request permissions.
   ///
   /// Must be called once at app startup, after Hive is open.
-  /// Handles timezone init failure gracefully — falls back to device local time.
+  /// Iterates [NotificationChannel.values] to create every channel —
+  /// adding a new channel = adding one enum value, zero changes here.
   Future<void> initialize() async {
     // Initialize timezone database with defensive fallback
     try {
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.local);
     } catch (e) {
-      // Timezone data unavailable — use device local time as fallback
-      // Notifications may fire at slightly wrong time during DST transitions
       developer.log(
         'Timezone init failed, using device time: $e',
         name: 'NotificationService',
@@ -42,7 +58,7 @@ class NotificationService {
 
     // Android initialization settings
     const androidSettings = AndroidInitializationSettings(
-      '@drawable/ic_notification',
+      NotificationConfig.icon,
     );
 
     // iOS initialization settings
@@ -59,26 +75,28 @@ class NotificationService {
 
     await _plugin.initialize(settings: initSettings);
 
-    // Create notification channel (Android 8.0+)
+    // Create ALL notification channels (Android 8.0+)
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
     if (androidPlugin != null) {
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          _channelId,
-          _channelName,
-          description: _channelDescription,
-          importance: Importance.high,
-          enableVibration: true,
-          enableLights: true,
-        ),
-      );
+      for (final channel in NotificationChannel.values) {
+        await androidPlugin.createNotificationChannel(
+          AndroidNotificationChannel(
+            channel.id,
+            channel.name,
+            description: channel.description,
+            importance: channel.importance,
+            enableVibration: channel.enableVibration,
+            enableLights: channel.enableLights,
+          ),
+        );
+      }
     }
 
     developer.log(
-      'NotificationService initialized',
+      'NotificationService initialized with ${NotificationChannel.values.length} channels',
       name: 'NotificationService',
     );
   }
@@ -86,13 +104,14 @@ class NotificationService {
   /// Schedule a notification at [scheduledDate] (timezone-aware).
   ///
   /// [id] must be non-negative and unique per notification.
-  /// [scheduledDate] is a TZDateTime for timezone-correct firing.
+  /// [channel] determines which Android channel to use.
   /// [matchDateTimeComponents] is optional — pass [DateTimeComponents.dayOfWeekAndTime]
   /// for weekly recurring notifications.
   Future<void> schedule({
     required int id,
     required String title,
     required String body,
+    required NotificationChannel channel,
     required tz.TZDateTime scheduledDate,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
@@ -101,28 +120,13 @@ class NotificationService {
       title: title,
       body: body,
       scheduledDate: scheduledDate,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@drawable/ic_notification',
-          color: Color(0xFFFFC107), // Amber accent
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
+      notificationDetails: _detailsFor(channel),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: matchDateTimeComponents,
     );
 
     developer.log(
-      'Scheduled notification #$id: $title at $scheduledDate',
+      'Scheduled [#${channel.id}] #$id: $title at $scheduledDate',
       name: 'NotificationService',
     );
   }
@@ -151,7 +155,6 @@ class NotificationService {
     if (androidPlugin != null) {
       return await androidPlugin.areNotificationsEnabled() ?? false;
     }
-    // iOS: permission is requested on init; assume enabled if we got here
     return true;
   }
 
@@ -167,6 +170,43 @@ class NotificationService {
     if (androidPlugin != null) {
       return await androidPlugin.canScheduleExactNotifications() ?? true;
     }
-    return true; // iOS doesn't have this restriction
+    return true;
+  }
+
+  /// Request notification permission (required for Android 13+).
+  /// Returns true if permission is granted.
+  Future<bool> requestPermission() async {
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidPlugin != null) {
+      final granted = await androidPlugin.requestNotificationsPermission();
+      return granted ?? false;
+    }
+    // iOS handles permission in initialization settings
+    return true;
+  }
+
+  /// Show an immediate notification.
+  ///
+  /// [id] must be non-negative and unique per notification.
+  /// [channel] determines which Android channel to use.
+  Future<void> showInstant({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationChannel channel,
+  }) async {
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: _detailsFor(channel),
+    );
+    developer.log(
+      'Showed [#${channel.id}] #$id: $title',
+      name: 'NotificationService',
+    );
   }
 }

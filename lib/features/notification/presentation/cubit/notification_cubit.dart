@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
@@ -29,7 +30,7 @@ class NotificationCubit extends Cubit<NotificationState> {
   /// Emits [notificationPermissionDenied] on the state if denied.
   /// Returns `true` if permission is granted, `false` otherwise.
   Future<bool> checkPermission() async {
-    final enabled = await _notificationService.areNotificationsEnabled();
+    final enabled = await _notificationService.requestPermission();
     emit(state.copyWith(notificationPermissionDenied: !enabled));
     return enabled;
   }
@@ -71,7 +72,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         emit(
           state.copyWith(
             status: NotificationStatus.error,
-            errorMessage: 'Izin notifikasi belum diberikan.',
+            errorMessage: AppStrings.settingsNotificationPermissionDenied,
           ),
         );
         return;

@@ -54,17 +54,12 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- WorkManager initialization (manual, not auto-init) -->
+        <!-- Disable AndroidX Startup auto-init (WorkManager initialized manually) -->
         <provider
-            android:name="androidx.start.InitializationProvider"
+            android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove"/>
-        </provider>
+            tools:node="remove" />
 
         <!-- flutter_local_notifications: notification display receiver -->
         <receiver

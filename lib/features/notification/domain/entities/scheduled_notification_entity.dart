@@ -1,4 +1,5 @@
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 
 /// A single scheduled local notification for a class reminder.
 ///
@@ -50,7 +51,7 @@ class ScheduledNotificationEntity {
   /// Defaults: [reminderOffset] = 5 minutes, [isActive] = true.
   static List<ScheduledNotificationEntity> fromJadwalEntity(
     JadwalEntity jadwal, {
-    int defaultReminderOffset = 5,
+    int defaultReminderOffset = NotificationConfig.defaultReminderMinutes,
     bool defaultIsActive = true,
   }) {
     return jadwal.scheduleItems

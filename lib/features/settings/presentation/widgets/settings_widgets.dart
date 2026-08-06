@@ -134,7 +134,7 @@ class ReminderIntervalTile extends StatelessWidget {
   }
 
   String _formatInterval(int minutes) {
-    if (minutes >= 60) return '${minutes ~/ 60} jam';
-    return '$minutes menit';
+    if (minutes >= 60) return AppStrings.settingsReminderHour;
+    return AppStrings.settingsReminderMinutes(minutes);
   }
 }

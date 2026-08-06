@@ -1,6 +1,7 @@
 // lib/features/notification/data/datasources/notification_local_data_source.dart
 import 'package:hive_ce/hive.dart';
 import 'package:lonceng_unman_fe/features/notification/data/models/scheduled_notification_model.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 
 /// Raw Hive operations for scheduled notifications.
 ///
@@ -14,8 +15,9 @@ class NotificationLocalDataSource {
   final Box<ScheduledNotificationModel> notificationsBox;
   final Box<int> settingsBox;
 
-  static const _reminderIntervalKey = 'reminder_interval_minutes';
-  static const int _defaultReminderInterval = 5;
+  static const _reminderIntervalKey = NotificationConfig.reminderIntervalKey;
+  static const int _defaultReminderInterval =
+      NotificationConfig.defaultReminderMinutes;
 
   /// Get all scheduled notifications.
   List<ScheduledNotificationModel> getAll() {

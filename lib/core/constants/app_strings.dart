@@ -130,4 +130,13 @@ abstract final class AppStrings {
     monthNovember,
     monthDecember,
   ];
+
+  // ─── Notification (errors) ─────────────────────────
+  static const String settingsNotificationPermissionDenied =
+      'Izin notifikasi belum diberikan. Aktifkan di Pengaturan Sistem.';
+  static const String notificationShowError = 'Gagal menampilkan notifikasi';
+
+  // ─── Settings (reminder format) ─────────────────────
+  static const String settingsReminderHour = '1 jam';
+  static String settingsReminderMinutes(int minutes) => '$minutes menit';
 }

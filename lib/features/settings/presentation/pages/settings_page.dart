@@ -72,22 +72,22 @@ class SettingsPage extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
+                        color: cs.errorContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.warning_amber_rounded,
-                            color: Colors.amber.shade900,
+                            color: cs.onErrorContainer,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Izin notifikasi belum diberikan. Aktifkan di Pengaturan Sistem.',
+                              AppStrings.settingsNotificationPermissionDenied,
                               style: TextStyle(
-                                color: Colors.amber.shade900,
+                                color: cs.onErrorContainer,
                                 fontSize: 13,
                               ),
                             ),
@@ -179,9 +179,13 @@ void _showReminderIntervalPicker(BuildContext context, int currentInterval) {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            for (final minutes in [5, 10, 15, 30, 60])
+            for (final minutes in NotificationConfig.reminderOptions)
               ListTile(
-                title: Text(minutes >= 60 ? '1 jam' : '$minutes menit'),
+                title: Text(
+                  minutes >= 60
+                      ? AppStrings.settingsReminderHour
+                      : AppStrings.settingsReminderMinutes(minutes),
+                ),
                 trailing: minutes == currentInterval
                     ? Icon(
                         Icons.check,

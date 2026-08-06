@@ -18,10 +18,9 @@ import 'package:timezone/timezone.dart' as tz;
 /// This is NOT a usecase — it orchestrates multiple repository and service calls.
 class NotificationScheduler {
   NotificationScheduler({
-    required NotificationRepository repository,
-    required NotificationService notificationService,
-  }) : _repository = repository,
-       _notificationService = notificationService;
+    required this._repository,
+    required this._notificationService,
+  });
 
   final NotificationRepository _repository;
   final NotificationService _notificationService;

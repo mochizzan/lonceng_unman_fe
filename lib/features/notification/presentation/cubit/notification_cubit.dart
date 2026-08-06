@@ -14,13 +14,10 @@ import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notifi
 /// and flutter_local_notifications callbacks need direct method calls.
 class NotificationCubit extends Cubit<NotificationState> {
   NotificationCubit({
-    required NotificationScheduler scheduler,
-    required NotificationRepository repository,
-    required NotificationService notificationService,
-  }) : _scheduler = scheduler,
-       _repository = repository,
-       _notificationService = notificationService,
-       super(const NotificationState());
+    required this._scheduler,
+    required this._repository,
+    required this._notificationService,
+  }) : super(const NotificationState());
 
   final NotificationScheduler _scheduler;
   final NotificationRepository _repository;

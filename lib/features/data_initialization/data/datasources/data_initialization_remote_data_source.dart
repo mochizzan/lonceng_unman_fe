@@ -1,96 +1,48 @@
 import 'dart:async';
 
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
-import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
-import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 
-/// Orchestrates the full post-login data initialization pipeline.
+/// Orchestrates the post-login data initialization pipeline.
 ///
-/// Chains LMS API calls in sequence, yielding [DataInitStatus] updates
-/// via a stream so the UI can show progress.
-/// Throws [DataInitStepException] on any step failure.
+/// Pipeline (3 API calls on home page):
+///   1. Download KRS PDF  → POST /api/v1/lms/krs
+///   2. Extract KRS       → POST /api/v1/lms/krs/extract
+///   3. Fetch KRS data    → POST /api/v1/lms/krs/data
+///
+/// Login (1 call on login page):
+///   POST /api/v1/lms/login
+///
+/// Total: 4 endpoint hits.
 class DataInitializationRemoteDataSource {
   final GetKrs _getKrs;
-  final GetKhs _getKhs;
 
-  DataInitializationRemoteDataSource({
-    required this._getKrs,
-    required this._getKhs,
-  });
+  DataInitializationRemoteDataSource({required this._getKrs});
 
   Stream<DataInitStatus> initialize({
     required String npm,
     required String password,
   }) async* {
-    // Step 1: Download KRS PDF + Fetch KHS semesters (PARALLEL)
+    // Step 1: Download KRS PDF
     yield DataInitStatus.downloadingKrs;
-    final semesters = await _runStep('download', () async {
-      final results = await Future.wait([
-        _getKrs.download(npm: npm, password: password),
-        _getKhs.getSemesters(npm: npm, password: password),
-      ]);
-      return results[1] as List<KhsSemesterEntity>;
-    });
-
-    // Step 2: Pick latest semester
-    yield DataInitStatus.fetchingSemesters;
-    if (semesters.isEmpty) {
-      throw const DataInitStepException('semesters', 'No semesters found');
-    }
-    final latest = semesters.last; // latest semester
-
-    // Step 3: Download KHS PDF
-    yield DataInitStatus.downloadingKhs;
     await _runStep(
-      'khs_download',
-      () => _getKhs.download(
-        npm: npm,
-        password: password,
-        tahunAjaran: latest.tahunAjaran,
-        semester: latest.semester,
-      ),
+      'krs_download',
+      () => _getKrs.download(npm: npm, password: password),
     );
 
-    // Step 4: Extract KRS
+    // Step 2: Extract KRS
     yield DataInitStatus.extractingKrs;
     await _runStep(
       'krs_extract',
       () => _getKrs.extract(npm: npm, password: password),
     );
 
-    // Step 5: Extract KHS
-    yield DataInitStatus.extractingKhs;
-    await _runStep(
-      'khs_extract',
-      () => _getKhs.extract(
-        npm: npm,
-        password: password,
-        tahunAjaran: latest.tahunAjaran,
-        semester: latest.semester,
-      ),
-    );
-
-    // Step 6: Fetch KRS data
+    // Step 3: Fetch KRS data
     yield DataInitStatus.fetchingKrsData;
     final krsData = await _runStep('krs_data', () => _getKrs(npm: npm));
     if (krsData.krs.mataKuliah.isEmpty) {
       throw const DataInitStepException('krs_data', 'Data KRS kosong');
-    }
-
-    // Step 7: Fetch KHS data
-    yield DataInitStatus.fetchingKhsData;
-    final khsData = await _runStep(
-      'khs_data',
-      () => _getKhs(
-        npm: npm,
-        tahunAjaran: latest.tahunAjaran,
-        semester: latest.semester,
-      ),
-    );
-    if (khsData.khs.mataKuliah.isEmpty) {
-      throw const DataInitStepException('khs_data', 'Data KHS kosong');
     }
 
     yield DataInitStatus.completed;

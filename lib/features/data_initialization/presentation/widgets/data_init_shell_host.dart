@@ -58,12 +58,11 @@ class _DataInitShellHostState extends State<DataInitShellHost> {
       return;
     }
 
-    // Check if academic data is already cached for this NPM.
+    // Check if KRS data is already cached for this NPM.
     final academicCache = Services.get<AcademicCacheService>();
     final hasKrs = academicCache.hasKrsData(npm: npm);
-    final hasKhsList = academicCache.hasKhsList(npm: npm);
 
-    if (hasKrs && hasKhsList) {
+    if (hasKrs) {
       // Data already cached — skip the pipeline entirely.
       // Emit success directly so downstream listeners know data is ready.
       // (BlocListener in build() won't fire a snackbar for cache hits.)

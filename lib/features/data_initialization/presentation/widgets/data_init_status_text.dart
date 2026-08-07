@@ -9,18 +9,10 @@ String dataInitStatusText(DataInitStatus status) {
       return 'Memverifikasi akun...';
     case DataInitStatus.downloadingKrs:
       return 'Mengunduh KRS...';
-    case DataInitStatus.fetchingSemesters:
-      return 'Mengambil daftar semester...';
-    case DataInitStatus.downloadingKhs:
-      return 'Mengunduh KHS...';
     case DataInitStatus.extractingKrs:
       return 'Mengekstrak KRS...';
-    case DataInitStatus.extractingKhs:
-      return 'Mengekstrak KHS...';
     case DataInitStatus.fetchingKrsData:
       return 'Memuat data KRS...';
-    case DataInitStatus.fetchingKhsData:
-      return 'Memuat data KHS...';
     case DataInitStatus.completed:
       return 'Data akademik siap';
     case DataInitStatus.failed:

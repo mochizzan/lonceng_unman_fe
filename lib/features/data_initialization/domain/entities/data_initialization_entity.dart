@@ -3,12 +3,8 @@ enum DataInitStatus {
   idle,
   authenticating,
   downloadingKrs,
-  fetchingSemesters,
-  downloadingKhs,
   extractingKrs,
-  extractingKhs,
   fetchingKrsData,
-  fetchingKhsData,
   completed,
   failed,
 }

@@ -251,10 +251,9 @@ Future<void> main() async {
       final getKhs = GetKhs(KhsRepositoryImpl(remoteDataSource: khsDataSource));
       Services.register<GetKhs>(getKhs);
 
-      // ── Data Initialization ──
+      // ── Data Initialization (KRS only: download → extract → get) ──
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
-        getKhs: getKhs,
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(

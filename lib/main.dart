@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ import 'package:lonceng_unman_fe/features/notification/data/repositories/notific
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/core/services/notification_permission.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Background message handler — must be top-level (not inside a class).
 /// Registered before runApp() so it works even when the app is terminated.
@@ -96,10 +98,38 @@ Future<void> main() async {
       );
 
       // ── Hive local persistence (with corruption recovery, EH-3) ──
+      // Store Hive boxes in external cache so data survives app updates
+      // and can be inspected via adb shell.
+      // Target: emulated/0/Android/data/<package>/cache/
+      // path_provider doesn't expose getExternalCacheDir, so we derive
+      // it from getExternalStorageDirectory (…/files/) → replace with /cache/.
+      String? hivePath;
+      try {
+        final externalDir = await getExternalStorageDirectory();
+        if (externalDir != null) {
+          hivePath = externalDir.path.replaceAll('/files', '/cache');
+          // Ensure the cache directory exists
+          final cacheDir = Directory(hivePath);
+          if (!await cacheDir.exists()) {
+            await cacheDir.create(recursive: true);
+          }
+          developer.log('Hive path: $hivePath', name: 'main');
+        }
+      } catch (e) {
+        developer.log(
+          'External cache dir unavailable, using default: $e',
+          name: 'main',
+        );
+      }
+
       late Box<ScheduledNotificationModel> notificationsBox;
       late Box<int> settingsBox;
       try {
-        await Hive.initFlutter();
+        if (hivePath != null) {
+          await Hive.initFlutter(hivePath);
+        } else {
+          await Hive.initFlutter();
+        }
         Hive.registerAdapter(ScheduledNotificationModelAdapter());
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
@@ -114,7 +144,11 @@ Future<void> main() async {
         );
         // Best-effort cleanup of corrupted boxes before retrying
         try {
-          await Hive.initFlutter();
+          if (hivePath != null) {
+            await Hive.initFlutter(hivePath);
+          } else {
+            await Hive.initFlutter();
+          }
           await Hive.deleteBoxFromDisk(
             NotificationConfig.scheduledNotificationsBox,
           );

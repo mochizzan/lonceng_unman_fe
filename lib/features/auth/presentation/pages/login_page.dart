@@ -67,6 +67,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return BlocProvider.value(
       value: _authBloc,
@@ -88,8 +89,11 @@ class _LoginPageState extends State<LoginPage> {
                 child: SafeArea(
                   child: Center(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: sp(context, 24),
+                      padding: EdgeInsets.fromLTRB(
+                        sp(context, AppDimens.space24),
+                        sp(context, AppDimens.space16),
+                        sp(context, AppDimens.space24),
+                        sp(context, AppDimens.space32) + bottomInset,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -97,13 +101,13 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           // Logo & Greeting
                           _buildGreeting(cs),
-                          SizedBox(height: sp(context, 32)),
+                          SizedBox(height: sp(context, AppDimens.space32)),
                           // Login Card
                           _LoginCard(
                             npmController: _npmController,
                             passwordController: _passwordController,
                           ),
-                          SizedBox(height: sp(context, 24)),
+                          SizedBox(height: sp(context, AppDimens.space24)),
                           // Footer
                           _buildFooter(cs),
                         ],
@@ -123,21 +127,21 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       children: [
         const BellLogo(),
-        SizedBox(height: sp(context, 24)),
+        SizedBox(height: sp(context, AppDimens.space24)),
         Text(
           AppStrings.loginGreeting,
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
             color: cs.onSurface,
-            fontSize: responsiveFontSize(context, 34),
+            fontSize: responsiveFontSize(context, AppDimens.textHero - 10),
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: sp(context, 12)),
+        SizedBox(height: sp(context, AppDimens.space12)),
         Text(
           AppStrings.loginSubtitleDetail,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: cs.onSurfaceVariant,
-            fontSize: responsiveFontSize(context, 14),
+            fontSize: responsiveFontSize(context, AppDimens.textMD),
           ),
           textAlign: TextAlign.center,
         ),
@@ -151,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
         text: AppStrings.loginHelpdesk,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: cs.onSurfaceVariant.withValues(alpha: AppColors.opacityMax),
-          fontSize: responsiveFontSize(context, 12),
+          fontSize: responsiveFontSize(context, AppDimens.textSM),
         ),
         children: [
           TextSpan(
@@ -174,16 +178,25 @@ class _LoginCard extends StatelessWidget {
   final TextEditingController npmController;
   final TextEditingController passwordController;
 
+  /// Reserved height for the submit action area so swapping
+  /// AppButton ↔ CircularProgressIndicator does not shift layout.
+  /// Matches AppButton vertical padding (16+16) + typical label line.
+  static const double _submitAreaHeight = AppDimens.space48 + AppDimens.space8;
+
+  /// Reserved height for the inline error slot so showing/hiding
+  /// the error text does not expand or collapse the card.
+  static const double _errorSlotHeight = AppDimens.space32;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     return Container(
-      padding: EdgeInsets.all(sp(context, 28)),
+      padding: EdgeInsets.all(sp(context, AppDimens.space28)),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(sp(context, 32)),
+        borderRadius: BorderRadius.circular(sp(context, AppDimens.cardHeroRadius)),
         boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Column(
@@ -193,18 +206,18 @@ class _LoginCard extends StatelessWidget {
           Text(
             AppStrings.loginButton,
             style: theme.textTheme.headlineMedium?.copyWith(
-              fontSize: responsiveFontSize(context, 20),
+              fontSize: responsiveFontSize(context, AppDimens.text4XL),
             ),
           ),
-          SizedBox(height: sp(context, 8)),
+          SizedBox(height: sp(context, AppDimens.space8)),
           Text(
             AppStrings.loginNpmHelper,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
-              fontSize: responsiveFontSize(context, 14),
+              fontSize: responsiveFontSize(context, AppDimens.textMD),
             ),
           ),
-          SizedBox(height: sp(context, 24)),
+          SizedBox(height: sp(context, AppDimens.space24)),
 
           // NPM Field
           AppTextField(
@@ -215,7 +228,7 @@ class _LoginCard extends StatelessWidget {
             keyboardType: TextInputType.number,
             onChanged: (v) => context.read<AuthBloc>().add(AuthNpmChanged(v)),
           ),
-          SizedBox(height: sp(context, 16)),
+          SizedBox(height: sp(context, AppDimens.space16)),
 
           // Password Field
           AppTextField(
@@ -228,59 +241,69 @@ class _LoginCard extends StatelessWidget {
                 context.read<AuthBloc>().add(AuthPasswordChanged(v)),
           ),
 
-          // Error message (shown below both fields)
-          BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              if (state is AuthError) {
-                return Padding(
-                  padding: EdgeInsets.only(top: sp(context, 12)),
-                  child: Text(
-                    state.message,
-                    style: TextStyle(
-                      color: cs.error,
-                      fontSize: responsiveFontSize(context, 12),
+          // Error message — fixed-height slot prevents layout shift
+          SizedBox(
+            height: sp(context, _errorSlotHeight),
+            child: BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                if (state is AuthError) {
+                  return Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      state.message,
+                      style: TextStyle(
+                        color: cs.error,
+                        fontSize: responsiveFontSize(context, AppDimens.textSM),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    textAlign: TextAlign.center,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+          SizedBox(height: sp(context, AppDimens.space16)),
+
+          // Submit Button — fixed-height area keeps card stable while loading
+          SizedBox(
+            height: sp(context, _submitAreaHeight),
+            child: BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                final bloc = context.read<AuthBloc>();
+                if (state is AuthLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return AppButton(
+                  onPressed: () => bloc.add(AuthSubmitted()),
+                  fullWidth: true,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppStrings.loginButton,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                          fontSize: responsiveFontSize(context, AppDimens.textMD),
+                        ),
+                      ),
+                      SizedBox(width: sp(context, AppDimens.space8)),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: sp(context, AppDimens.iconMD),
+                        color: cs.onPrimaryContainer,
+                      ),
+                    ],
                   ),
                 );
-              }
-              return const SizedBox.shrink();
-            },
+              },
+            ),
           ),
-          SizedBox(height: sp(context, 24)),
 
-          // Submit Button
-          BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              final bloc = context.read<AuthBloc>();
-              if (state is AuthLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return AppButton(
-                onPressed: () => bloc.add(AuthSubmitted()),
-                fullWidth: true,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      AppStrings.loginButton,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                        fontSize: responsiveFontSize(context, 14),
-                      ),
-                    ),
-                    SizedBox(width: sp(context, 8)),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: sp(context, 20),
-                      color: cs.onPrimaryContainer,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+          SizedBox(height: sp(context, AppDimens.space16)),
 
           // Helper text
           Text.rich(
@@ -288,7 +311,7 @@ class _LoginCard extends StatelessWidget {
               text: AppStrings.loginNoAccount,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: cs.onSurfaceVariant,
-                fontSize: responsiveFontSize(context, 12),
+                fontSize: responsiveFontSize(context, AppDimens.textSM),
               ),
               children: [
                 TextSpan(

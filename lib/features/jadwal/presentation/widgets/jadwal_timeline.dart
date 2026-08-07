@@ -37,13 +37,31 @@ class JadwalTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
+      // Show different message based on whether "Semua" or a specific day is selected
+      final message = (selectedDay == 'Semua' || selectedDay.isEmpty)
+          ? 'Tidak ada jadwal kuliah minggu ini'
+          : 'Tidak ada kelas hari $selectedDay';
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppDimens.space32),
-          child: Text(
-            'Tidak ada jadwal',
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_busy_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(height: AppDimens.space16),
+              Text(
+                message,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       );

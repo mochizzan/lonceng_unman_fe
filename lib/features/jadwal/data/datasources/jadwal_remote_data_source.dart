@@ -61,11 +61,8 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
       }
     }
 
-    // Build day list: "Semua" first, then only days that have classes
-    final orderedDays = <String>[
-      'Semua',
-      ...allDays.where((d) => daysWithClasses.contains(d)),
-    ];
+    // Build day list: ALWAYS show all 7 days + "Semua"
+    final orderedDays = <String>['Semua', ...allDays];
 
     // Default selection: today if it has classes, otherwise "Semua"
     final selectedDay = daysWithClasses.contains(todayDayName)

@@ -37,34 +37,7 @@ class JadwalTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      // Show different message based on whether "Semua" or a specific day is selected
-      final message = (selectedDay == 'Semua' || selectedDay.isEmpty)
-          ? 'Tidak ada jadwal kuliah minggu ini'
-          : 'Tidak ada kelas hari $selectedDay';
-
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimens.space32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.event_busy_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              const SizedBox(height: AppDimens.space16),
-              Text(
-                message,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildEmptyState(context);
     }
 
     final cs = Theme.of(context).colorScheme;
@@ -167,11 +140,20 @@ class JadwalTimeline extends StatelessWidget {
       );
     }
 
-    // Single day view (no day headers)
+    // Single day view — filter to only the selected day
+    final filteredItems = items.where((item) {
+      final dayName = _dayName(item.startTime);
+      return dayName == selectedDay;
+    }).toList();
+
+    if (filteredItems.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
       child: Column(
-        children: List.generate(items.length, (index) {
+        children: List.generate(filteredItems.length, (index) {
           return IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,8 +162,8 @@ class JadwalTimeline extends StatelessWidget {
                   width: 24,
                   child: Column(
                     children: [
-                      _buildDot(cs, items[index]),
-                      if (index < items.length - 1)
+                      _buildDot(cs, filteredItems[index]),
+                      if (index < filteredItems.length - 1)
                         Expanded(
                           child: Container(width: 2, color: cs.outlineVariant),
                         ),
@@ -192,13 +174,43 @@ class JadwalTimeline extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: AppDimens.space16),
-                    child: JadwalCard(item: items[index], index: index),
+                    child: JadwalCard(item: filteredItems[index], index: index),
                   ),
                 ),
               ],
             ),
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final message = (selectedDay == 'Semua' || selectedDay.isEmpty)
+        ? 'Tidak ada jadwal kuliah minggu ini'
+        : 'Tidak ada kelas hari $selectedDay';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimens.space32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.event_busy_rounded,
+              size: 48,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(height: AppDimens.space16),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

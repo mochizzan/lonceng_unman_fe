@@ -44,15 +44,29 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     final krsResponse = await krsDataSource.getKrsData(npm: npm);
     final krsData = krsResponse.krs;
 
-    // Fetch KHS data for GPA (requires semester info from KRS)
+    // Fetch KHS data for GPA — use latest available semester
     double gpa = 0.0;
     try {
-      final khsResponse = await khsDataSource.getKhsData(
+      // Get available KHS semesters to find the latest one
+      // Note: getSemesters() needs password, which we load from cache
+      final password = creds?['password'] ?? '';
+
+      final semesters = await khsDataSource.getSemesters(
         npm: npm,
-        tahunAjaran: krsData.periode.tahunAjaran,
-        semester: krsData.periode.semester,
+        password: password,
       );
-      gpa = khsResponse.khs.rekapitulasi.ipk;
+
+      if (semesters.isNotEmpty) {
+        // Pick the last semester (latest = most recent)
+        final latest = semesters.last;
+
+        final khsResponse = await khsDataSource.getKhsData(
+          npm: npm,
+          tahunAjaran: latest.tahunAjaran,
+          semester: latest.semester,
+        );
+        gpa = khsResponse.khs.rekapitulasi.ipk;
+      }
     } catch (_) {
       // KHS may not be available yet if data-init hasn't completed.
     }

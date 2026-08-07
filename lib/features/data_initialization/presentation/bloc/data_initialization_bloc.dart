@@ -8,50 +8,86 @@ import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/ge
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 
+/// Max wall-clock time for the full post-login pipeline.
+const Duration kDataInitTimeout = Duration(seconds: 90);
+
 class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
   final GetDataInitialization _getDataInit;
-  StreamSubscription<DataInitStatus>? _subscription;
+  bool _isRunning = false;
 
   DataInitBloc(this._getDataInit) : super(const DataInitIdle()) {
     on<DataInitStarted>(_onStarted);
     on<DataInitReset>(_onReset);
   }
 
+  /// Whether a pipeline run is currently in progress.
+  bool get isRunning => _isRunning;
+
   Future<void> _onStarted(
     DataInitStarted event,
     Emitter<DataInitBlocState> emit,
   ) async {
-    _subscription?.cancel();
-    emit(const DataInitInProgress(DataInitStatus.authenticating));
+    // Guard against concurrent / duplicate starts (login + shell bootstrap).
+    if (_isRunning) return;
+    if (state is DataInitSuccess) return;
 
-    _subscription = _getDataInit(npm: event.npm, password: event.password)
-        .listen(
-          (status) {
-            if (status == DataInitStatus.completed) {
-              emit(const DataInitSuccess());
-            } else {
-              emit(DataInitInProgress(status));
-            }
-          },
-          onError: (error) {
-            final friendlyMessage = ErrorHandler.toHumanReadable(error);
-            String? step;
-            if (error is DataInitStepException) {
-              step = error.step;
-            }
-            emit(DataInitFailure(friendlyMessage, failedStep: step));
-          },
+    _isRunning = true;
+    emit(const DataInitInProgress(DataInitStatus.downloadingKrs));
+
+    try {
+      final stream = _getDataInit(
+        npm: event.npm,
+        password: event.password,
+      ).timeout(
+        kDataInitTimeout,
+        onTimeout: (sink) {
+          sink.addError(
+            TimeoutException(
+              'Inisialisasi data melebihi batas waktu',
+              kDataInitTimeout,
+            ),
+          );
+          sink.close();
+        },
+      );
+
+      // Emit from within the handler so BLoC owns the Emitter lifecycle.
+      await for (final status in stream) {
+        if (status == DataInitStatus.completed) {
+          emit(const DataInitSuccess());
+        } else if (status == DataInitStatus.failed) {
+          emit(const DataInitFailure('Gagal memuat data akademik'));
+        } else {
+          emit(DataInitInProgress(status));
+        }
+      }
+
+      // If stream ended without completed/failed, treat as success only when
+      // the last emitted state was already success; otherwise fail soft.
+      if (state is DataInitInProgress) {
+        emit(
+          const DataInitFailure(
+            'Pipeline selesai tanpa status completed',
+            failedStep: 'unknown',
+          ),
         );
+      }
+    } catch (error) {
+      final friendlyMessage = ErrorHandler.toHumanReadable(error);
+      String? step;
+      if (error is DataInitStepException) {
+        step = error.step;
+      } else if (error is TimeoutException) {
+        step = 'timeout';
+      }
+      emit(DataInitFailure(friendlyMessage, failedStep: step));
+    } finally {
+      _isRunning = false;
+    }
   }
 
   void _onReset(DataInitReset event, Emitter<DataInitBlocState> emit) {
-    _subscription?.cancel();
+    if (_isRunning) return;
     emit(const DataInitIdle());
-  }
-
-  @override
-  Future<void> close() {
-    _subscription?.cancel();
-    return super.close();
   }
 }

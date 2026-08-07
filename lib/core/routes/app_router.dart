@@ -3,13 +3,9 @@
 // Route configuration using go_router.
 // Defines all app routes based on DESIGN.md navigation structure.
 //
-// Route Inventory (minimum 5 required):
-// - /login → LoginPage (auth flow, standalone)
-// - /data-init → DataInitializationPage (post-login pipeline, standalone)
-// - /home → HomePage (ShellRoute child, bottom nav)
-// - /jadwal → JadwalPage (ShellRoute child, bottom nav)
-// - /profile → ProfilePage (ShellRoute child, bottom nav)
-// - /settings → SettingsPage (standalone, not in bottom nav)
+// Post-login flow: authenticated users go straight to /home.
+// Data initialization runs in the background on the shell
+// (see DataInitShellHost) with SnackBar progress — not a gate page.
 
 import 'dart:async';
 
@@ -22,11 +18,11 @@ import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
-// Import feature pages (public APIs only — no data/domain internals)
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/pages/data_initialization_page.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_shell_host.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
@@ -58,20 +54,14 @@ String? authRedirect(
     return isLogin ? null : '/${RouteNames.login}';
   }
 
-  // Authenticated: redirect away from /login to data-init pipeline.
-  // Data-init will route to home on completion.
-  if (isLogin) return '/${RouteNames.dataInit}';
+  // Authenticated: leave login and the legacy data-init gate.
+  // Data-init runs in the background on the home shell.
+  if (isLogin || isDataInit) return '/${RouteNames.home}';
 
-  // Authenticated and not on login or data-init: allow (data-init navigates to home).
-  if (isDataInit) return null;
-
-  return null; // authenticated + not on login → allow
+  return null; // authenticated + app route → allow
 }
 
 /// Converts a [Stream] into a [Listenable] for go_router 17.x.
-/// go_router 17.x removed GoRouterRefreshSink/GoRouterRefreshStream;
-/// this adapter provides the same behavior: listen to the stream and
-/// notify listeners on each event so GoRouter re-evaluates redirect.
 class _StreamListenable extends ChangeNotifier {
   _StreamListenable(Stream<dynamic> stream) {
     _subscription = stream.listen((_) => notifyListeners());
@@ -86,8 +76,6 @@ class _StreamListenable extends ChangeNotifier {
   }
 }
 
-/// Maps a matched route name to a bottom-nav index.
-/// Returns 0 (Home) for any route outside the shell — safe fallback.
 int _indexForRoute(String? routeName) {
   switch (routeName) {
     case RouteNames.home:
@@ -101,8 +89,6 @@ int _indexForRoute(String? routeName) {
   }
 }
 
-/// Builds the route list, closing over [authStatusNotifier] so the login
-/// route can inject it into the [AuthBloc].
 List<RouteBase> _buildRoutes(
   AuthStatusNotifier authStatusNotifier,
   ThemeNotifier themeNotifier,
@@ -116,30 +102,35 @@ List<RouteBase> _buildRoutes(
           LoginPage(authStatusNotifier: authStatusNotifier),
     ),
 
-    // --- Data Initialization (standalone; post-login pipeline) ---
+    // --- Legacy data-init (redirects to home; pipeline is background) ---
     GoRoute(
       name: RouteNames.dataInit,
       path: '/${RouteNames.dataInit}',
-      builder: (context, state) {
-        return BlocProvider(
-          create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
-          child: const DataInitializationPage(),
-        );
-      },
+      builder: (context, state) => const DataInitializationPage(),
     ),
 
     // --- Main app (bottom navigation shell) ---
     ShellRoute(
       builder: (context, state, child) {
-        return BlocProvider(
-          create: (_) => NotificationCubit(
-            scheduler: Services.get<NotificationScheduler>(),
-            repository: Services.get<NotificationRepository>(),
-            notificationService: Services.get<NotificationService>(),
-          )..loadNotifications(),
-          child: MainShellScaffold(
-            currentIndex: _indexForRoute(state.topRoute?.name),
-            child: child,
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) =>
+                  DataInitBloc(Services.get<GetDataInitialization>()),
+            ),
+            BlocProvider(
+              create: (_) => NotificationCubit(
+                scheduler: Services.get<NotificationScheduler>(),
+                repository: Services.get<NotificationRepository>(),
+                notificationService: Services.get<NotificationService>(),
+              )..loadNotifications(),
+            ),
+          ],
+          child: DataInitShellHost(
+            child: MainShellScaffold(
+              currentIndex: _indexForRoute(state.topRoute?.name),
+              child: child,
+            ),
           ),
         );
       },
@@ -178,14 +169,6 @@ List<RouteBase> _buildRoutes(
   ];
 }
 
-/// Injectable router factory.
-/// Pass an [AuthStatusNotifier] that the router and auth bloc share to
-/// coordinate auth-guard redirects. The same notifier is injected into
-/// the AuthBloc for the /login route so that successful login updates
-/// the auth guard and unblocks navigation to the home shell.
-///
-/// Also accepts a [ThemeNotifier] to pass to the settings page for
-/// runtime theme switching.
 final class AppRouter {
   AppRouter._();
 

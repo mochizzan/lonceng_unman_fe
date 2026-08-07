@@ -42,17 +42,30 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     final krsResponse = await krsDataSource.getKrsData(npm: npm);
     final krsData = krsResponse.krs;
 
-    // Fetch KHS data for GPA and cumulative SKS
+    // Fetch KHS data for GPA and cumulative SKS — use previous semester.
+    // KHS for the current semester is usually not available until
+    // the end of the semester, so we use the previous one instead.
     double gpa = 0.0;
     int cumulativeSks = 0;
     try {
-      final khsResponse = await khsDataSource.getKhsData(
+      final password = creds?['password'] ?? '';
+
+      final semesters = await khsDataSource.getSemesters(
         npm: npm,
-        tahunAjaran: krsData.periode.tahunAjaran,
-        semester: krsData.periode.semester,
+        password: password,
       );
-      gpa = khsResponse.khs.rekapitulasi.ipk;
-      cumulativeSks = khsResponse.khs.rekapitulasi.totalSks;
+
+      if (semesters.length >= 2) {
+        final previous = semesters[semesters.length - 2];
+
+        final khsResponse = await khsDataSource.getKhsData(
+          npm: npm,
+          tahunAjaran: previous.tahunAjaran,
+          semester: previous.semester,
+        );
+        gpa = khsResponse.khs.rekapitulasi.ipk;
+        cumulativeSks = khsResponse.khs.rekapitulasi.totalSks;
+      }
     } catch (_) {
       // KHS may not be available yet if data-init hasn't completed.
     }

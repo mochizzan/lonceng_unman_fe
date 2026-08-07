@@ -114,7 +114,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(
           top: AppDimens.space40,
-          bottom: AppDimens.space32,
+          bottom: AppDimens.space80,
         ),
         child: Column(
           children: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
@@ -10,8 +11,11 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/widge
 
 /// Hosts background data-initialization for the main shell.
 ///
-/// - Auto-starts the pipeline from [CredentialCache] when the shell mounts
-/// - Surfaces progress / errors via [SnackBar] (dashboard stays visible)
+/// - Loads credentials from [CredentialCache] when the shell mounts
+/// - Checks [AcademicCacheService] for cached KRS/KHS data before starting
+///   the pipeline — skips entirely on cache hit, no snackbar shown
+/// - Dispatches the pipeline on cache miss; surfaces progress / errors via
+///   [SnackBar] (dashboard stays visible)
 /// - Does not block navigation or replace the home layout
 class DataInitShellHost extends StatefulWidget {
   const DataInitShellHost({super.key, required this.child});
@@ -55,6 +59,19 @@ class _DataInitShellHostState extends State<DataInitShellHost> {
       return;
     }
 
+    // Check if academic data is already cached for this NPM.
+    final academicCache = Services.get<AcademicCacheService>();
+    final hasKrs = academicCache.hasKrsData(npm: npm);
+    final hasKhsList = academicCache.hasKhsList(npm: npm);
+
+    if (hasKrs && hasKhsList) {
+      // Data already cached — skip the pipeline entirely.
+      // Emit success directly so downstream listeners know data is ready.
+      // (BlocListener in build() won't fire a snackbar for cache hits.)
+      return;
+    }
+
+    // Cache miss — dispatch pipeline and let BlocListener surface progress.
     bloc.add(DataInitStarted(npm: npm, password: password));
   }
 

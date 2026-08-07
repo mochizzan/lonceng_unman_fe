@@ -1,7 +1,7 @@
 // home - Abstract data source (interface)
 //
 // Defines the contract for fetching home screen data from a remote source.
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
@@ -21,17 +21,17 @@ abstract class HomeRemoteDataSource {
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   final KrsRemoteDataSource krsDataSource;
   final KhsRemoteDataSource khsDataSource;
-  final CredentialCache credentialCache;
+  final AcademicCacheService academicCacheService;
 
   const HomeRemoteDataSourceImpl({
     required this.krsDataSource,
     required this.khsDataSource,
-    required this.credentialCache,
+    required this.academicCacheService,
   });
 
   @override
   Future<HomeModel> getHomeData() async {
-    final creds = await credentialCache.load();
+    final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
     if (npm == null || npm.isEmpty) {
       throw Exception('NPM not found in credentials. Please log in again.');

@@ -3,7 +3,8 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
@@ -13,13 +14,14 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GetAuth _getAuth;
   final AuthStatusNotifier _authStatusNotifier;
-  final CredentialCache _credentialCache;
+  final AcademicCacheService _academicCacheService;
 
   AuthBloc(
     this._getAuth,
     this._authStatusNotifier, {
-    CredentialCache? credentialCache,
-  }) : _credentialCache = credentialCache ?? CredentialCache(),
+    AcademicCacheService? academicCacheService,
+  }) : _academicCacheService =
+           academicCacheService ?? Services.get<AcademicCacheService>(),
        super(const AuthInitial()) {
     on<AuthNpmChanged>(_onNpmChanged);
     on<AuthPasswordChanged>(_onPasswordChanged);
@@ -44,7 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Check for cached credentials and auto-login if found.
   /// Returns true if cached credentials were loaded (caller should skip login).
   Future<bool> checkCachedCredentials() async {
-    final cached = await _credentialCache.load();
+    final cached = await _academicCacheService.loadCredentials();
     if (cached == null) return false;
 
     _npm = cached['npm']!;
@@ -70,7 +72,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final AuthEntity user = await _getAuth(npm: _npm, password: _password);
       // Cache credentials for next launch — await to prevent race condition
       // with DataInitializationPage reading the same cache file.
-      await _credentialCache.save(npm: _npm, password: _password);
+      await _academicCacheService.saveCredentials(
+        npm: _npm,
+        password: _password,
+      );
       _authStatusNotifier.setStatus(AuthStatus.authenticated);
       emit(AuthAuthenticated(user));
     } on AppException catch (e) {
@@ -84,10 +89,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _npm = '';
     _password = '';
     try {
-      _credentialCache.clear();
+      _academicCacheService.clearCredentials();
     } catch (e) {
       developer.log(
-        'AuthBloc: failed to clear credential cache: $e',
+        'AuthBloc: failed to clear academic cache: $e',
         name: 'AuthBloc',
       );
     }

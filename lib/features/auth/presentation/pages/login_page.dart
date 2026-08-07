@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
@@ -41,7 +42,11 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _authBloc =
         widget.authBloc ??
-        AuthBloc(Services.get<GetAuth>(), widget.authStatusNotifier);
+        AuthBloc(
+          Services.get<GetAuth>(),
+          widget.authStatusNotifier,
+          academicCacheService: Services.get<AcademicCacheService>(),
+        );
     _checkCachedLogin();
   }
 
@@ -196,8 +201,9 @@ class _LoginCard extends StatelessWidget {
       padding: EdgeInsets.all(sp(context, AppDimens.space28)),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius:
-            BorderRadius.circular(sp(context, AppDimens.cardHeroRadius)),
+        borderRadius: BorderRadius.circular(
+          sp(context, AppDimens.cardHeroRadius),
+        ),
         boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Column(
@@ -288,8 +294,10 @@ class _LoginCard extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: cs.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
-                          fontSize:
-                              responsiveFontSize(context, AppDimens.textMD),
+                          fontSize: responsiveFontSize(
+                            context,
+                            AppDimens.textMD,
+                          ),
                         ),
                       ),
                       SizedBox(width: sp(context, AppDimens.space8)),

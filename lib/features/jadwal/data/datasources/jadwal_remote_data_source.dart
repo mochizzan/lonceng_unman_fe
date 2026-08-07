@@ -2,7 +2,7 @@
 //
 // Defines the contract for fetching weekly schedule data from a remote source.
 
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/models/jadwal_model.dart';
@@ -17,16 +17,16 @@ abstract class JadwalRemoteDataSource {
 /// Real implementation that fetches schedule from the KRS API.
 class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   final KrsRemoteDataSource krsDataSource;
-  final CredentialCache credentialCache;
+  final AcademicCacheService academicCacheService;
 
   const JadwalRemoteDataSourceImpl({
     required this.krsDataSource,
-    required this.credentialCache,
+    required this.academicCacheService,
   });
 
   @override
   Future<JadwalModel> getJadwal() async {
-    final creds = await credentialCache.load();
+    final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
     if (npm == null || npm.isEmpty) {
       throw Exception('NPM not found in credentials. Please log in again.');

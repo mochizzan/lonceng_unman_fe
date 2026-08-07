@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
@@ -176,6 +177,11 @@ Future<void> main() async {
       final credentialCache = CredentialCache();
       Services.register<CredentialCache>(credentialCache);
 
+      // ── Academic Cache Service ──
+      final academicCacheService = AcademicCacheService();
+      await academicCacheService.initialize();
+      Services.register<AcademicCacheService>(academicCacheService);
+
       // ── Auth Status Notifier (global, drives router redirect) ──
       final authStatusNotifier = AuthStatusNotifier();
       Services.register<AuthStatusNotifier>(authStatusNotifier);
@@ -184,7 +190,7 @@ Future<void> main() async {
       final apiClient = ApiClient(
         baseUrl: AppStrings.apiBaseUrl,
         onAuthError: () {
-          credentialCache.clear();
+          academicCacheService.clearCredentials();
           authStatusNotifier.setStatus(AuthStatus.unauthenticated);
         },
       );
@@ -196,15 +202,20 @@ Future<void> main() async {
       Services.register<GetAuth>(
         GetAuth(AuthRepositoryImpl(remoteDataSource: authDataSource)),
       );
-
       // ── KRS ──
-      final krsDataSource = KrsRemoteDataSourceImpl(apiClient: apiClient);
+      final krsDataSource = KrsRemoteDataSourceImpl(
+        apiClient: apiClient,
+        academicCacheService: academicCacheService,
+      );
       Services.register<KrsRemoteDataSource>(krsDataSource);
       final getKrs = GetKrs(KrsRepositoryImpl(remoteDataSource: krsDataSource));
       Services.register<GetKrs>(getKrs);
 
       // ── KHS ──
-      final khsDataSource = KhsRemoteDataSourceImpl(apiClient: apiClient);
+      final khsDataSource = KhsRemoteDataSourceImpl(
+        apiClient: apiClient,
+        academicCacheService: academicCacheService,
+      );
       Services.register<KhsRemoteDataSource>(khsDataSource);
       final getKhs = GetKhs(KhsRepositoryImpl(remoteDataSource: khsDataSource));
       Services.register<GetKhs>(getKhs);
@@ -230,7 +241,7 @@ Future<void> main() async {
             remoteDataSource: HomeRemoteDataSourceImpl(
               krsDataSource: krsDataSource,
               khsDataSource: khsDataSource,
-              credentialCache: credentialCache,
+              academicCacheService: academicCacheService,
             ),
           ),
         ),
@@ -242,7 +253,7 @@ Future<void> main() async {
           JadwalRepositoryImpl(
             remoteDataSource: JadwalRemoteDataSourceImpl(
               krsDataSource: krsDataSource,
-              credentialCache: credentialCache,
+              academicCacheService: academicCacheService,
             ),
           ),
         ),
@@ -255,7 +266,7 @@ Future<void> main() async {
             remoteDataSource: ProfileRemoteDataSourceImpl(
               krsDataSource: krsDataSource,
               khsDataSource: khsDataSource,
-              credentialCache: credentialCache,
+              academicCacheService: academicCacheService,
             ),
           ),
         ),

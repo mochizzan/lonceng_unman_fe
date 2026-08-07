@@ -2,7 +2,7 @@
 //
 // Defines the contract for fetching profile screen data from a remote source.
 
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
@@ -19,17 +19,17 @@ abstract class ProfileRemoteDataSource {
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   final KrsRemoteDataSource krsDataSource;
   final KhsRemoteDataSource khsDataSource;
-  final CredentialCache credentialCache;
+  final AcademicCacheService academicCacheService;
 
   const ProfileRemoteDataSourceImpl({
     required this.krsDataSource,
     required this.khsDataSource,
-    required this.credentialCache,
+    required this.academicCacheService,
   });
 
   @override
   Future<ProfileModel> getProfile() async {
-    final creds = await credentialCache.load();
+    final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
     if (npm == null || npm.isEmpty) {
       throw Exception('NPM not found in credentials. Please log in again.');

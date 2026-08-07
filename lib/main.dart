@@ -251,9 +251,10 @@ Future<void> main() async {
       final getKhs = GetKhs(KhsRepositoryImpl(remoteDataSource: khsDataSource));
       Services.register<GetKhs>(getKhs);
 
-      // ── Data Initialization (KRS only: download → extract → get) ──
+      // ── Data Initialization (KRS + KHS pipeline) ──
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
+        getKhs: getKhs,
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(
@@ -269,8 +270,6 @@ Future<void> main() async {
         GetHome(
           HomeRepositoryImpl(
             remoteDataSource: HomeRemoteDataSourceImpl(
-              krsDataSource: krsDataSource,
-              khsDataSource: khsDataSource,
               academicCacheService: academicCacheService,
             ),
           ),
@@ -294,8 +293,6 @@ Future<void> main() async {
         GetProfile(
           ProfileRepositoryImpl(
             remoteDataSource: ProfileRemoteDataSourceImpl(
-              krsDataSource: krsDataSource,
-              khsDataSource: khsDataSource,
               academicCacheService: academicCacheService,
             ),
           ),

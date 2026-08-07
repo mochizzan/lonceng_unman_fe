@@ -12,6 +12,11 @@ import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_status_text.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
@@ -20,13 +25,22 @@ import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.authStatusNotifier, this.authBloc});
+  const LoginPage({
+    super.key,
+    required this.authStatusNotifier,
+    this.authBloc,
+    this.dataInitBloc,
+  });
 
   final AuthStatusNotifier authStatusNotifier;
 
   /// Optional pre-built AuthBloc for testing.
   /// When null, a new BLoC is created internally.
   final AuthBloc? authBloc;
+
+  /// Optional pre-built DataInitBloc for testing.
+  /// When null, a new BLoC is created internally.
+  final DataInitBloc? dataInitBloc;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -36,6 +50,8 @@ class _LoginPageState extends State<LoginPage> {
   final _npmController = TextEditingController();
   final _passwordController = TextEditingController();
   late final AuthBloc _authBloc;
+  bool _loginSuccess = false;
+  late final DataInitBloc _dataInitBloc;
 
   @override
   void initState() {
@@ -44,9 +60,11 @@ class _LoginPageState extends State<LoginPage> {
         widget.authBloc ??
         AuthBloc(
           Services.get<GetAuth>(),
-          widget.authStatusNotifier,
           academicCacheService: Services.get<AcademicCacheService>(),
         );
+    _dataInitBloc =
+        widget.dataInitBloc ??
+        DataInitBloc(Services.get<GetDataInitialization>());
     _checkCachedLogin();
   }
 
@@ -66,6 +84,7 @@ class _LoginPageState extends State<LoginPage> {
     _npmController.dispose();
     _passwordController.dispose();
     _authBloc.close();
+    _dataInitBloc.close();
     super.dispose();
   }
 
@@ -78,7 +97,16 @@ class _LoginPageState extends State<LoginPage> {
       value: _authBloc,
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthError) {
+          if (state is AuthAuthenticated) {
+            setState(() => _loginSuccess = true);
+            // Trigger data-init pipeline on the login page.
+            _dataInitBloc.add(
+              DataInitStarted(
+                npm: _npmController.text,
+                password: _passwordController.text,
+              ),
+            );
+          } else if (state is AuthError) {
             // Show Toast for network-level errors that can't display inline.
             // All other errors display inline via BlocBuilder below.
             if (state.error is NetworkException ||
@@ -93,31 +121,37 @@ class _LoginPageState extends State<LoginPage> {
               AuthBackground(
                 child: SafeArea(
                   child: Center(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        sp(context, AppDimens.space24),
-                        sp(context, AppDimens.space16),
-                        sp(context, AppDimens.space24),
-                        sp(context, AppDimens.space32) + bottomInset,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Logo & Greeting
-                          _buildGreeting(cs),
-                          SizedBox(height: sp(context, AppDimens.space32)),
-                          // Login Card
-                          _LoginCard(
-                            npmController: _npmController,
-                            passwordController: _passwordController,
+                    child: _loginSuccess
+                        ? _buildProgressUI(context)
+                        : SingleChildScrollView(
+                            padding: EdgeInsets.fromLTRB(
+                              sp(context, AppDimens.space24),
+                              sp(context, AppDimens.space16),
+                              sp(context, AppDimens.space24),
+                              sp(context, AppDimens.space32) + bottomInset,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Logo & Greeting
+                                _buildGreeting(cs),
+                                SizedBox(
+                                  height: sp(context, AppDimens.space32),
+                                ),
+                                // Login Card
+                                _LoginCard(
+                                  npmController: _npmController,
+                                  passwordController: _passwordController,
+                                ),
+                                SizedBox(
+                                  height: sp(context, AppDimens.space24),
+                                ),
+                                // Footer
+                                _buildFooter(cs),
+                              ],
+                            ),
                           ),
-                          SizedBox(height: sp(context, AppDimens.space24)),
-                          // Footer
-                          _buildFooter(cs),
-                        ],
-                      ),
-                    ),
                   ),
                 ),
               ),
@@ -170,6 +204,71 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       textAlign: TextAlign.center,
+    );
+  }
+
+  /// Progress UI shown after successful login while data-init runs.
+  Widget _buildProgressUI(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return BlocProvider.value(
+      value: _dataInitBloc,
+      child: BlocBuilder<DataInitBloc, DataInitBlocState>(
+        builder: (context, state) {
+          final statusText = state is DataInitInProgress
+              ? dataInitStatusText(state.status)
+              : 'Menyiapkan data...';
+
+          final isCompleted = state is DataInitSuccess;
+
+          if (isCompleted && mounted) {
+            // Navigate to home after the current frame so the widget tree
+            // can settle before GoRouter replaces the route.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              // Mark authenticated so the router guard allows /home.
+              widget.authStatusNotifier.setStatus(AuthStatus.authenticated);
+            });
+          }
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              const BellLogo(),
+              SizedBox(height: sp(context, AppDimens.space32)),
+
+              // Status text
+              Text(
+                isCompleted ? 'Data akademik siap' : statusText,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: cs.onSurface,
+                  fontSize: responsiveFontSize(context, AppDimens.textMD),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: sp(context, AppDimens.space24)),
+
+              // Progress indicator
+              if (!isCompleted) CircularProgressIndicator(color: cs.primary),
+
+              // Error message
+              if (state is DataInitFailure)
+                Padding(
+                  padding: EdgeInsets.only(top: sp(context, AppDimens.space16)),
+                  child: Text(
+                    state.message,
+                    style: TextStyle(
+                      color: cs.error,
+                      fontSize: responsiveFontSize(context, AppDimens.textSM),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

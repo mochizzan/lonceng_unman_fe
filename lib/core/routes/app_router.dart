@@ -4,8 +4,8 @@
 // Defines all app routes based on DESIGN.md navigation structure.
 //
 // Post-login flow: authenticated users go straight to /home.
-// Data initialization runs in the background on the shell
-// (see DataInitShellHost) with SnackBar progress — not a gate page.
+// Data initialization runs at login time; home shows skeletons while
+// cache data loads.
 
 import 'dart:async';
 
@@ -19,10 +19,7 @@ import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/pages/data_initialization_page.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_shell_host.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
@@ -115,10 +112,6 @@ List<RouteBase> _buildRoutes(
         return MultiBlocProvider(
           providers: [
             BlocProvider(
-              create: (_) =>
-                  DataInitBloc(Services.get<GetDataInitialization>()),
-            ),
-            BlocProvider(
               create: (_) => NotificationCubit(
                 scheduler: Services.get<NotificationScheduler>(),
                 repository: Services.get<NotificationRepository>(),
@@ -126,11 +119,9 @@ List<RouteBase> _buildRoutes(
               )..loadNotifications(),
             ),
           ],
-          child: DataInitShellHost(
-            child: MainShellScaffold(
-              currentIndex: _indexForRoute(state.topRoute?.name),
-              child: child,
-            ),
+          child: MainShellScaffold(
+            currentIndex: _indexForRoute(state.topRoute?.name),
+            child: child,
           ),
         );
       },

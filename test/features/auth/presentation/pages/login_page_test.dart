@@ -29,10 +29,7 @@ void main() {
     final authNotifier = AuthStatusNotifier();
     // Provide a custom authBloc to avoid DI resolution
     final completer = Completer<AuthEntity>();
-    final authBloc = AuthBloc(
-      GetAuth(FakeAuthRepository(completer)),
-      authNotifier,
-    );
+    final authBloc = AuthBloc(GetAuth(FakeAuthRepository(completer)));
     await tester.pumpWidget(
       MaterialApp(
         theme: lightTheme,
@@ -55,10 +52,7 @@ void main() {
   testWidgets('submit shows loading when pressed', (tester) async {
     final completer = Completer<AuthEntity>();
     final authStatusNotifier = AuthStatusNotifier();
-    final authBloc = AuthBloc(
-      GetAuth(FakeAuthRepository(completer)),
-      authStatusNotifier,
-    );
+    final authBloc = AuthBloc(GetAuth(FakeAuthRepository(completer)));
 
     final router = GoRouter(
       initialLocation: '/${RouteNames.login}',
@@ -106,10 +100,7 @@ void main() {
     // Use a pre-built authBloc that always succeeds
     final completer = Completer<AuthEntity>();
     completer.complete(AuthEntity(npm: '21081010001', password: 'testpass'));
-    final authBloc = AuthBloc(
-      GetAuth(FakeAuthRepository(completer)),
-      authStatusNotifier,
-    );
+    final authBloc = AuthBloc(GetAuth(FakeAuthRepository(completer)));
 
     final router = GoRouter(
       initialLocation: '/${RouteNames.login}',

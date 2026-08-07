@@ -6,15 +6,13 @@
 // - Quick stats (SKS, classes today, semester/IPK)
 // - Today's schedule timeline
 //
-// While post-login data initialization runs (background), the layout
-// stays visible with skeleton placeholders instead of a full-page spinner.
+// Shows skeleton placeholders while loading data from cache.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
+
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
@@ -70,43 +68,24 @@ class _HomePageViewState extends State<_HomePageView> {
 
   @override
   Widget build(BuildContext context) {
-    // Initial fetch once; later refreshes come from DataInitSuccess / pull.
+    // Initial fetch once; later refreshes come from pull-to-refresh.
     _ensureFetch();
 
     return Scaffold(
-      body: MultiBlocListener(
-        listeners: [
-          // When background data-init completes, refresh dashboard data.
-          BlocListener<DataInitBloc, DataInitBlocState>(
-            listenWhen: (prev, next) =>
-                next is DataInitSuccess && prev is! DataInitSuccess,
-            listener: (context, state) {
-              context.read<HomeBloc>().add(const HomeRefreshRequested());
-            },
-          ),
-        ],
-        child: BlocBuilder<DataInitBloc, DataInitBlocState>(
-          builder: (context, initState) {
-            final initInProgress = initState is DataInitInProgress ||
-                initState is DataInitIdle;
+      body: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          // Prefer real data when already loaded (e.g. stub / cache).
+          if (state is HomeLoaded) {
+            return _buildContent(context, state);
+          }
 
-            return BlocBuilder<HomeBloc, HomeState>(
-              builder: (context, state) {
-                // Prefer real data when already loaded (e.g. stub / cache).
-                if (state is HomeLoaded) {
-                  return _buildContent(context, state);
-                }
+          if (state is HomeError) {
+            return _buildError(context, state.message);
+          }
 
-                if (state is HomeError && !initInProgress) {
-                  return _buildError(context, state.message);
-                }
-
-                // Loading or still initializing → dashboard shell + skeletons.
-                return _buildSkeletonDashboard(context);
-              },
-            );
-          },
-        ),
+          // Loading → dashboard shell + skeletons.
+          return _buildSkeletonDashboard(context);
+        },
       ),
     );
   }
@@ -115,11 +94,7 @@ class _HomePageViewState extends State<_HomePageView> {
     return CustomScrollView(
       slivers: [
         const SliverToBoxAdapter(
-          child: HomeHeader(
-            dateText: '',
-            userName: '…',
-            avatarUrl: '',
-          ),
+          child: HomeHeader(dateText: '', userName: '…', avatarUrl: ''),
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(

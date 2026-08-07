@@ -1,13 +1,13 @@
 // home - Abstract data source (interface)
 //
-// Defines the contract for fetching home screen data from a remote source.
+// Defines the contract for fetching home screen data from cache.
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
-import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
+import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/entities/krs_entity.dart';
 
 abstract class HomeRemoteDataSource {
@@ -15,20 +15,15 @@ abstract class HomeRemoteDataSource {
   Future<HomeModel> getHomeData();
 }
 
-/// Real implementation that fetches data from KRS + KHS APIs.
+/// Reads home screen data from local cache only (no API calls).
 ///
-/// The KRS endpoint provides schedule, semester, and student info.
-/// The KHS endpoint provides GPA and cumulative SKS.
+/// All data is fetched during login via the expanded data-init pipeline.
+/// This class reads KRS + KHS from [AcademicCacheService] and builds the
+/// [HomeModel] used by the Home page.
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
-  final KrsRemoteDataSource krsDataSource;
-  final KhsRemoteDataSource khsDataSource;
   final AcademicCacheService academicCacheService;
 
-  const HomeRemoteDataSourceImpl({
-    required this.krsDataSource,
-    required this.khsDataSource,
-    required this.academicCacheService,
-  });
+  const HomeRemoteDataSourceImpl({required this.academicCacheService});
 
   @override
   Future<HomeModel> getHomeData() async {
@@ -40,32 +35,22 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       );
     }
 
-    // Fetch KRS data (schedule, student info, semester)
-    final krsResponse = await krsDataSource.getKrsData(npm: npm);
-    final krsData = krsResponse.krs;
+    // Read KRS data from cache
+    final krsJson = await academicCacheService.loadKrsData(npm: npm);
+    if (krsJson == null) {
+      throw const ValidationException(
+        'Data KRS belum tersedia. Silakan login ulang.',
+      );
+    }
+    final krsData = KrsModel.fromJson(krsJson).krs;
 
-    // Fetch KHS data for GPA — use previous semester (not current).
-    // KHS for the current semester is usually not available until
-    // the end of the semester, so we use the previous one instead.
+    // Read KHS data from cache (optional — may not be available yet)
     double gpa = 0.0;
     try {
-      final password = creds?['password'] ?? '';
-
-      final semesters = await khsDataSource.getSemesters(
-        npm: npm,
-        password: password,
-      );
-
-      if (semesters.length >= 2) {
-        // Pick the second-to-last semester (previous = guaranteed data)
-        final previous = semesters[semesters.length - 2];
-
-        final khsResponse = await khsDataSource.getKhsData(
-          npm: npm,
-          tahunAjaran: previous.tahunAjaran,
-          semester: previous.semester,
-        );
-        gpa = khsResponse.khs.rekapitulasi.ipk;
+      final khsJson = await academicCacheService.loadKhsData(npm: npm);
+      if (khsJson != null) {
+        final khsData = KhsModel.fromJson(khsJson).khs;
+        gpa = khsData.rekapitulasi.ipk;
       }
     } catch (_) {
       // KHS may not be available yet if data-init hasn't completed.

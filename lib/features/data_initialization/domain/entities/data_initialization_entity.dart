@@ -5,6 +5,10 @@ enum DataInitStatus {
   downloadingKrs,
   extractingKrs,
   fetchingKrsData,
+  fetchingKhsSemesters,
+  downloadingKhs,
+  extractingKhs,
+  fetchingKhsData,
   completed,
   failed,
 }

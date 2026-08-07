@@ -1,6 +1,5 @@
 // auth - BLoC
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
@@ -11,16 +10,12 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GetAuth _getAuth;
-  final AuthStatusNotifier _authStatusNotifier;
   final AcademicCacheService _academicCacheService;
 
-  AuthBloc(
-    this._getAuth,
-    this._authStatusNotifier, {
-    AcademicCacheService? academicCacheService,
-  }) : _academicCacheService =
-           academicCacheService ?? Services.get<AcademicCacheService>(),
-       super(const AuthInitial()) {
+  AuthBloc(this._getAuth, {AcademicCacheService? academicCacheService})
+    : _academicCacheService =
+          academicCacheService ?? Services.get<AcademicCacheService>(),
+      super(const AuthInitial()) {
     on<AuthNpmChanged>(_onNpmChanged);
     on<AuthPasswordChanged>(_onPasswordChanged);
     on<AuthSubmitted>(_onSubmitted);
@@ -74,7 +69,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         npm: _npm,
         password: _password,
       );
-      _authStatusNotifier.setStatus(AuthStatus.authenticated);
+      // NOTE: AuthStatusNotifier.setStatus(AuthStatus.authenticated) is NOT
+      // called here. The login page calls it after the data-init pipeline
+      // completes, so the router redirect to /home only fires once data is
+      // ready. This prevents the router from destroying the progress UI.
       emit(AuthAuthenticated(user));
     } on AppException catch (e) {
       emit(AuthError(e.message, error: e));

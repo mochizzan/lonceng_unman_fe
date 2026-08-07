@@ -1,11 +1,11 @@
 // profile - Abstract data source (interface)
 //
-// Defines the contract for fetching profile screen data from a remote source.
+// Defines the contract for fetching profile screen data from cache.
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
-import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
+import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
 
 abstract class ProfileRemoteDataSource {
@@ -13,20 +13,15 @@ abstract class ProfileRemoteDataSource {
   Future<ProfileModel> getProfile();
 }
 
-/// Real implementation that fetches profile data from KRS + KHS APIs.
+/// Reads profile data from local cache only (no API calls).
 ///
-/// KRS provides student identity and current schedule.
-/// KHS provides GPA and cumulative SKS.
+/// All data is fetched during login via the expanded data-init pipeline.
+/// This class reads KRS + KHS from [AcademicCacheService] and builds the
+/// [ProfileModel] used by the Profile page.
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
-  final KrsRemoteDataSource krsDataSource;
-  final KhsRemoteDataSource khsDataSource;
   final AcademicCacheService academicCacheService;
 
-  const ProfileRemoteDataSourceImpl({
-    required this.krsDataSource,
-    required this.khsDataSource,
-    required this.academicCacheService,
-  });
+  const ProfileRemoteDataSourceImpl({required this.academicCacheService});
 
   @override
   Future<ProfileModel> getProfile() async {
@@ -38,33 +33,24 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       );
     }
 
-    // Fetch KRS data (student info, semester, schedule)
-    final krsResponse = await krsDataSource.getKrsData(npm: npm);
-    final krsData = krsResponse.krs;
+    // Read KRS data from cache
+    final krsJson = await academicCacheService.loadKrsData(npm: npm);
+    if (krsJson == null) {
+      throw const ValidationException(
+        'Data KRS belum tersedia. Silakan login ulang.',
+      );
+    }
+    final krsData = KrsModel.fromJson(krsJson).krs;
 
-    // Fetch KHS data for GPA and cumulative SKS — use previous semester.
-    // KHS for the current semester is usually not available until
-    // the end of the semester, so we use the previous one instead.
+    // Read KHS data from cache (optional — may not be available yet)
     double gpa = 0.0;
     int cumulativeSks = 0;
     try {
-      final password = creds?['password'] ?? '';
-
-      final semesters = await khsDataSource.getSemesters(
-        npm: npm,
-        password: password,
-      );
-
-      if (semesters.length >= 2) {
-        final previous = semesters[semesters.length - 2];
-
-        final khsResponse = await khsDataSource.getKhsData(
-          npm: npm,
-          tahunAjaran: previous.tahunAjaran,
-          semester: previous.semester,
-        );
-        gpa = khsResponse.khs.rekapitulasi.ipk;
-        cumulativeSks = khsResponse.khs.rekapitulasi.totalSks;
+      final khsJson = await academicCacheService.loadKhsData(npm: npm);
+      if (khsJson != null) {
+        final khsData = KhsModel.fromJson(khsJson).khs;
+        gpa = khsData.rekapitulasi.ipk;
+        cumulativeSks = khsData.rekapitulasi.totalSks;
       }
     } catch (_) {
       // KHS may not be available yet if data-init hasn't completed.

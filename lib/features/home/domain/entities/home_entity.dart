@@ -3,62 +3,7 @@
 // Domain-layer entity representing the aggregated home screen data.
 // Follows Clean Architecture: domain layer has no framework dependencies.
 
-/// Status of a schedule item (class session).
-enum ScheduleStatus {
-  /// The class is currently in progress.
-  ongoing,
-
-  /// The class is upcoming (starts later today).
-  upcoming,
-
-  /// The class already finished.
-  completed,
-}
-
-/// A single schedule (class session) on the home screen timeline.
-class ScheduleItemEntity {
-  const ScheduleItemEntity({
-    required this.courseName,
-    required this.room,
-    required this.startTime,
-    required this.endTime,
-    this.lecturer,
-    this.group,
-    this.status = ScheduleStatus.upcoming,
-  });
-
-  final String courseName;
-  final String room;
-  final DateTime startTime;
-  final DateTime endTime;
-  final String? lecturer;
-  final String? group;
-  final ScheduleStatus status;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ScheduleItemEntity &&
-          runtimeType == other.runtimeType &&
-          courseName == other.courseName &&
-          room == other.room &&
-          startTime == other.startTime &&
-          endTime == other.endTime &&
-          lecturer == other.lecturer &&
-          group == other.group &&
-          status == other.status;
-
-  @override
-  int get hashCode => Object.hash(
-    courseName,
-    room,
-    startTime,
-    endTime,
-    lecturer,
-    group,
-    status,
-  );
-}
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 
 /// The next upcoming class, used for the countdown hero card.
 class NextClassEntity {

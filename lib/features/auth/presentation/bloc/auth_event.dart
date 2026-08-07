@@ -23,6 +23,21 @@ class AuthNpmChanged extends AuthEvent {
   int get hashCode => npm.hashCode;
 }
 
+class AuthPasswordChanged extends AuthEvent {
+  final String password;
+  const AuthPasswordChanged(this.password);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AuthPasswordChanged &&
+          runtimeType == other.runtimeType &&
+          password == other.password;
+
+  @override
+  int get hashCode => password.hashCode;
+}
+
 class AuthSubmitted extends AuthEvent {
   const AuthSubmitted();
 

@@ -53,16 +53,12 @@ class FcmService {
   final StreamController<RemoteMessage> _messageController =
       StreamController<RemoteMessage>.broadcast();
 
-  /// Stream of foreground messages received while the app is open.
-  Stream<RemoteMessage> get onMessage => _messageController.stream;
-
   /// Stream of notification taps (app opened from background).
   Stream<RemoteMessage> get onMessageOpenedApp =>
       FirebaseMessaging.onMessageOpenedApp;
 
   /// Current FCM registration token. Cached after first retrieval.
   String? _currentToken;
-  String? get currentToken => _currentToken;
 
   /// Stream subscription for token refresh.
   StreamSubscription<String>? _tokenRefreshSubscription;
@@ -169,32 +165,5 @@ class FcmService {
     }
     developer.log('Data: ${message.data}', name: 'FCM');
     _messageController.add(message);
-  }
-
-  /// Subscribe to an FCM topic for broadcast messages.
-  Future<void> subscribeToTopic(String topic) async {
-    await _messaging.subscribeToTopic(topic);
-    developer.log('Subscribed to topic: $topic', name: 'FCM');
-  }
-
-  /// Unsubscribe from an FCM topic.
-  Future<void> unsubscribeFromTopic(String topic) async {
-    await _messaging.unsubscribeFromTopic(topic);
-    developer.log('Unsubscribed from topic: $topic', name: 'FCM');
-  }
-
-  /// Delete the current FCM token (e.g., on sign-out).
-  Future<void> deleteToken() async {
-    await _messaging.deleteToken();
-    _currentToken = null;
-    developer.log('Token deleted', name: 'FCM');
-  }
-
-  /// Clean up resources.
-  void dispose() {
-    _tokenRefreshSubscription?.cancel();
-    _foregroundSubscription?.cancel();
-    _backgroundTapSubscription?.cancel();
-    _messageController.close();
   }
 }

@@ -1,8 +1,9 @@
 // home - Abstract data source (interface)
 //
 // Defines the contract for fetching home screen data from a remote source.
+import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
-import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
 abstract class HomeRemoteDataSource {
   /// Fetches home screen data for the authenticated user.

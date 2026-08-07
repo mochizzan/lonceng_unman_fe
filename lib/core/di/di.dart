@@ -34,16 +34,6 @@ class Services {
     return service as T;
   }
 
-  /// Check if a service is registered.
-  static bool isRegistered<T>() {
-    return _services.containsKey(T);
-  }
-
-  /// Unregister a service (useful for testing).
-  static void unregister<T>() {
-    _services.remove(T);
-  }
-
   /// Clear all registered services (useful for testing).
   static void clear() {
     _services.clear();

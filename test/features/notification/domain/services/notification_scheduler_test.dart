@@ -1,9 +1,11 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -75,6 +77,7 @@ class MockNotificationService implements NotificationService {
     required int id,
     required String title,
     required String body,
+    required NotificationChannel channel,
     required tz.TZDateTime scheduledDate,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
@@ -88,10 +91,10 @@ class MockNotificationService implements NotificationService {
   Future<void> cancelAll() async => allCancelled = true;
 
   @override
-  Future<bool> areNotificationsEnabled() async => true;
+  Future<bool> canScheduleExactNotifications() async => canScheduleExact;
 
   @override
-  Future<bool> canScheduleExactNotifications() async => canScheduleExact;
+  Future<bool> requestPermission() async => true;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,13 +125,13 @@ void main() {
         selectedDay: 'Senin',
         days: ['Senin', 'Selasa', 'Rabu'],
         scheduleItems: [
-          JadwalScheduleItem(
+          ScheduleItemEntity(
             courseName: 'Algoritma',
             startTime: DateTime(2026, 1, 1, 8, 0),
             endTime: DateTime(2026, 1, 1, 10, 0),
             room: 'R.301',
             sks: '3',
-            status: JadwalScheduleStatus.upcoming,
+            status: ScheduleStatus.upcoming,
           ),
         ],
       );
@@ -148,22 +151,22 @@ void main() {
         selectedDay: 'Selasa',
         days: ['Senin', 'Selasa'],
         scheduleItems: [
-          JadwalScheduleItem(
+          ScheduleItemEntity(
             courseName: 'Algoritma',
             startTime: DateTime(2026, 1, 1, 8, 0),
             endTime: DateTime(2026, 1, 1, 10, 0),
             room: 'R.301',
             sks: '3',
-            status: JadwalScheduleStatus.upcoming,
+            status: ScheduleStatus.upcoming,
           ),
-          JadwalScheduleItem(
+          ScheduleItemEntity(
             courseName: 'Basis Data',
             startTime: DateTime(2026, 1, 1, 13, 0),
             endTime: DateTime(2026, 1, 1, 15, 0),
             room: 'R.201',
             sks: '3',
             lecturer: 'Dr. Budi',
-            status: JadwalScheduleStatus.upcoming,
+            status: ScheduleStatus.upcoming,
           ),
         ],
       );
@@ -184,13 +187,13 @@ void main() {
         selectedDay: 'Senin',
         days: ['Senin'],
         scheduleItems: [
-          JadwalScheduleItem(
+          ScheduleItemEntity(
             courseName: 'Test',
             startTime: DateTime(2026, 1, 1, 8, 0),
             endTime: DateTime(2026, 1, 1, 10, 0),
             room: 'R.1',
             sks: '2',
-            status: JadwalScheduleStatus.upcoming,
+            status: ScheduleStatus.upcoming,
           ),
         ],
       );

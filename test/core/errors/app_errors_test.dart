@@ -3,35 +3,62 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 
 void main() {
-  group('NotificationException', () {
+  group('NetworkException', () {
     test('is an AppException', () {
-      const exception = NotificationException('test error');
+      const exception = NetworkException('test error');
       expect(exception, isA<AppException>());
       expect(exception, isA<Exception>());
     });
 
     test('has correct default code', () {
-      const exception = NotificationException('test error');
-      expect(exception.code, 'NOTIFICATION_ERROR');
+      const exception = NetworkException('test error');
+      expect(exception.code, 'NETWORK_ERROR');
     });
 
     test('has correct message', () {
-      const exception = NotificationException('Schedule failed');
-      expect(exception.message, 'Schedule failed');
+      const exception = NetworkException('No internet');
+      expect(exception.message, 'No internet');
+    });
+  });
+
+  group('ServerException', () {
+    test('is an AppException', () {
+      const exception = ServerException('test error');
+      expect(exception, isA<AppException>());
     });
 
-    test('can override code', () {
-      const exception = NotificationException(
-        'Channel error',
-        code: 'CHANNEL_ERROR',
-      );
-      expect(exception.code, 'CHANNEL_ERROR');
+    test('has correct default code', () {
+      const exception = ServerException('test error');
+      expect(exception.code, 'SERVER_ERROR');
     });
 
-    test('toString includes message and code', () {
-      const exception = NotificationException('test');
-      expect(exception.toString(), contains('test'));
-      expect(exception.toString(), contains('NOTIFICATION_ERROR'));
+    test('stores status code', () {
+      const exception = ServerException('test', statusCode: 404);
+      expect(exception.statusCode, 404);
+    });
+  });
+
+  group('AuthException', () {
+    test('is an AppException', () {
+      const exception = AuthException('test error');
+      expect(exception, isA<AppException>());
+    });
+
+    test('has correct default code', () {
+      const exception = AuthException('test error');
+      expect(exception.code, 'AUTH_ERROR');
+    });
+  });
+
+  group('ValidationException', () {
+    test('is an AppException', () {
+      const exception = ValidationException('test error');
+      expect(exception, isA<AppException>());
+    });
+
+    test('has correct default code', () {
+      const exception = ValidationException('test error');
+      expect(exception.code, 'VALIDATION_ERROR');
     });
   });
 }

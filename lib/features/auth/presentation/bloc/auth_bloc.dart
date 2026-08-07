@@ -1,6 +1,9 @@
 // auth - BLoC
+import 'dart:developer' as developer;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
@@ -10,20 +13,43 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GetAuth _getAuth;
   final AuthStatusNotifier _authStatusNotifier;
+  final CredentialCache _credentialCache;
 
-  AuthBloc(this._getAuth, this._authStatusNotifier)
-    : super(const AuthInitial()) {
+  AuthBloc(
+    this._getAuth,
+    this._authStatusNotifier, {
+    CredentialCache? credentialCache,
+  }) : _credentialCache = credentialCache ?? CredentialCache(),
+       super(const AuthInitial()) {
     on<AuthNpmChanged>(_onNpmChanged);
+    on<AuthPasswordChanged>(_onPasswordChanged);
     on<AuthSubmitted>(_onSubmitted);
     on<AuthLogoutRequested>(_onLogoutRequested);
   }
 
   String _npm = '';
+  String _password = '';
 
   String get npm => _npm;
+  String get password => _password;
 
   void _onNpmChanged(AuthNpmChanged event, Emitter emit) {
     _npm = event.npm;
+  }
+
+  void _onPasswordChanged(AuthPasswordChanged event, Emitter emit) {
+    _password = event.password;
+  }
+
+  /// Check for cached credentials and auto-login if found.
+  /// Returns true if cached credentials were loaded (caller should skip login).
+  Future<bool> checkCachedCredentials() async {
+    final cached = await _credentialCache.load();
+    if (cached == null) return false;
+
+    _npm = cached['npm']!;
+    _password = cached['password']!;
+    return true;
   }
 
   Future<void> _onSubmitted(AuthSubmitted event, Emitter emit) async {
@@ -35,24 +61,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(const AuthError('NPM harus 10-11 digit angka'));
       return;
     }
+    if (_password.isEmpty) {
+      emit(const AuthError('Password wajib diisi'));
+      return;
+    }
     emit(AuthLoading());
     try {
-      final AuthEntity user = await _getAuth(npm: _npm);
+      final AuthEntity user = await _getAuth(npm: _npm, password: _password);
+      // Cache credentials for next launch — await to prevent race condition
+      // with DataInitializationPage reading the same cache file.
+      await _credentialCache.save(npm: _npm, password: _password);
       _authStatusNotifier.setStatus(AuthStatus.authenticated);
       emit(AuthAuthenticated(user));
-    } on AuthException catch (e) {
-      emit(AuthError(e.message));
-    } on NetworkException catch (e) {
-      emit(AuthError(e.message));
-    } on ServerException catch (e) {
-      emit(AuthError(e.message));
+    } on AppException catch (e) {
+      emit(AuthError(e.message, error: e));
     } catch (e) {
-      emit(const AuthError('Gagal terhubung ke server'));
+      emit(AuthError(e.toString()));
     }
   }
 
   void _onLogoutRequested(AuthLogoutRequested event, Emitter emit) {
     _npm = '';
+    _password = '';
+    try {
+      _credentialCache.clear();
+    } catch (e) {
+      developer.log(
+        'AuthBloc: failed to clear credential cache: $e',
+        name: 'AuthBloc',
+      );
+    }
     _authStatusNotifier.setStatus(AuthStatus.unauthenticated);
     emit(const AuthInitial());
   }

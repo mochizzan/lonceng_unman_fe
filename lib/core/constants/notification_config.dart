@@ -103,17 +103,10 @@ abstract final class NotificationConfig {
   /// Key for the reminder interval setting (stored as int, in minutes).
   static const String reminderIntervalKey = 'reminder_interval_minutes';
 
-  /// Prefix for per-channel toggle keys. Full key = [channelTogglePrefix] + channel.id.
-  static const String channelTogglePrefix = 'channel_enabled_';
-
   // ─── Reminder Defaults ────────────────────────────────────
   /// Default reminder offset in minutes before class starts.
   static const int defaultReminderMinutes = 5;
 
   /// Available reminder interval options (in minutes).
   static const List<int> reminderOptions = [5, 10, 15, 30, 60];
-
-  // ─── Channel Defaults ─────────────────────────────────────
-  /// All channels are enabled by default.
-  static const bool defaultChannelEnabled = true;
 }

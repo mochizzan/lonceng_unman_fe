@@ -7,7 +7,7 @@ class GetAuth {
 
   const GetAuth(this.repository);
 
-  Future<AuthEntity> call({required String npm}) {
-    return repository.login(npm: npm);
+  Future<AuthEntity> call({required String npm, required String password}) {
+    return repository.login(npm: npm, password: password);
   }
 }

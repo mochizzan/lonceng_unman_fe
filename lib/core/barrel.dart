@@ -1,5 +1,7 @@
 // Core module barrel exports
 export 'constants/barrel.dart';
+export 'domain/barrel.dart';
+export 'data/models/barrel.dart';
 export 'utils/barrel.dart';
 export 'theme/barrel.dart';
 export 'errors/barrel.dart';

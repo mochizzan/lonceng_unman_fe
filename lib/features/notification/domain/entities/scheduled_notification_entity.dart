@@ -46,7 +46,7 @@ class ScheduledNotificationEntity {
 
   /// Creates a list of [ScheduledNotificationEntity] from a [JadwalEntity].
   ///
-  /// Each [JadwalScheduleItem] in [jadwal] becomes one notification entity.
+  /// Each [ScheduleItemEntity] in [jadwal] becomes one notification entity.
   /// The [dayOfWeek] is taken from [jadwal.selectedDay].
   /// Defaults: [reminderOffset] = 5 minutes, [isActive] = true.
   static List<ScheduledNotificationEntity> fromJadwalEntity(

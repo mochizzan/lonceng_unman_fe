@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
+import 'package:lonceng_unman_fe/shared/widgets/stat_card.dart';
 
 class QuickStats extends StatelessWidget {
   const QuickStats({super.key, required this.data});
@@ -23,7 +24,7 @@ class QuickStats extends StatelessWidget {
           children: [
             // SKS Semester Ini
             Expanded(
-              child: _StatCard(
+              child: StatCard(
                 icon: Icons.auto_stories,
                 iconColor: cs.primary,
                 iconBg: cs.surfaceContainerHighest,
@@ -38,7 +39,7 @@ class QuickStats extends StatelessWidget {
             const SizedBox(width: AppDimens.space12),
             // Kuliah Hari Ini
             Expanded(
-              child: _StatCard(
+              child: StatCard(
                 icon: Icons.calendar_today,
                 iconColor: cs.primary,
                 iconBg: cs.surfaceContainerHighest,
@@ -132,87 +133,6 @@ class QuickStats extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.label,
-    required this.labelColor,
-    required this.value,
-    required this.valueColor,
-    required this.footnote,
-    required this.footnoteColor,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String label;
-  final Color labelColor;
-  final String value;
-  final Color valueColor;
-  final String footnote;
-  final Color footnoteColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(AppDimens.space16),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(AppDimens.radius2XL),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.05),
-            offset: const Offset(0, 3),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: AppDimens.avatarSM,
-            height: AppDimens.avatarSM,
-            margin: const EdgeInsets.only(bottom: 24),
-            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-            child: Icon(icon, size: AppDimens.iconSM, color: iconColor),
-          ),
-          Text(
-            label,
-            style: TextStyle(fontSize: AppDimens.textSM, color: labelColor),
-          ),
-          const SizedBox(height: 2),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: AppDimens.text4XL,
-                fontWeight: FontWeight.bold,
-                color: valueColor,
-              ),
-              children: [
-                TextSpan(text: value),
-                TextSpan(
-                  text: footnote,
-                  style: TextStyle(
-                    fontSize: AppDimens.textBase,
-                    fontWeight: FontWeight.w500,
-                    color: footnoteColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

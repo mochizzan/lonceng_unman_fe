@@ -18,19 +18,14 @@ class FakeGetAuth implements GetAuth {
       throw UnsupportedError('repository not needed for tests');
 
   @override
-  Future<AuthEntity> call({required String npm}) {
+  Future<AuthEntity> call({required String npm, required String password}) {
     if (error != null) throw error!;
     return Future.value(result);
   }
 }
 
 void main() {
-  final now = DateTime(2025, 1, 1);
-  final authEntity = AuthEntity(
-    npm: '21081010001',
-    token: 'tok',
-    expiresAt: now,
-  );
+  final authEntity = AuthEntity(npm: '21081010001', password: 'testpass');
 
   group('AuthBloc', () {
     blocTest<AuthBloc, AuthState>(
@@ -38,6 +33,7 @@ void main() {
       build: () => AuthBloc(FakeGetAuth(authEntity), AuthStatusNotifier()),
       act: (bloc) {
         bloc.add(AuthNpmChanged('21081010001'));
+        bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
       expect: () => [AuthLoading(), AuthAuthenticated(authEntity)],
@@ -46,8 +42,21 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits AuthError when NPM is empty',
       build: () => AuthBloc(FakeGetAuth(authEntity), AuthStatusNotifier()),
-      act: (bloc) => bloc.add(AuthSubmitted()),
+      act: (bloc) {
+        bloc.add(const AuthPasswordChanged('testpass'));
+        bloc.add(AuthSubmitted());
+      },
       expect: () => [const AuthError('NPM wajib diisi')],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits AuthError when password is empty',
+      build: () => AuthBloc(FakeGetAuth(authEntity), AuthStatusNotifier()),
+      act: (bloc) {
+        bloc.add(AuthNpmChanged('21081010001'));
+        bloc.add(AuthSubmitted());
+      },
+      expect: () => [const AuthError('Password wajib diisi')],
     );
 
     blocTest<AuthBloc, AuthState>(
@@ -55,6 +64,7 @@ void main() {
       build: () => AuthBloc(FakeGetAuth(authEntity), AuthStatusNotifier()),
       act: (bloc) {
         bloc.add(AuthNpmChanged('1234567890'));
+        bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
       expect: () => [AuthLoading(), AuthAuthenticated(authEntity)],
@@ -65,6 +75,7 @@ void main() {
       build: () => AuthBloc(FakeGetAuth(authEntity), AuthStatusNotifier()),
       act: (bloc) {
         bloc.add(AuthNpmChanged('123'));
+        bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
       expect: () => [const AuthError('NPM harus 10-11 digit angka')],
@@ -75,6 +86,7 @@ void main() {
       build: () => AuthBloc(FakeGetAuth(authEntity), AuthStatusNotifier()),
       act: (bloc) {
         bloc.add(AuthNpmChanged('123456789a'));
+        bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
       expect: () => [const AuthError('NPM harus 10-11 digit angka')],
@@ -88,6 +100,7 @@ void main() {
       ),
       act: (bloc) {
         bloc.add(AuthNpmChanged('21081010001'));
+        bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
       expect: () => [

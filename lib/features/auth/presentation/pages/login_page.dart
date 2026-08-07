@@ -1,19 +1,21 @@
-// Login page - NPM authentication
-// Implements the full DESIGN.md Â§5.1 layout, aligned with HTML reference.
+// Login page - NPM + Password authentication
+// Implements the full DESIGN.md §5.1 layout, aligned with HTML reference.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:go_router/go_router.dart';
-import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
+import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bell_logo.dart';
+import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
@@ -31,6 +33,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _npmController = TextEditingController();
+  final _passwordController = TextEditingController();
   late final AuthBloc _authBloc;
 
   @override
@@ -39,11 +42,24 @@ class _LoginPageState extends State<LoginPage> {
     _authBloc =
         widget.authBloc ??
         AuthBloc(Services.get<GetAuth>(), widget.authStatusNotifier);
+    _checkCachedLogin();
+  }
+
+  /// Check for cached credentials and auto-login if found.
+  Future<void> _checkCachedLogin() async {
+    final hasCached = await _authBloc.checkCachedCredentials();
+    if (hasCached && mounted) {
+      // Pre-fill form fields from bloc's cached values (no second disk read).
+      _npmController.text = _authBloc.npm;
+      _passwordController.text = _authBloc.password;
+      _authBloc.add(AuthSubmitted());
+    }
   }
 
   @override
   void dispose() {
     _npmController.dispose();
+    _passwordController.dispose();
     _authBloc.close();
     super.dispose();
   }
@@ -54,16 +70,21 @@ class _LoginPageState extends State<LoginPage> {
 
     return BlocProvider.value(
       value: _authBloc,
-      child: Scaffold(
-        body: Stack(
-          children: [
-            AuthBackground(
-              child: BlocListener<AuthBloc, AuthState>(
-                listener: (context, state) {
-                  if (state is AuthAuthenticated) {
-                    context.goNamed(RouteNames.home);
-                  }
-                },
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthError) {
+            // Show Toast for network-level errors that can't display inline.
+            // All other errors display inline via BlocBuilder below.
+            if (state.error is NetworkException ||
+                state.error is ServerException) {
+              ErrorHandler.show(context, state.error!);
+            }
+          }
+        },
+        child: Scaffold(
+          body: Stack(
+            children: [
+              AuthBackground(
                 child: SafeArea(
                   child: Center(
                     child: SingleChildScrollView(
@@ -78,7 +99,10 @@ class _LoginPageState extends State<LoginPage> {
                           _buildGreeting(cs),
                           SizedBox(height: sp(context, 32)),
                           // Login Card
-                          _LoginCard(npmController: _npmController),
+                          _LoginCard(
+                            npmController: _npmController,
+                            passwordController: _passwordController,
+                          ),
                           SizedBox(height: sp(context, 24)),
                           // Footer
                           _buildFooter(cs),
@@ -88,8 +112,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -142,9 +166,13 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class _LoginCard extends StatelessWidget {
-  const _LoginCard({required this.npmController});
+  const _LoginCard({
+    required this.npmController,
+    required this.passwordController,
+  });
 
   final TextEditingController npmController;
+  final TextEditingController passwordController;
 
   @override
   Widget build(BuildContext context) {
@@ -156,13 +184,7 @@ class _LoginCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(sp(context, 32)),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
-            offset: Offset(0, sp(context, 4)),
-            blurRadius: sp(context, 12),
-          ),
-        ],
+        boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -184,23 +206,49 @@ class _LoginCard extends StatelessWidget {
           ),
           SizedBox(height: sp(context, 24)),
 
-          // NPM Field (error shown inline on the field)
+          // NPM Field
+          AppTextField(
+            key: const Key('npm_field'),
+            controller: npmController,
+            label: AppStrings.loginNpmHint,
+            icon: Icons.badge_outlined,
+            keyboardType: TextInputType.number,
+            onChanged: (v) => context.read<AuthBloc>().add(AuthNpmChanged(v)),
+          ),
+          SizedBox(height: sp(context, 16)),
+
+          // Password Field
+          AppTextField(
+            key: const Key('password_field'),
+            controller: passwordController,
+            label: AppStrings.loginPasswordHint,
+            icon: Icons.lock_outline,
+            obscureText: true,
+            onChanged: (v) =>
+                context.read<AuthBloc>().add(AuthPasswordChanged(v)),
+          ),
+
+          // Error message (shown below both fields)
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
-              final errorText = state is AuthError ? state.message : null;
-              return AppTextField(
-                key: const Key('npm_field'),
-                controller: npmController,
-                label: AppStrings.loginNpmHint,
-                icon: Icons.badge_outlined,
-                keyboardType: TextInputType.number,
-                errorText: errorText,
-                onChanged: (v) =>
-                    context.read<AuthBloc>().add(AuthNpmChanged(v)),
-              );
+              if (state is AuthError) {
+                return Padding(
+                  padding: EdgeInsets.only(top: sp(context, 12)),
+                  child: Text(
+                    state.message,
+                    style: TextStyle(
+                      color: cs.error,
+                      fontSize: responsiveFontSize(context, 12),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
             },
           ),
           SizedBox(height: sp(context, 24)),
+
           // Submit Button
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
@@ -208,18 +256,9 @@ class _LoginCard extends StatelessWidget {
               if (state is AuthLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
-              return FilledButton(
+              return AppButton(
                 onPressed: () => bloc.add(AuthSubmitted()),
-                style: FilledButton.styleFrom(
-                  backgroundColor: cs.primaryContainer,
-                  foregroundColor: cs.onPrimaryContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(sp(context, 24)),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: sp(context, 16)),
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                ),
+                fullWidth: true,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

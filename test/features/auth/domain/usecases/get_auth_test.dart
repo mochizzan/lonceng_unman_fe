@@ -7,7 +7,10 @@ class FakeAuthRepository implements AuthRepository {
   final AuthEntity result;
   FakeAuthRepository(this.result);
   @override
-  Future<AuthEntity> login({required String npm}) async {
+  Future<AuthEntity> login({
+    required String npm,
+    required String password,
+  }) async {
     return result;
   }
 }
@@ -15,15 +18,10 @@ class FakeAuthRepository implements AuthRepository {
 void main() {
   group('GetAuth', () {
     test('calls repository.login and returns result', () async {
-      final now = DateTime(2025, 1, 1);
-      final expected = AuthEntity(
-        npm: '21081010001',
-        token: 'tok',
-        expiresAt: now,
-      );
+      final expected = AuthEntity(npm: '21081010001', password: 'tok');
       final repo = FakeAuthRepository(expected);
       final usecase = GetAuth(repo);
-      final result = await usecase(npm: '21081010001');
+      final result = await usecase(npm: '21081010001', password: 'tok');
       expect(result, expected);
     });
   });

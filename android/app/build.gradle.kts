@@ -9,7 +9,13 @@ plugins {
 
 android {
     namespace = "com.miproduction.loncengunman"
-    compileSdk = flutter.compileSdkVersion
+    // Explicit SDK versions — pinned rather than inherited from Flutter defaults
+    // so version bumps are intentional and reviewable.
+    //   compileSdk 37: Flutter default (latest platform APIs)
+    //   targetSdk 34: Google Play requires 34+ for new apps/updates (Aug 2024);
+    //                  35 required by Aug 2025 — bump when ready.
+    //   minSdk 21:    Flutter minimum; flutter_local_notifications also requires 21+
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -21,9 +27,8 @@ android {
 
     defaultConfig {
         applicationId = "com.miproduction.loncengunman"
-        // flutter_local_notifications requires minSdk 21+
-        minSdk = maxOf(flutter.minSdkVersion, 21)
-        targetSdk = flutter.targetSdkVersion
+        minSdk = flutter.minSdkVersion
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

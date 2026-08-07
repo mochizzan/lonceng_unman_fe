@@ -1,2 +1,2 @@
-// core/models barrel
-export 'base_model.dart';
+// Network models
+// Add shared data models here

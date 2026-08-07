@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
+import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
 /// Formats a [Duration] as HH:MM:SS.
 String formatCountdown(Duration duration) {
@@ -16,77 +17,6 @@ String formatCountdown(Duration duration) {
   final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
   final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
   return '$hours:$minutes:$seconds';
-}
-
-/// A pulsing dot indicator matching the HTML `animate-ping` effect.
-/// Uses [AnimationController] with `.repeat()` for an infinite pulse cycle.
-class _PulsingDot extends StatefulWidget {
-  const _PulsingDot({required this.color});
-
-  final Color color;
-
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppDurations.countdown,
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: AppDimens.dotXL,
-      height: AppDimens.dotXL,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              final value = _controller.value;
-              final scale = 0.6 + (value * 0.8);
-              final opacity = (0.8 - value * 0.6).clamp(0.0, 1.0);
-              return Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: AppDimens.dotXL,
-                  height: AppDimens.dotXL,
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: opacity),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              );
-            },
-          ),
-          Container(
-            width: AppDimens.dotMD,
-            height: AppDimens.dotMD,
-            decoration: BoxDecoration(
-              color: widget.color,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Hero countdown card with a live-updating countdown timer.
@@ -154,7 +84,11 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                 // Live indicator
                 Row(
                   children: [
-                    _PulsingDot(color: onPrimaryContainer),
+                    PulsingDot(
+                      color: onPrimaryContainer,
+                      size: AppDimens.dotMD,
+                      duration: AppDurations.countdown,
+                    ),
                     const SizedBox(width: AppDimens.space8),
                     Text(
                       AppStrings.homeNextClassIn,

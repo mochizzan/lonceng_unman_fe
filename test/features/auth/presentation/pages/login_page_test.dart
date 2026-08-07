@@ -19,7 +19,7 @@ class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository(this.completer);
 
   @override
-  Future<AuthEntity> login({required String npm}) {
+  Future<AuthEntity> login({required String npm, required String password}) {
     return completer.future;
   }
 }
@@ -46,6 +46,8 @@ void main() {
     expect(find.text('Gunakan NPM aktif kamu'), findsOneWidget);
     expect(find.text('NPM'), findsOneWidget);
     expect(find.byIcon(Icons.badge_outlined), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     expect(find.textContaining('Hubungi Admin'), findsOneWidget);
     expect(find.textContaining('Helpdesk IT'), findsOneWidget);
   });
@@ -84,6 +86,8 @@ void main() {
 
     // Enter a valid 11-digit NPM
     await tester.enterText(find.byKey(const Key('npm_field')), '21081010001');
+    // Enter password
+    await tester.enterText(find.byKey(const Key('password_field')), 'testpass');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Masuk Akun').last);
     await tester.pump();
@@ -91,13 +95,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     // Release the completer and settle to avoid a hanging bloc.
-    completer.complete(
-      AuthEntity(
-        npm: '21081010001',
-        token: 'tok',
-        expiresAt: DateTime(2025, 1, 1),
-      ),
-    );
+    completer.complete(AuthEntity(npm: '21081010001', password: 'testpass'));
     await tester.pumpAndSettle();
   });
 
@@ -107,13 +105,7 @@ void main() {
     final authStatusNotifier = AuthStatusNotifier();
     // Use a pre-built authBloc that always succeeds
     final completer = Completer<AuthEntity>();
-    completer.complete(
-      AuthEntity(
-        npm: '21081010001',
-        token: 'tok',
-        expiresAt: DateTime(2025, 1, 1),
-      ),
-    );
+    completer.complete(AuthEntity(npm: '21081010001', password: 'testpass'));
     final authBloc = AuthBloc(
       GetAuth(FakeAuthRepository(completer)),
       authStatusNotifier,
@@ -145,8 +137,9 @@ void main() {
 
     expect(find.text('Halo Mahasiswa!'), findsOneWidget);
 
-    // Enter valid NPM
+    // Enter valid NPM and password
     await tester.enterText(find.byKey(const Key('npm_field')), '21081010001');
+    await tester.enterText(find.byKey(const Key('password_field')), 'testpass');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Masuk Akun').last);
     await tester.pumpAndSettle();

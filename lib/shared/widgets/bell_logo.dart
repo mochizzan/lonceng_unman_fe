@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 /// App logo: toga cap icon (Icons.school) in Primary Container circle, radius 28px.
@@ -15,13 +16,7 @@ class BellLogo extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.primaryContainer,
         borderRadius: BorderRadius.circular(sp(context, 28)),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.06),
-            offset: Offset(0, sp(context, 4)),
-            blurRadius: sp(context, 12),
-          ),
-        ],
+        boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Icon(
         Icons.school,

@@ -27,7 +27,7 @@ class NotificationScheduler {
 
   /// Schedule notifications for all classes in [jadwal].
   ///
-  /// For each [JadwalScheduleItem]:
+  /// For each [ScheduleItemEntity]:
   /// 1. Computes the next occurrence of the day-of-week
   /// 2. Combines with class start time minus reminder offset
   /// 3. Registers alarm via flutter_local_notifications

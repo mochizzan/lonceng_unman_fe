@@ -5,7 +5,6 @@
 /// Organized by feature for easy discovery.
 abstract final class AppStrings {
   // ─── App ──────────────────────────────────────────────
-  static const String appName = 'Lonceng UnMan';
   static const String appVersion = '1.0.0+1';
 
   // ─── Auth ─────────────────────────────────────────────
@@ -23,10 +22,8 @@ abstract final class AppStrings {
   static const String loginContactAdmin = 'Hubungi Admin';
 
   // ─── Home ─────────────────────────────────────────────
-  static const String homeGreeting = 'Halo, {name} 👋';
   static const String homeNextClassIn = 'Kelas berikutnya dalam';
   static const String homeLecturerLabel = 'Dosen Pengampu';
-  static const String homeLocationLabel = 'Lokasi Kelas';
   static const String homeViewMaterials = 'Lihat Materi Kelas';
   static const String homeScheduleTitle = 'Jadwal Hari Ini';
   static const String homeViewAll = 'Lihat Semua';
@@ -37,7 +34,6 @@ abstract final class AppStrings {
   static const String homeClassUnit = 'Kelas';
   static const String homeSksSemester = 'SKS Semester Ini';
   static const String homeKuliahHariIni = 'Kuliah Hari Ini';
-  static const String homeKelas = 'Kelas';
   static const String homeIpkTerakhir = 'IPK Terakhir';
 
   // ─── Jadwal ───────────────────────────────────────────
@@ -45,7 +41,6 @@ abstract final class AppStrings {
   static const String jadwalNullFallback = '-';
 
   // ─── Profile ──────────────────────────────────────────
-  static const String profileTitle = 'Profil';
   static const String profileTitleFull = 'Profil Saya';
   static const String profileEditTooltip = 'Edit Profil';
   static const String profileTabAbout = 'Tentang';
@@ -92,16 +87,6 @@ abstract final class AppStrings {
     daySunday,
   ];
 
-  static const List<String> dayNamesShort = [
-    'Sen',
-    'Sel',
-    'Rab',
-    'Kam',
-    'Jum',
-    'Sab',
-    'Min',
-  ];
-
   // ─── Month Names (Indonesian) ─────────────────────────
   static const String monthJanuary = 'Januari';
   static const String monthFebruary = 'Februari';
@@ -134,9 +119,18 @@ abstract final class AppStrings {
   // ─── Notification (errors) ─────────────────────────
   static const String settingsNotificationPermissionDenied =
       'Izin notifikasi belum diberikan. Aktifkan di Pengaturan Sistem.';
-  static const String notificationShowError = 'Gagal menampilkan notifikasi';
 
   // ─── Settings (reminder format) ─────────────────────
   static const String settingsReminderHour = '1 jam';
   static String settingsReminderMinutes(int minutes) => '$minutes menit';
+
+  // ─── API Configuration ─────────────────────────────
+  //
+  // Android emulator: 10.0.2.2 maps to host PC's localhost
+  // iOS simulator / Web: 127.0.0.1 works directly
+  // Physical device: use your PC's IP address (e.g. 192.168.x.x)
+  //
+  // For emulator builds, we use 10.0.2.2 as the default.
+  // To switch per environment, use --dart-define or flavor.
+  static const String apiBaseUrl = 'http://10.0.2.2:3000';
 }

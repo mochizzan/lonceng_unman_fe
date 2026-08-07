@@ -4,10 +4,6 @@
 /// Theme colors live in lib/core/theme/theme.dart (ColorScheme + AppColors).
 /// This file holds values that are NOT part of the Material 3 theme system.
 abstract final class AppColors {
-  // ─── Shadow Colors ────────────────────────────────────
-  static const int cardShadowAlpha = 0x10; // 6% opacity
-  static const int navBarShadowAlpha = 0x40; // 25% opacity
-
   // ─── Common Opacities (for withValues(alpha:)) ────────
   static const double opacityLow = 0.08;
   static const double opacityMedium = 0.12;
@@ -16,7 +12,6 @@ abstract final class AppColors {
   static const double opacityMax = 0.7;
   static const double opacityFull = 0.8;
   static const double opacityNearFull = 0.85;
-  static const double opacityAlmostFull = 0.9;
 
   // ─── Shadow Opacities ──────────────────────────────────
   static const double shadowLow = 0.06;

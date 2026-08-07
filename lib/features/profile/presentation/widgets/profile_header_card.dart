@@ -7,6 +7,7 @@
 // Matches DESIGN.md §5.4 Profile Header Card + HTML template lines 36-46.
 
 import 'package:flutter/material.dart';
+import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity.dart';
 
@@ -25,13 +26,7 @@ class ProfileHeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.primaryContainer,
         borderRadius: BorderRadius.circular(sp(context, 32)),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
-            offset: Offset(0, sp(context, 4)),
-            blurRadius: sp(context, 12),
-          ),
-        ],
+        boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,

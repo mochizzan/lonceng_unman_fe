@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity.dart';
 
@@ -43,13 +44,7 @@ class AcademicInfoSection extends StatelessWidget {
           color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
           width: AppDimens.borderWidthThin,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
-            offset: Offset(0, sp(context, 4)),
-            blurRadius: sp(context, 12),
-          ),
-        ],
+        boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

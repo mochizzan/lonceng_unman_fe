@@ -63,27 +63,3 @@ class ProfileModel extends ProfileEntity {
     );
   }
 }
-
-/// Stub profile data matching the HTML template.
-class StubProfileModel extends ProfileModel {
-  StubProfileModel()
-    : super(
-        userName: 'Aditya Pratama',
-        avatarUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCnBIL5cJ77Nfm9Q8slewKAS_21_yT3yb1_sUdsHuAfpDTaur8eBGDEL9DXqSaJt9Xj3CpCwww0JaAiZ3StVnLWxDSopEerEkB0hKth_cn2VLnpolxeCKSad7lscm0kjKIVE4Bx8f13WERDCrGYRL-zyPjkPsOgHJ3dKi1o5ZZ6YKu8HwbtwkJcjIEjullt5LtSbQVf3Zf2jw4yx4qZwUxhTc-kKCG-ZHFj5hZlZRtFg56mASnX0kLOPA',
-        npm: '20210140001',
-        studyProgram: 'Teknik Informatika',
-        semester: 'Semester 5',
-        gpa: 3.85,
-        sksTaken: 104,
-        sksTotal: 120,
-        todayClassCount: 3,
-        bio:
-            'Mahasiswa semester 5 Teknik Informatika. '
-            'Suka ngoding, nongkrong di kafe, dan dengarin lo-fi '
-            'saat belajar. Pengen jadi backend engineer yang profesional.',
-        reminderEnabled: true,
-        darkModeEnabled: false,
-        lastUpdated: null,
-      );
-}

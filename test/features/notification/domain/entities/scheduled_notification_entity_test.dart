@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 
@@ -130,22 +131,22 @@ void main() {
           selectedDay: 'Senin',
           days: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
           scheduleItems: [
-            JadwalScheduleItem(
+            ScheduleItemEntity(
               courseName: 'Algoritma',
               startTime: DateTime(2026, 8, 10, 8, 0),
               endTime: DateTime(2026, 8, 10, 9, 40),
               room: 'R.301',
               sks: '3',
-              status: JadwalScheduleStatus.upcoming,
+              status: ScheduleStatus.upcoming,
               lecturer: 'Dr. Budi',
             ),
-            JadwalScheduleItem(
+            ScheduleItemEntity(
               courseName: 'Basis Data',
               startTime: DateTime(2026, 8, 10, 10, 0),
               endTime: DateTime(2026, 8, 10, 11, 40),
               room: 'R.205',
               sks: '3',
-              status: JadwalScheduleStatus.upcoming,
+              status: ScheduleStatus.upcoming,
             ),
           ],
         );
@@ -180,13 +181,13 @@ void main() {
           selectedDay: 'Selasa',
           days: ['Selasa'],
           scheduleItems: [
-            JadwalScheduleItem(
+            ScheduleItemEntity(
               courseName: 'Algoritma',
               startTime: DateTime(2026, 8, 11, 14, 0),
               endTime: DateTime(2026, 8, 11, 15, 40),
               room: 'R.301',
               sks: '3',
-              status: JadwalScheduleStatus.upcoming,
+              status: ScheduleStatus.upcoming,
             ),
           ],
         );

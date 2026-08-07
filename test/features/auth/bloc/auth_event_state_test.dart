@@ -11,6 +11,12 @@ void main() {
       expect(AuthNpmChanged('123'), isNot(AuthNpmChanged('456')));
     });
 
+    test('AuthPasswordChanged has correct value and equality', () {
+      expect(AuthPasswordChanged('pass').password, 'pass');
+      expect(AuthPasswordChanged('pass'), AuthPasswordChanged('pass'));
+      expect(AuthPasswordChanged('pass'), isNot(AuthPasswordChanged('other')));
+    });
+
     test('AuthSubmitted are equal', () {
       expect(AuthSubmitted(), AuthSubmitted());
     });
@@ -27,8 +33,7 @@ void main() {
     });
 
     test('AuthAuthenticated holds user', () {
-      final now = DateTime(2025, 1, 1);
-      final user = AuthEntity(npm: '21081010001', token: 'tok', expiresAt: now);
+      final user = AuthEntity(npm: '21081010001', password: 'pass');
       final state = AuthAuthenticated(user);
       expect(state.user, user);
     });

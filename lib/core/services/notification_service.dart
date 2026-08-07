@@ -143,21 +143,6 @@ class NotificationService {
     developer.log('Cancelled all notifications', name: 'NotificationService');
   }
 
-  /// Check if notifications are enabled on this device.
-  ///
-  /// On Android 13+ (API 33+), checks POST_NOTIFICATIONS permission.
-  /// On older Android and iOS, returns true by default.
-  Future<bool> areNotificationsEnabled() async {
-    final androidPlugin = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (androidPlugin != null) {
-      return await androidPlugin.areNotificationsEnabled() ?? false;
-    }
-    return true;
-  }
-
   /// Check if exact notifications can be scheduled (Android 12+).
   ///
   /// On Android 12+ (API 31+), SCHEDULE_EXACT_ALARM is a special permission
@@ -186,27 +171,5 @@ class NotificationService {
     }
     // iOS handles permission in initialization settings
     return true;
-  }
-
-  /// Show an immediate notification.
-  ///
-  /// [id] must be non-negative and unique per notification.
-  /// [channel] determines which Android channel to use.
-  Future<void> showInstant({
-    required int id,
-    required String title,
-    required String body,
-    required NotificationChannel channel,
-  }) async {
-    await _plugin.show(
-      id: id,
-      title: title,
-      body: body,
-      notificationDetails: _detailsFor(channel),
-    );
-    developer.log(
-      'Showed [#${channel.id}] #$id: $title',
-      name: 'NotificationService',
-    );
   }
 }

@@ -8,18 +8,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
+import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
+import 'package:lonceng_unman_fe/core/utils/format_utils.dart';
 
 class JadwalCard extends StatelessWidget {
   const JadwalCard({super.key, required this.item, required this.index});
 
-  final JadwalScheduleItem item;
+  final ScheduleItemEntity item;
   final int index;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isOngoing = item.status == JadwalScheduleStatus.ongoing;
+    final isOngoing = item.status == ScheduleStatus.ongoing;
 
     // Background and border
     final bgColor = isOngoing ? cs.primaryContainer : cs.surface;
@@ -44,13 +46,7 @@ class JadwalCard extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(AppDimens.cardItemRadius),
         border: borderColor != null ? Border.all(color: borderColor) : null,
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: AppColors.shadowLow),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppShadows.card(cs),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppDimens.space20),
@@ -129,7 +125,7 @@ class JadwalCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                   ),
                   child: Text(
-                    '${_formatTime(item.startTime)} - ${_formatTime(item.endTime)}',
+                    '${formatTime(item.startTime)} - ${formatTime(item.endTime)}',
                     style: TextStyle(
                       fontSize: AppDimens.textSM,
                       fontWeight: FontWeight.w500,
@@ -185,7 +181,7 @@ class JadwalCard extends StatelessWidget {
                 ),
                 const SizedBox(width: AppDimens.space6),
                 Text(
-                  item.sks,
+                  item.sks ?? '',
                   style: TextStyle(
                     fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w500,
@@ -200,9 +196,5 @@ class JadwalCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

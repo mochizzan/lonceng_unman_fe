@@ -31,7 +31,7 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> {
     } on ServerException catch (e) {
       emit(JadwalError(e.message));
     } catch (e) {
-      emit(const JadwalError('Gagal memuat data jadwal'));
+      emit(JadwalError(e.toString()));
     }
   }
 
@@ -47,7 +47,7 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> {
     } on ServerException catch (e) {
       emit(JadwalError(e.message));
     } catch (e) {
-      emit(const JadwalError('Gagal memuat data jadwal'));
+      emit(JadwalError(e.toString()));
     }
   }
 }

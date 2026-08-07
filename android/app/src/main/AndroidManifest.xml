@@ -1,11 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Local notification permissions -->
+    <!-- Android 13+ (API 33): runtime permission for showing notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Android 12+ (API 31): schedule exact alarms (user-revocable) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <!-- Android 14+ (API 34): non-revocable exact alarm permission for alarm/timer apps
+         Falls back to SCHEDULE_EXACT_ALARM if user revokes it -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <!-- Boot receiver: re-schedule alarms after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Android 14+ (API 34): foreground services require a typed permission.
+         workmanager and flutter_local_notifications use dataSync type. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
     <application
         android:label="Lonceng UnMan"

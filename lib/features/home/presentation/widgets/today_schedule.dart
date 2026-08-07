@@ -5,8 +5,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart' hide AppColors;
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
-import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
+import 'package:lonceng_unman_fe/core/utils/format_utils.dart';
+import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
 class TodaySchedule extends StatelessWidget {
   const TodaySchedule({super.key, required this.items, this.onSeeAllTap});
@@ -86,76 +88,6 @@ class TodaySchedule extends StatelessWidget {
   }
 }
 
-/// A pulsing dot for "sedang berlangsung" items.
-class _PulsingDot extends StatefulWidget {
-  const _PulsingDot({required this.color});
-
-  final Color color;
-
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: AppDurations.slow)
-      ..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: AppDimens.dotLG,
-      height: AppDimens.dotLG,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Outer pulse ring
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              final value = _controller.value;
-              final scale = 0.6 + (value * 0.8);
-              final opacity = (0.8 - value * 0.6).clamp(0.0, 1.0);
-              return Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: AppDimens.dotLG,
-                  height: AppDimens.dotLG,
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: opacity),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              );
-            },
-          ),
-          // Inner dot
-          Container(
-            width: AppDimens.dotSM,
-            height: AppDimens.dotSM,
-            decoration: BoxDecoration(
-              color: widget.color,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TimelineItem extends StatelessWidget {
   const _TimelineItem({
     required this.item,
@@ -220,7 +152,11 @@ class _TimelineItem extends StatelessWidget {
       return SizedBox(
         width: AppDimens.dotLG,
         height: AppDimens.dotLG,
-        child: _PulsingDot(color: successColor),
+        child: PulsingDot(
+          color: successColor,
+          size: AppDimens.dotSM,
+          duration: AppDurations.slow,
+        ),
       );
     }
     return Container(
@@ -243,7 +179,7 @@ class _TimelineItem extends StatelessWidget {
     Color successColor,
   ) {
     final timeRange =
-        '${_formatTime(item.startTime)} – ${_formatTime(item.endTime)}';
+        '${formatTime(item.startTime)} – ${formatTime(item.endTime)}';
     return Container(
       padding: const EdgeInsets.all(AppDimens.space14),
       decoration: BoxDecoration(
@@ -314,7 +250,7 @@ class _TimelineItem extends StatelessWidget {
   }
 
   Widget _buildUpcomingCard(ColorScheme cs, int index) {
-    final timeStr = _formatTime(item.startTime);
+    final timeStr = formatTime(item.startTime);
     // Index 1: secondaryContainer (segera) - softer than primaryContainer
     // Index 2+: surfaceContainerHighest (akan datang)
     final bool isSoon = index == 1;
@@ -406,11 +342,5 @@ class _TimelineItem extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatTime(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m';
   }
 }

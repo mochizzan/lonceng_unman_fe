@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 
 /// Full-width tonal action button for navigating to settings.
 ///
@@ -19,27 +20,22 @@ class ProfileActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () {
-          context.pushNamed(RouteNames.settings);
-        },
-        style: FilledButton.styleFrom(
-          backgroundColor: cs.secondaryContainer,
-          foregroundColor: cs.onSecondaryContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+    return AppButton(
+      onPressed: () {
+        context.pushNamed(RouteNames.settings);
+      },
+      fullWidth: true,
+      secondary: true,
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.settings_outlined),
+          SizedBox(width: 8),
+          Text(
+            AppStrings.profileSettingsButton,
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        icon: const Icon(Icons.settings_outlined),
-        label: const Text(
-          AppStrings.profileSettingsButton,
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        ],
       ),
     );
   }

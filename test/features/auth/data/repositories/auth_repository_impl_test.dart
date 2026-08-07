@@ -8,11 +8,16 @@ class FakeRemoteDataSource implements AuthRemoteDataSource {
   final AuthModel result;
   bool wasCalled = false;
   String? receivedNpm;
+  String? receivedPassword;
   FakeRemoteDataSource(this.result);
   @override
-  Future<AuthModel> login({required String npm}) async {
+  Future<AuthModel> login({
+    required String npm,
+    required String password,
+  }) async {
     wasCalled = true;
     receivedNpm = npm;
+    receivedPassword = password;
     return result;
   }
 }
@@ -20,28 +25,29 @@ class FakeRemoteDataSource implements AuthRemoteDataSource {
 void main() {
   group('AuthRepositoryImpl', () {
     test('login delegates to remote data source', () async {
-      final now = DateTime(2025, 1, 1);
-      final model = AuthModel(npm: '21081010001', token: 'tok', expiresAt: now);
+      final model = AuthModel(npm: '21081010001', password: 'testpass');
       final remote = FakeRemoteDataSource(model);
       final repository = AuthRepositoryImpl(remoteDataSource: remote);
-      final result = await repository.login(npm: '21081010001');
+      final result = await repository.login(
+        npm: '21081010001',
+        password: 'testpass',
+      );
       expect(result.npm, '21081010001');
-      expect(result.token, 'tok');
-      expect(result.expiresAt, now);
+      expect(result.password, 'testpass');
       expect(remote.wasCalled, isTrue);
       expect(remote.receivedNpm, '21081010001');
+      expect(remote.receivedPassword, 'testpass');
     });
 
     test('login returns AuthEntity (AuthModel is an AuthEntity)', () async {
       final remote = FakeRemoteDataSource(
-        AuthModel(
-          npm: '21081010002',
-          token: 'tok2',
-          expiresAt: DateTime(2025, 2, 2),
-        ),
+        AuthModel(npm: '21081010002', password: 'pass2'),
       );
       final repository = AuthRepositoryImpl(remoteDataSource: remote);
-      final result = await repository.login(npm: '21081010002');
+      final result = await repository.login(
+        npm: '21081010002',
+        password: 'pass2',
+      );
       expect(result, isA<AuthEntity>());
     });
   });

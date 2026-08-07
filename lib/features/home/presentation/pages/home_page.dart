@@ -19,6 +19,7 @@ import 'package:lonceng_unman_fe/features/home/presentation/widgets/hero_countdo
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/home_header.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/quick_stats.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/today_schedule.dart';
+import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, this.getHome});
@@ -44,31 +45,9 @@ class _HomePageView extends StatelessWidget {
 
   String _getDateText() {
     final now = DateTime.now();
-    final dayNames = [
-      AppStrings.daySunday,
-      AppStrings.dayMonday,
-      AppStrings.dayTuesday,
-      AppStrings.dayWednesday,
-      AppStrings.dayThursday,
-      AppStrings.dayFriday,
-      AppStrings.daySaturday,
-    ];
-    final monthNames = [
-      AppStrings.monthJanuary,
-      AppStrings.monthFebruary,
-      AppStrings.monthMarch,
-      AppStrings.monthApril,
-      AppStrings.monthMay,
-      AppStrings.monthJune,
-      AppStrings.monthJuly,
-      AppStrings.monthAugust,
-      AppStrings.monthSeptember,
-      AppStrings.monthOctober,
-      AppStrings.monthNovember,
-      AppStrings.monthDecember,
-    ];
-    final dayName = dayNames[now.weekday % 7];
-    final monthName = monthNames[now.month - 1];
+    // AppStrings.dayNames = [Mon..Sun] (index 0-6), weekday 1=Mon
+    final dayName = AppStrings.dayNames[now.weekday - 1];
+    final monthName = AppStrings.monthNames[now.month - 1];
     return '$dayName, ${now.day} $monthName ${now.year}';
   }
 
@@ -100,31 +79,11 @@ class _HomePageView extends StatelessWidget {
   }
 
   Widget _buildLoading(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    );
+    return const AppLoadingIndicator();
   }
 
   Widget _buildError(BuildContext context, String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: AppDimens.iconError,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: AppDimens.space16),
-          Text(
-            message,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-          ),
-        ],
-      ),
-    );
+    return AppErrorDisplay(message: message);
   }
 
   Widget _buildContent(BuildContext context, HomeLoaded state) {

@@ -43,7 +43,8 @@ class AuthAuthenticated extends AuthState {
 
 class AuthError extends AuthState {
   final String message;
-  const AuthError(this.message);
+  final Object? error;
+  const AuthError(this.message, {this.error});
 
   @override
   bool operator ==(Object other) =>

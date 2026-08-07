@@ -8,7 +8,10 @@ class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<AuthEntity> login({required String npm}) async {
-    return remoteDataSource.login(npm: npm);
+  Future<AuthEntity> login({
+    required String npm,
+    required String password,
+  }) async {
+    return remoteDataSource.login(npm: npm, password: password);
   }
 }

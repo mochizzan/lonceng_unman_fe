@@ -17,6 +17,7 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_day_selector.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_timeline.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
+import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
 
 class JadwalPage extends StatelessWidget {
   const JadwalPage({super.key});
@@ -94,25 +95,11 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
   }
 
   Widget _buildLoading(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    );
+    return const AppLoadingIndicator();
   }
 
   Widget _buildError(BuildContext context, String message) {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: AppDimens.iconError, color: cs.error),
-          const SizedBox(height: AppDimens.space16),
-          Text(message, style: TextStyle(color: cs.onSurface)),
-        ],
-      ),
-    );
+    return AppErrorDisplay(message: message);
   }
 
   Widget _buildContent(BuildContext context, JadwalLoaded state) {

@@ -17,8 +17,11 @@ class _FakeGetAuth implements GetAuth {
   AuthRepository get repository => throw UnimplementedError();
 
   @override
-  Future<AuthEntity> call({required String npm}) async {
-    return AuthEntity(npm: npm, token: 'fake', expiresAt: DateTime.now());
+  Future<AuthEntity> call({
+    required String npm,
+    required String password,
+  }) async {
+    return AuthEntity(npm: npm, password: password);
   }
 }
 
@@ -28,7 +31,7 @@ void main() {
   });
 
   tearDown(() {
-    Services.unregister<GetAuth>();
+    Services.clear();
   });
 
   testWidgets('LoginPage renders on /login for unauthenticated user', (

@@ -5,6 +5,7 @@
 //
 // Route Inventory (minimum 5 required):
 // - /login → LoginPage (auth flow, standalone)
+// - /data-init → DataInitializationPage (post-login pipeline, standalone)
 // - /home → HomePage (ShellRoute child, bottom nav)
 // - /jadwal → JadwalPage (ShellRoute child, bottom nav)
 // - /profile → ProfilePage (ShellRoute child, bottom nav)
@@ -23,6 +24,9 @@ import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
 // Import feature pages (public APIs only — no data/domain internals)
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/pages/data_initialization_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
@@ -47,14 +51,19 @@ String? authRedirect(
   if (status == AuthStatus.unknown) return null;
 
   final isLogin = matchedRoute == RouteNames.login;
+  final isDataInit = matchedRoute == RouteNames.dataInit;
 
   // Unauthenticated: block everything except /login.
   if (status == AuthStatus.unauthenticated) {
     return isLogin ? null : '/${RouteNames.login}';
   }
 
-  // Authenticated: redirect away from /login to home.
-  if (isLogin) return '/${RouteNames.home}';
+  // Authenticated: redirect away from /login to data-init pipeline.
+  // Data-init will route to home on completion.
+  if (isLogin) return '/${RouteNames.dataInit}';
+
+  // Authenticated and not on login or data-init: allow (data-init navigates to home).
+  if (isDataInit) return null;
 
   return null; // authenticated + not on login → allow
 }
@@ -105,6 +114,18 @@ List<RouteBase> _buildRoutes(
       path: '/${RouteNames.login}',
       builder: (context, state) =>
           LoginPage(authStatusNotifier: authStatusNotifier),
+    ),
+
+    // --- Data Initialization (standalone; post-login pipeline) ---
+    GoRoute(
+      name: RouteNames.dataInit,
+      path: '/${RouteNames.dataInit}',
+      builder: (context, state) {
+        return BlocProvider(
+          create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
+          child: const DataInitializationPage(),
+        );
+      },
     ),
 
     // --- Main app (bottom navigation shell) ---

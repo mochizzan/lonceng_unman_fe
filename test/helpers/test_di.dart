@@ -23,11 +23,10 @@ final testThemeNotifier = ThemeNotifier();
 
 class _FakeAuthRepo implements AuthRepository {
   @override
-  Future<AuthEntity> login({required String npm}) async => AuthEntity(
-    npm: npm,
-    token: 'fake_token',
-    expiresAt: DateTime.now().add(const Duration(hours: 1)),
-  );
+  Future<AuthEntity> login({
+    required String npm,
+    required String password,
+  }) async => AuthEntity(npm: npm, password: password);
 }
 
 class _FakeHomeRepo implements HomeRepository {
@@ -89,8 +88,5 @@ void registerTestDependencies() {
 /// Unregister all DI dependencies.
 /// Call in tearDown() or tearDownAll().
 void unregisterTestDependencies() {
-  Services.unregister<GetAuth>();
-  Services.unregister<GetHome>();
-  Services.unregister<GetJadwal>();
-  Services.unregister<GetProfile>();
+  Services.clear();
 }

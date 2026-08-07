@@ -29,7 +29,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     } on ServerException catch (e) {
       emit(HomeError(e.message));
     } catch (e) {
-      emit(const HomeError('Gagal memuat data beranda'));
+      emit(HomeError(e.toString()));
     }
   }
 
@@ -45,7 +45,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     } on ServerException catch (e) {
       emit(HomeError(e.message));
     } catch (e) {
-      emit(const HomeError('Gagal memuat data beranda'));
+      emit(HomeError(e.toString()));
     }
   }
 }

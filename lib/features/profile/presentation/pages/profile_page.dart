@@ -23,6 +23,7 @@ import 'package:lonceng_unman_fe/features/profile/presentation/widgets/academic_
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_action_button.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_bio_section.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_header_card.dart';
+import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key, this.getProfile});
@@ -74,25 +75,11 @@ class _ProfilePageView extends StatelessWidget {
   }
 
   Widget _buildLoading(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    );
+    return const AppLoadingIndicator();
   }
 
   Widget _buildError(BuildContext context, String message) {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: AppDimens.iconError, color: cs.error),
-          const SizedBox(height: AppDimens.space16),
-          Text(message, style: TextStyle(color: cs.onSurface)),
-        ],
-      ),
-    );
+    return AppErrorDisplay(message: message);
   }
 
   Widget _buildContent(BuildContext context, ProfileLoaded state) {

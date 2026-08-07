@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -77,11 +78,6 @@ class MockNotificationScheduler implements NotificationScheduler {
 
 // Minimal mock notification service
 class MockNotificationService implements NotificationService {
-  bool enabled = true;
-
-  @override
-  Future<bool> areNotificationsEnabled() async => enabled;
-
   @override
   Future<void> cancel(int id) async {}
 
@@ -99,9 +95,13 @@ class MockNotificationService implements NotificationService {
     required int id,
     required String title,
     required String body,
+    required NotificationChannel channel,
     required tz.TZDateTime scheduledDate,
     DateTimeComponents? matchDateTimeComponents,
   }) async {}
+
+  @override
+  Future<bool> requestPermission() async => true;
 }
 
 void main() {

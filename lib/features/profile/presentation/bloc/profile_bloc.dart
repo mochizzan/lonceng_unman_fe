@@ -31,7 +31,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } on ServerException catch (e) {
       emit(ProfileError(e.message));
     } catch (e) {
-      emit(const ProfileError('Gagal memuat data profil'));
+      emit(ProfileError(e.toString()));
     }
   }
 
@@ -47,7 +47,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } on ServerException catch (e) {
       emit(ProfileError(e.message));
     } catch (e) {
-      emit(const ProfileError('Gagal memuat data profil'));
+      emit(ProfileError(e.toString()));
     }
   }
 }

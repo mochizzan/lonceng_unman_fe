@@ -10,7 +10,7 @@ sealed class AppException implements Exception {
   final String? code;
 
   @override
-  String toString() => 'AppException($message, code: $code)';
+  String toString() => '$runtimeType($message)';
 }
 
 /// Network-related errors (no internet, timeout, DNS failure).
@@ -29,11 +29,6 @@ final class ServerException extends AppException {
   final int? statusCode;
 }
 
-/// Cache/storage related errors.
-final class CacheException extends AppException {
-  const CacheException(super.message, {super.code = 'CACHE_ERROR'});
-}
-
 /// Authentication errors (invalid credentials, expired token).
 final class AuthException extends AppException {
   const AuthException(super.message, {super.code = 'AUTH_ERROR'});
@@ -42,12 +37,4 @@ final class AuthException extends AppException {
 /// Validation errors (invalid input, missing required fields).
 final class ValidationException extends AppException {
   const ValidationException(super.message, {super.code = 'VALIDATION_ERROR'});
-}
-
-/// Notification scheduling or display errors.
-final class NotificationException extends AppException {
-  const NotificationException(
-    super.message, {
-    super.code = 'NOTIFICATION_ERROR',
-  });
 }

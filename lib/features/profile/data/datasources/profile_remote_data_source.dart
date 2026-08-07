@@ -68,7 +68,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       avatarUrl: '',
       npm: krsData.mahasiswa.npm,
       studyProgram: krsData.mahasiswa.programStudi,
-      semester: 'Semester ${krsData.periode.semester}',
+      semester: krsData.periode.semester,
       gpa: gpa,
       sksTaken: cumulativeSks,
       sksTotal: 120, // Standard graduation requirement

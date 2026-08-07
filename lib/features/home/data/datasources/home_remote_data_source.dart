@@ -79,7 +79,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       sksTaken: krsData.totalSks,
       sksTotal: 24, // Standard max SKS per semester
       todayClassCount: todaySchedule.length,
-      semester: 'Semester ${krsData.periode.semester}',
+      semester: krsData.periode.semester,
       studyProgram: krsData.mahasiswa.programStudi,
       gpa: gpa,
     );

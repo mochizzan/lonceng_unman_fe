@@ -113,7 +113,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(
-          top: AppDimens.space24,
+          top: AppDimens.space40,
           bottom: AppDimens.space32,
         ),
         child: Column(
@@ -129,7 +129,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
                 onDaySelected: _handleDaySelected,
               ),
             ),
-            const SizedBox(height: AppDimens.space24),
+            const SizedBox(height: AppDimens.space16),
             // Timeline list — schedule cards
             JadwalTimeline(items: items, selectedDay: _selectedDay),
           ],

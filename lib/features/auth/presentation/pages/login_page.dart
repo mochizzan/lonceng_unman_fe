@@ -132,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
           AppStrings.loginGreeting,
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
             color: cs.onSurface,
-            fontSize: responsiveFontSize(context, AppDimens.textHero - 10),
+            fontSize: responsiveFontSize(context, AppDimens.textDisplay),
           ),
           textAlign: TextAlign.center,
         ),
@@ -180,7 +180,7 @@ class _LoginCard extends StatelessWidget {
 
   /// Reserved height for the submit action area so swapping
   /// AppButton ↔ CircularProgressIndicator does not shift layout.
-  /// Matches AppButton vertical padding (16+16) + typical label line.
+  /// Matches AppButton vertical padding + typical label line.
   static const double _submitAreaHeight = AppDimens.space48 + AppDimens.space8;
 
   /// Reserved height for the inline error slot so showing/hiding
@@ -196,7 +196,8 @@ class _LoginCard extends StatelessWidget {
       padding: EdgeInsets.all(sp(context, AppDimens.space28)),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(sp(context, AppDimens.cardHeroRadius)),
+        borderRadius:
+            BorderRadius.circular(sp(context, AppDimens.cardHeroRadius)),
         boxShadow: AppShadows.cardResponsive(context),
       ),
       child: Column(
@@ -287,7 +288,8 @@ class _LoginCard extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: cs.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
-                          fontSize: responsiveFontSize(context, AppDimens.textMD),
+                          fontSize:
+                              responsiveFontSize(context, AppDimens.textMD),
                         ),
                       ),
                       SizedBox(width: sp(context, AppDimens.space8)),

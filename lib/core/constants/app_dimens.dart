@@ -32,6 +32,7 @@ abstract final class AppDimens {
   static const double text3XL = 19;
   static const double text4XL = 20;
   static const double text5XL = 22;
+  static const double textDisplay = 34;
   static const double textHero = 44;
 
   // ─── Border Radius ────────────────────────────────────

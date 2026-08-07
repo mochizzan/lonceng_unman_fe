@@ -34,12 +34,15 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
     required String npm,
     required String password,
   }) async {
-    final response = await apiClient.post(
+    // Trigger extraction on the server side only.
+    // The actual KRS data is fetched later via getKrsData() which calls
+    // /api/v1/lms/krs/data and saves the real data to cache.
+    // NOTE: Do NOT save the extract response here — it only contains
+    // a success message, not the actual KRS data.
+    await apiClient.post(
       '/api/v1/lms/krs/extract',
       body: lmsCredentialBody(npm: npm, password: password),
     );
-    // Save extracted KRS data to cache after successful extraction.
-    await academicCacheService.saveKrsData(npm: npm, data: response);
   }
 
   @override

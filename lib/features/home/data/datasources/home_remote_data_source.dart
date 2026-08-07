@@ -46,11 +46,13 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
     // Read KHS data from cache (optional — may not be available yet)
     double gpa = 0.0;
+    String? khsSemester;
     try {
       final khsJson = await academicCacheService.loadKhsData(npm: npm);
       if (khsJson != null) {
         final khsData = KhsModel.fromJson(khsJson).khs;
         gpa = khsData.rekapitulasi.ipk;
+        khsSemester = khsData.periode.semester;
       }
     } catch (_) {
       // KHS may not be available yet if data-init hasn't completed.
@@ -79,7 +81,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       sksTaken: krsData.totalSks,
       sksTotal: 24, // Standard max SKS per semester
       todayClassCount: todaySchedule.length,
-      semester: krsData.periode.semester,
+      semester: khsSemester ?? krsData.periode.semester,
       studyProgram: krsData.mahasiswa.programStudi,
       gpa: gpa,
     );

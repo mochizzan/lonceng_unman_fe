@@ -371,7 +371,7 @@ class _LoginCard extends StatelessWidget {
               },
             ),
           ),
-          SizedBox(height: sp(context, AppDimens.space16)),
+          SizedBox(height: sp(context, AppDimens.space8)),
 
           // Submit Button — fixed-height area keeps card stable while loading
           SizedBox(
@@ -410,29 +410,6 @@ class _LoginCard extends StatelessWidget {
                 );
               },
             ),
-          ),
-
-          SizedBox(height: sp(context, AppDimens.space16)),
-
-          // Helper text
-          Text.rich(
-            TextSpan(
-              text: AppStrings.loginNoAccount,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontSize: responsiveFontSize(context, AppDimens.textSM),
-              ),
-              children: [
-                TextSpan(
-                  text: AppStrings.loginContactAdmin,
-                  style: TextStyle(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

@@ -37,28 +37,32 @@ class HomeHeader extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Date + greeting
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dateText,
-                  style: TextStyle(
-                    fontSize: AppDimens.textBase,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+            // Date + greeting (Expanded to prevent overflow)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateText,
+                    style: TextStyle(
+                      fontSize: AppDimens.textBase,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppDimens.space2),
-                Text(
-                  'Halo, $userName 👋',
-                  style: TextStyle(
-                    fontSize: AppDimens.text5XL,
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface,
+                  const SizedBox(height: AppDimens.space2),
+                  Text(
+                    'Halo, $userName 👋',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: AppDimens.text5XL,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             // Notification + avatar
             Row(

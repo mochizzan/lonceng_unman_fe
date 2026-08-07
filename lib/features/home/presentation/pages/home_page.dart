@@ -118,14 +118,14 @@ class _HomePageViewState extends State<_HomePageView> {
           child: HomeHeader(
             dateText: '',
             userName: '…',
-            avatarUrl: null,
+            avatarUrl: '',
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(
             horizontal: AppDimens.screenPaddingHorizontal,
           ).copyWith(bottom: AppDimens.space80),
-          sliver: const HomeSkeletonSliver(),
+          sliver: HomeSkeletonSliver(),
         ),
       ],
     );
@@ -156,8 +156,6 @@ class _HomePageViewState extends State<_HomePageView> {
               avatarUrl: data.avatarUrl,
             ),
           ),
-          // While background init still runs, keep real header but skeleton
-          // body cards until refresh lands (optional soft mode).
           SliverPadding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimens.screenPaddingHorizontal,

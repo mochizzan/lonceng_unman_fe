@@ -21,8 +21,11 @@ class PeriodeModel extends PeriodeEntity {
   const PeriodeModel({required super.tahunAjaran, required super.semester});
 
   factory PeriodeModel.fromJson(Map<String, dynamic> json) {
+    final ta = json['tahun_ajaran'];
     return PeriodeModel(
-      tahunAjaran: json['tahun_ajaran'] as String? ?? '',
+      tahunAjaran: ta is Map<String, dynamic>
+          ? '${ta['awal']}/${ta['akhir']}'
+          : ta as String? ?? '',
       semester: json['semester'] as String? ?? '',
     );
   }
@@ -36,19 +39,18 @@ class MataKuliahKrsModel extends MataKuliahKrsEntity {
     required super.hari,
     required super.jamMulai,
     required super.jamSelesai,
-    required super.ruangan,
     required super.dosen,
   });
 
   factory MataKuliahKrsModel.fromJson(Map<String, dynamic> json) {
+    final jadwal = json['jadwal'] as Map<String, dynamic>? ?? {};
     return MataKuliahKrsModel(
       kode: json['kode'] as String? ?? '',
       nama: json['nama'] as String? ?? '',
       sks: json['sks'] as int? ?? 0,
-      hari: json['hari'] as String? ?? '',
-      jamMulai: json['jam_mulai'] as String? ?? '',
-      jamSelesai: json['jam_selesai'] as String? ?? '',
-      ruangan: json['ruangan'] as String? ?? '',
+      hari: jadwal['hari'] as String? ?? '',
+      jamMulai: jadwal['waktu_mulai'] as String? ?? '',
+      jamSelesai: jadwal['waktu_selesai'] as String? ?? '',
       dosen: json['dosen'] as String? ?? '',
     );
   }

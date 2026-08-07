@@ -25,6 +25,8 @@ abstract final class AppStrings {
   static const String homeNextClassIn = 'Kelas berikutnya dalam';
   static const String homeLecturerLabel = 'Dosen Pengampu';
   static const String homeViewMaterials = 'Lihat Materi Kelas';
+  static const String homeEmptyClassTitle = 'Tidak ada kelas hari ini';
+  static const String homeEmptyClassSubtitle = 'Nikmati hari Anda';
   static const String homeScheduleTitle = 'Jadwal Hari Ini';
   static const String homeViewAll = 'Lihat Semua';
   static const String homeNoSchedule = 'Tidak ada jadwal hari ini';

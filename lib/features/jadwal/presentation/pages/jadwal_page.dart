@@ -95,7 +95,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
   }
 
   Widget _buildLoading(BuildContext context) {
-    return const AppLoadingIndicator();
+    return const _JadwalSkeleton();
   }
 
   Widget _buildError(BuildContext context, String message) {
@@ -132,6 +132,116 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
             JadwalTimeline(items: items),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton placeholder matching JadwalPage layout
+// ---------------------------------------------------------------------------
+
+class _JadwalSkeleton extends StatelessWidget {
+  const _JadwalSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final shimmerColor = cs.surfaceContainerHighest.withValues(alpha: 0.7);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(
+        top: AppDimens.space24,
+        bottom: AppDimens.space32,
+      ),
+      child: Column(
+        children: [
+          // Day selector pill skeleton — row of rounded pills
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
+            child: SizedBox(
+              height: 56,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 7,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.space20,
+                  vertical: AppDimens.space8,
+                ),
+                separatorBuilder: (_, _) =>
+                    const SizedBox(width: AppDimens.space10),
+                itemBuilder: (_, _) => Container(
+                  width: 48,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
+                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimens.space24),
+          // Timeline skeleton — 4 items: dot + line + card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
+            child: Column(
+              children: List.generate(4, (index) {
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Dot column
+                      SizedBox(
+                        width: 24,
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: shimmerColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            if (index < 3)
+                              Expanded(
+                                child: Container(
+                                  width: 2,
+                                  color: cs.outlineVariant.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppDimens.space16),
+                      // Card skeleton
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppDimens.space16,
+                          ),
+                          child: Container(
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: shimmerColor,
+                              borderRadius: BorderRadius.circular(
+                                AppDimens.radiusMD,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }

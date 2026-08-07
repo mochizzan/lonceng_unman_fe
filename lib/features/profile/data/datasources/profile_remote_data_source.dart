@@ -1,7 +1,10 @@
 // profile - Abstract data source (interface)
 //
 // Defines the contract for fetching profile screen data from a remote source.
-// Follows the same pattern as jadwal's [JadwalRemoteDataSource].
+
+import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
+import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
 
 abstract class ProfileRemoteDataSource {
@@ -9,28 +12,83 @@ abstract class ProfileRemoteDataSource {
   Future<ProfileModel> getProfile();
 }
 
-/// Stub implementation — returns mock data synchronously.
-/// Replace with real HTTP client when backend is available.
-class StubProfileRemoteDataSource implements ProfileRemoteDataSource {
+/// Real implementation that fetches profile data from KRS + KHS APIs.
+///
+/// KRS provides student identity and current schedule.
+/// KHS provides GPA and cumulative SKS.
+class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
+  final KrsRemoteDataSource krsDataSource;
+  final KhsRemoteDataSource khsDataSource;
+  final CredentialCache credentialCache;
+
+  const ProfileRemoteDataSourceImpl({
+    required this.krsDataSource,
+    required this.khsDataSource,
+    required this.credentialCache,
+  });
+
   @override
   Future<ProfileModel> getProfile() async {
+    final creds = await credentialCache.load();
+    final npm = creds?['npm'];
+    if (npm == null || npm.isEmpty) {
+      throw Exception('NPM not found in credentials. Please log in again.');
+    }
+
+    // Fetch KRS data (student info, semester, schedule)
+    final krsResponse = await krsDataSource.getKrsData(npm: npm);
+    final krsData = krsResponse.krs;
+
+    // Fetch KHS data for GPA and cumulative SKS
+    double gpa = 0.0;
+    int cumulativeSks = 0;
+    try {
+      final khsResponse = await khsDataSource.getKhsData(
+        npm: npm,
+        tahunAjaran: krsData.periode.tahunAjaran,
+        semester: krsData.periode.semester,
+      );
+      gpa = khsResponse.khs.rekapitulasi.ipk;
+      cumulativeSks = khsResponse.khs.rekapitulasi.totalSks;
+    } catch (_) {
+      // KHS may not be available yet if data-init hasn't completed.
+    }
+
+    // Count today's classes
+    final now = DateTime.now();
+    final todayDayName = _weekdayToDayName(now.weekday);
+    final todayClassCount = krsData.mataKuliah
+        .where((mk) => mk.hari == todayDayName)
+        .length;
+
     return ProfileModel(
-      userName: 'Aditya Pratama',
-      avatarUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCnBIL5cJ77Nfm9Q8slewKAS_21_yT3yb1_sUdsHuAfpDTaur8eBGDEL9DXqSaJt9Xj3CpCwww0JaAiZ3StVnLWxDSopEerEkB0hKth_cn2VLnpolxeCKSad7lscm0kjKIVE4Bx8f13WERDCrGYRL-zyPjkPsOgHJ3dKi1o5ZZ6YKu8HwbtwkJcjIEjullt5LtSbQVf3Zf2jw4yx4qZwUxhTc-kKCG-ZHFj5hZlZRtFg56mASnX0kLOPA',
-      npm: '20210140001',
-      studyProgram: 'Teknik Informatika',
-      semester: 'Semester 5',
-      gpa: 3.85,
-      sksTaken: 104,
-      sksTotal: 120,
-      todayClassCount: 3,
-      bio:
-          'Mahasiswa Teknik Informatika yang antusias dengan pengembangan web dan desain UI/UX. '
-          'Berpengalaman dalam mengerjakan proyek perkuliahan berbasis JavaScript dan Figma.',
+      userName: krsData.mahasiswa.nama,
+      avatarUrl: '',
+      npm: krsData.mahasiswa.npm,
+      studyProgram: krsData.mahasiswa.programStudi,
+      semester: 'Semester ${krsData.periode.semester}',
+      gpa: gpa,
+      sksTaken: cumulativeSks,
+      sksTotal: 120, // Standard graduation requirement
+      todayClassCount: todayClassCount,
+      bio: null,
       reminderEnabled: true,
       darkModeEnabled: false,
-      lastUpdated: DateTime(2024, 8, 4),
+      lastUpdated: DateTime.now(),
     );
   }
+}
+
+/// Converts a Dart weekday int (1=Monday..7=Sunday) to Indonesian day name.
+String _weekdayToDayName(int weekday) {
+  const names = {
+    1: 'Senin',
+    2: 'Selasa',
+    3: 'Rabu',
+    4: 'Kamis',
+    5: 'Jumat',
+    6: 'Sabtu',
+    7: 'Minggu',
+  };
+  return names[weekday] ?? '';
 }

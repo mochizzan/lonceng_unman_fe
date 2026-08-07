@@ -48,7 +48,7 @@ class HomeEntity {
   const HomeEntity({
     required this.userName,
     required this.avatarUrl,
-    required this.nextClass,
+    this.nextClass,
     required this.scheduleItems,
     required this.sksTaken,
     required this.sksTotal,
@@ -60,7 +60,7 @@ class HomeEntity {
 
   final String userName;
   final String avatarUrl;
-  final NextClassEntity nextClass;
+  final NextClassEntity? nextClass;
   final List<ScheduleItemEntity> scheduleItems;
   final int sksTaken;
   final int sksTotal;

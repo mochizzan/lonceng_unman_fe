@@ -1,57 +1,144 @@
 // jadwal - Abstract data source (interface)
 //
 // Defines the contract for fetching weekly schedule data from a remote source.
-// Follows the same pattern as home's [HomeRemoteDataSource].
 
+import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/models/jadwal_model.dart';
+import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/krs/domain/entities/krs_entity.dart';
 
 abstract class JadwalRemoteDataSource {
   /// Fetches weekly schedule data for the authenticated user.
   Future<JadwalModel> getJadwal();
 }
 
-/// Stub implementation — returns mock data synchronously.
-/// Replace with real HTTP client when backend is available.
-class StubJadwalRemoteDataSource implements JadwalRemoteDataSource {
+/// Real implementation that fetches schedule from the KRS API.
+class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
+  final KrsRemoteDataSource krsDataSource;
+  final CredentialCache credentialCache;
+
+  const JadwalRemoteDataSourceImpl({
+    required this.krsDataSource,
+    required this.credentialCache,
+  });
+
   @override
   Future<JadwalModel> getJadwal() async {
+    final creds = await credentialCache.load();
+    final npm = creds?['npm'];
+    if (npm == null || npm.isEmpty) {
+      throw Exception('NPM not found in credentials. Please log in again.');
+    }
+
+    final krsResponse = await krsDataSource.getKrsData(npm: npm);
+    final mataKuliah = krsResponse.krs.mataKuliah;
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final todayDayName = _weekdayToDayName(now.weekday);
+
+    // Determine which days have classes
+    const allDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+    final daysWithClasses = <String>{};
+    for (final mk in mataKuliah) {
+      if (allDays.contains(mk.hari)) {
+        daysWithClasses.add(mk.hari);
+      }
+    }
+
+    final orderedDays = allDays
+        .where((d) => daysWithClasses.contains(d))
+        .toList();
+
+    // If today has classes, select it; otherwise pick the first available day
+    final selectedDay = orderedDays.contains(todayDayName)
+        ? todayDayName
+        : (orderedDays.isNotEmpty ? orderedDays.first : todayDayName);
+
+    // Build schedule items for the selected day
+    final selectedDate = _dateForDay(selectedDay, today);
+    final scheduleItems =
+        mataKuliah
+            .where((mk) => mk.hari == selectedDay)
+            .map((mk) => _toScheduleItem(mk, selectedDate, now))
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return JadwalModel(
-      selectedDay: 'Senin',
-      days: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
-      scheduleItems: [
-        ScheduleItemModel(
-          courseName: 'Interaksi Manusia & Komputer',
-          room: 'R. 301',
-          startTime: today.add(const Duration(hours: 8)),
-          endTime: today.add(const Duration(hours: 10, minutes: 30)),
-          lecturer: 'Dr. Ir. Budi Santoso, M.Kom.',
-          sks: '3 SKS',
-          status: ScheduleStatus.ongoing,
-        ),
-        ScheduleItemModel(
-          courseName: 'Algoritma & Pemrograman II',
-          room: 'Lab Komputer 2',
-          startTime: today.add(const Duration(hours: 11)),
-          endTime: today.add(const Duration(hours: 13, minutes: 30)),
-          lecturer: 'Dra. Sari Wulandari, M.Sc.',
-          sks: '3 SKS',
-          status: ScheduleStatus.upcoming,
-        ),
-        ScheduleItemModel(
-          courseName: 'Etika Profesi & Hukum',
-          room: 'R. 405',
-          startTime: today.add(const Duration(hours: 14)),
-          endTime: today.add(const Duration(hours: 15, minutes: 40)),
-          lecturer: 'Prof. Dr. Ahmad Rizal, SH., MH.',
-          sks: '2 SKS',
-          status: ScheduleStatus.upcoming,
-        ),
-      ],
+      selectedDay: selectedDay,
+      days: orderedDays.isNotEmpty ? orderedDays : allDays,
+      scheduleItems: scheduleItems,
     );
   }
+}
+
+// ── Shared helpers ──────────────────────────────────────────────────────
+
+/// Converts a Dart weekday int to Indonesian day name.
+String _weekdayToDayName(int weekday) {
+  const names = {
+    1: 'Senin',
+    2: 'Selasa',
+    3: 'Rabu',
+    4: 'Kamis',
+    5: 'Jumat',
+    6: 'Sabtu',
+    7: 'Minggu',
+  };
+  return names[weekday] ?? '';
+}
+
+/// Returns the date for the given Indonesian [dayName] in the current week.
+/// If [dayName] is today, returns [today].
+DateTime _dateForDay(String dayName, DateTime today) {
+  const dayToWeekday = {
+    'Senin': 1,
+    'Selasa': 2,
+    'Rabu': 3,
+    'Kamis': 4,
+    'Jumat': 5,
+    'Sabtu': 6,
+    'Minggu': 7,
+  };
+  final targetWeekday = dayToWeekday[dayName] ?? 1;
+  final daysUntil = (targetWeekday - today.weekday) % 7;
+  return today.add(Duration(days: daysUntil));
+}
+
+/// Parses a "HH:MM" time string into a [DateTime] on the given [date].
+DateTime _parseTime(String timeStr, DateTime date) {
+  if (timeStr.isEmpty) return date;
+  final parts = timeStr.split(':');
+  final hour = int.tryParse(parts[0]) ?? 0;
+  final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+  return DateTime(date.year, date.month, date.day, hour, minute);
+}
+
+/// Converts a KRS [MataKuliahKrsEntity] to a [ScheduleItemModel].
+ScheduleItemModel _toScheduleItem(
+  MataKuliahKrsEntity mk,
+  DateTime date,
+  DateTime now,
+) {
+  final startTime = _parseTime(mk.jamMulai, date);
+  final endTime = _parseTime(mk.jamSelesai, date);
+
+  return ScheduleItemModel(
+    courseName: mk.nama,
+    room: '',
+    startTime: startTime,
+    endTime: endTime,
+    lecturer: mk.dosen.isNotEmpty ? mk.dosen : null,
+    sks: mk.sks > 0 ? '${mk.sks} SKS' : null,
+    status: _determineStatus(startTime, endTime, now),
+  );
+}
+
+/// Determines schedule status based on current time.
+ScheduleStatus _determineStatus(DateTime start, DateTime end, DateTime now) {
+  if (now.isAfter(start) && now.isBefore(end)) return ScheduleStatus.ongoing;
+  if (now.isAfter(end)) return ScheduleStatus.completed;
+  return ScheduleStatus.upcoming;
 }

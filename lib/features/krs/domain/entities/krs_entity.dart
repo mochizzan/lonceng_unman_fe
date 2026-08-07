@@ -55,7 +55,6 @@ class MataKuliahKrsEntity {
   final String hari;
   final String jamMulai;
   final String jamSelesai;
-  final String ruangan;
   final String dosen;
 
   const MataKuliahKrsEntity({
@@ -65,7 +64,6 @@ class MataKuliahKrsEntity {
     required this.hari,
     required this.jamMulai,
     required this.jamSelesai,
-    required this.ruangan,
     required this.dosen,
   });
 
@@ -80,12 +78,11 @@ class MataKuliahKrsEntity {
           hari == other.hari &&
           jamMulai == other.jamMulai &&
           jamSelesai == other.jamSelesai &&
-          ruangan == other.ruangan &&
           dosen == other.dosen;
 
   @override
   int get hashCode =>
-      Object.hash(kode, nama, sks, hari, jamMulai, jamSelesai, ruangan, dosen);
+      Object.hash(kode, nama, sks, hari, jamMulai, jamSelesai, dosen);
 }
 
 class KrsDataEntity {

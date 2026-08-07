@@ -8,7 +8,6 @@ class MataKuliahKhsModel extends MataKuliahKhsEntity {
     required super.nama,
     required super.sks,
     required super.nilai,
-    required super.bobot,
     required super.mutu,
   });
 
@@ -18,7 +17,6 @@ class MataKuliahKhsModel extends MataKuliahKhsEntity {
       nama: json['nama'] as String? ?? '',
       sks: json['sks'] as int? ?? 0,
       nilai: json['nilai'] as String? ?? '',
-      bobot: (json['bobot'] as num?)?.toDouble() ?? 0.0,
       mutu: json['mutu'] as int? ?? 0,
     );
   }
@@ -91,8 +89,11 @@ class KhsSemesterModel extends KhsSemesterEntity {
   });
 
   factory KhsSemesterModel.fromJson(Map<String, dynamic> json) {
+    final ta = json['tahun_ajaran'];
     return KhsSemesterModel(
-      tahunAjaran: json['tahun_ajaran'] as String? ?? '',
+      tahunAjaran: ta is Map<String, dynamic>
+          ? '${ta['awal']}/${ta['akhir']}'
+          : ta as String? ?? '',
       semester: json['semester'] as String? ?? '',
       sks: json['sks'] as int? ?? 0,
     );

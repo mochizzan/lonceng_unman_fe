@@ -177,7 +177,8 @@ Future<void> main() async {
       Services.register<ApiClient>(apiClient);
 
       // ── Credential Cache ──
-      Services.register<CredentialCache>(CredentialCache());
+      final credentialCache = CredentialCache();
+      Services.register<CredentialCache>(credentialCache);
 
       // ── Auth (real HTTP) ──
       final authDataSource = AuthRemoteDataSourceImpl(apiClient: apiClient);
@@ -212,25 +213,40 @@ Future<void> main() async {
         ),
       );
 
-      // ── Home (stub — another agent) ──
+      // ── Home (real KRS/KHS data) ──
       Services.register<GetHome>(
         GetHome(
-          HomeRepositoryImpl(remoteDataSource: StubHomeRemoteDataSource()),
+          HomeRepositoryImpl(
+            remoteDataSource: HomeRemoteDataSourceImpl(
+              krsDataSource: krsDataSource,
+              khsDataSource: khsDataSource,
+              credentialCache: credentialCache,
+            ),
+          ),
         ),
       );
 
-      // ── Jadwal (stub — another agent) ──
+      // ── Jadwal (real KRS data) ──
       Services.register<GetJadwal>(
         GetJadwal(
-          JadwalRepositoryImpl(remoteDataSource: StubJadwalRemoteDataSource()),
+          JadwalRepositoryImpl(
+            remoteDataSource: JadwalRemoteDataSourceImpl(
+              krsDataSource: krsDataSource,
+              credentialCache: credentialCache,
+            ),
+          ),
         ),
       );
 
-      // ── Profile (stub — another agent) ──
+      // ── Profile (real KRS/KHS data) ──
       Services.register<GetProfile>(
         GetProfile(
           ProfileRepositoryImpl(
-            remoteDataSource: StubProfileRemoteDataSource(),
+            remoteDataSource: ProfileRemoteDataSourceImpl(
+              krsDataSource: krsDataSource,
+              khsDataSource: khsDataSource,
+              credentialCache: credentialCache,
+            ),
           ),
         ),
       );

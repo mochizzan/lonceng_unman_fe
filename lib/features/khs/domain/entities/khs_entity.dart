@@ -12,7 +12,6 @@ class MataKuliahKhsEntity {
   final String nama;
   final int sks;
   final String nilai;
-  final double bobot;
   final int mutu;
 
   const MataKuliahKhsEntity({
@@ -20,7 +19,6 @@ class MataKuliahKhsEntity {
     required this.nama,
     required this.sks,
     required this.nilai,
-    required this.bobot,
     required this.mutu,
   });
 
@@ -33,11 +31,10 @@ class MataKuliahKhsEntity {
           nama == other.nama &&
           sks == other.sks &&
           nilai == other.nilai &&
-          bobot == other.bobot &&
           mutu == other.mutu;
 
   @override
-  int get hashCode => Object.hash(kode, nama, sks, nilai, bobot, mutu);
+  int get hashCode => Object.hash(kode, nama, sks, nilai, mutu);
 }
 
 class RekapitulasiEntity {

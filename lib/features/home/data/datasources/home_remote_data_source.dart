@@ -1,67 +1,204 @@
 // home - Abstract data source (interface)
 //
 // Defines the contract for fetching home screen data from a remote source.
+import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
+import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/krs/domain/entities/krs_entity.dart';
 
 abstract class HomeRemoteDataSource {
   /// Fetches home screen data for the authenticated user.
   Future<HomeModel> getHomeData();
 }
 
-/// Stub implementation — returns mock data synchronously.
-/// Replace with real HTTP client when backend is available.
-class StubHomeRemoteDataSource implements HomeRemoteDataSource {
+/// Real implementation that fetches data from KRS + KHS APIs.
+///
+/// The KRS endpoint provides schedule, semester, and student info.
+/// The KHS endpoint provides GPA and cumulative SKS.
+class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
+  final KrsRemoteDataSource krsDataSource;
+  final KhsRemoteDataSource khsDataSource;
+  final CredentialCache credentialCache;
+
+  const HomeRemoteDataSourceImpl({
+    required this.krsDataSource,
+    required this.khsDataSource,
+    required this.credentialCache,
+  });
+
   @override
   Future<HomeModel> getHomeData() async {
+    final creds = await credentialCache.load();
+    final npm = creds?['npm'];
+    if (npm == null || npm.isEmpty) {
+      throw Exception('NPM not found in credentials. Please log in again.');
+    }
+
+    // Fetch KRS data (schedule, student info, semester)
+    final krsResponse = await krsDataSource.getKrsData(npm: npm);
+    final krsData = krsResponse.krs;
+
+    // Fetch KHS data for GPA (requires semester info from KRS)
+    double gpa = 0.0;
+    try {
+      final khsResponse = await khsDataSource.getKhsData(
+        npm: npm,
+        tahunAjaran: krsData.periode.tahunAjaran,
+        semester: krsData.periode.semester,
+      );
+      gpa = khsResponse.khs.rekapitulasi.ipk;
+    } catch (_) {
+      // KHS may not be available yet if data-init hasn't completed.
+    }
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final baseDate = today.add(const Duration(days: 3));
+    final todayDayName = _weekdayToDayName(now.weekday);
+
+    // Build today's schedule from KRS mata_kuliah
+    final todaySchedule =
+        krsData.mataKuliah
+            .where((mk) => mk.hari == todayDayName)
+            .map((mk) => _toScheduleItem(mk, today, now))
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    // Find next upcoming/ongoing class
+    final nextClass = _findNextClass(krsData.mataKuliah, today, now);
 
     return HomeModel(
-      userName: 'Aditya',
-      avatarUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCnBIL5cJ77Nfm9Q8slewKAS_21_yT3yb1_sUdsHuAfpDTaur8eBGDEL9DXqSaJt9Xj3CpCwww0JaAiZ3StVnLWxDSopEerEkB0hKth_cn2VLnpolxeCKSad7lscm0kjKIVE4Bx8f13WERDCrGYRL-zyPjkPsOgHJ3dKi1o5ZZ6YKu8HwbtwkJcjIEjullt5LtSbQVf3Zf2jw4yx4qZwUxhTc-kKCG-ZHFj5hZlZRtFg56mASnX0kLOPA',
-      nextClass: NextClassModel(
-        courseName: 'Sistem Basis Data',
-        startTime: baseDate.add(const Duration(hours: 9, minutes: 15)),
-        endTime: baseDate.add(const Duration(hours: 10, minutes: 45)),
-        sks: '3 SKS',
-        lecturer: 'Dr. Aris Sudarman',
-        location: 'Lab Komputer 3',
-      ),
-      scheduleItems: [
-        ScheduleItemModel(
-          courseName: 'Algoritma Lanjut',
-          room: 'R. 402',
-          startTime: baseDate.add(const Duration(hours: 8)),
-          endTime: baseDate.add(const Duration(hours: 10, minutes: 30)),
-          lecturer: 'Dr. Aris Sudarman',
-          group: 'Kelas A',
-          status: ScheduleStatus.ongoing,
-        ),
-        ScheduleItemModel(
-          courseName: 'Sistem Basis Data',
-          room: 'Lab Komp 3',
-          startTime: baseDate.add(const Duration(hours: 11)),
-          endTime: baseDate.add(const Duration(hours: 12, minutes: 30)),
-          status: ScheduleStatus.upcoming,
-        ),
-        ScheduleItemModel(
-          courseName: 'Kewirausahaan',
-          room: 'R. Teater 1',
-          startTime: baseDate.add(const Duration(hours: 14)),
-          endTime: baseDate.add(const Duration(hours: 15, minutes: 30)),
-          status: ScheduleStatus.upcoming,
-        ),
-      ],
-      sksTaken: 22,
-      sksTotal: 24,
-      todayClassCount: 3,
-      semester: 'Semester 5',
-      studyProgram: 'Teknik Informatika',
-      gpa: 3.85,
+      userName: krsData.mahasiswa.nama,
+      avatarUrl: '',
+      nextClass: nextClass,
+      scheduleItems: todaySchedule,
+      sksTaken: krsData.totalSks,
+      sksTotal: 24, // Standard max SKS per semester
+      todayClassCount: todaySchedule.length,
+      semester: 'Semester ${krsData.periode.semester}',
+      studyProgram: krsData.mahasiswa.programStudi,
+      gpa: gpa,
     );
   }
+
+  /// Finds the next upcoming/ongoing class across today and upcoming days.
+  NextClassModel _findNextClass(
+    List<MataKuliahKrsEntity> mataKuliah,
+    DateTime today,
+    DateTime now,
+  ) {
+    // Check today first
+    final todayDayName = _weekdayToDayName(now.weekday);
+    final todayItems =
+        mataKuliah
+            .where((mk) => mk.hari == todayDayName)
+            .map((mk) => _toScheduleItem(mk, today, now))
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    for (final item in todayItems) {
+      if (item.status == ScheduleStatus.upcoming ||
+          item.status == ScheduleStatus.ongoing) {
+        return NextClassModel(
+          courseName: item.courseName,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          sks: item.sks ?? '',
+          lecturer: item.lecturer,
+          location: item.room,
+        );
+      }
+    }
+
+    // No more classes today — find the next day with classes
+    const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+    for (int offset = 1; offset <= 7; offset++) {
+      final futureDate = today.add(Duration(days: offset));
+      final futureDayName = _weekdayToDayName(futureDate.weekday);
+      if (!dayNames.contains(futureDayName)) continue;
+
+      final futureItems =
+          mataKuliah
+              .where((mk) => mk.hari == futureDayName)
+              .map((mk) => _toScheduleItem(mk, futureDate, now))
+              .toList()
+            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+      if (futureItems.isNotEmpty) {
+        final first = futureItems.first;
+        return NextClassModel(
+          courseName: first.courseName,
+          startTime: first.startTime,
+          endTime: first.endTime,
+          sks: first.sks ?? '',
+          lecturer: first.lecturer,
+          location: first.room,
+        );
+      }
+    }
+
+    // Fallback: no classes found at all
+    return NextClassModel(
+      courseName: 'Tidak ada jadwal',
+      startTime: today.add(const Duration(hours: 24)),
+      endTime: today.add(const Duration(hours: 25)),
+      sks: '0',
+    );
+  }
+
+  /// Converts a KRS [MataKuliahKrsEntity] into a [ScheduleItemModel].
+  ScheduleItemModel _toScheduleItem(
+    MataKuliahKrsEntity mk,
+    DateTime date,
+    DateTime now,
+  ) {
+    final startTime = _parseTime(mk.jamMulai, date);
+    final endTime = _parseTime(mk.jamSelesai, date);
+
+    return ScheduleItemModel(
+      courseName: mk.nama,
+      room: '',
+      startTime: startTime,
+      endTime: endTime,
+      lecturer: mk.dosen.isNotEmpty ? mk.dosen : null,
+      sks: mk.sks > 0 ? '${mk.sks}' : null,
+      status: _determineStatus(startTime, endTime, now),
+    );
+  }
+}
+
+// ── Shared helpers ──────────────────────────────────────────────────────
+
+/// Parses a "HH:MM" or "HH:MM:SS" time string into a [DateTime]
+/// combined with the given [date].
+DateTime _parseTime(String timeStr, DateTime date) {
+  if (timeStr.isEmpty) return date;
+  final parts = timeStr.split(':');
+  final hour = int.tryParse(parts[0]) ?? 0;
+  final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+  return DateTime(date.year, date.month, date.day, hour, minute);
+}
+
+/// Converts a Dart weekday int (1=Monday..7=Sunday) to Indonesian day name.
+String _weekdayToDayName(int weekday) {
+  const names = {
+    1: 'Senin',
+    2: 'Selasa',
+    3: 'Rabu',
+    4: 'Kamis',
+    5: 'Jumat',
+    6: 'Sabtu',
+    7: 'Minggu',
+  };
+  return names[weekday] ?? '';
+}
+
+/// Determines whether a class is ongoing, upcoming, or completed
+/// based on the current time.
+ScheduleStatus _determineStatus(DateTime start, DateTime end, DateTime now) {
+  if (now.isAfter(start) && now.isBefore(end)) return ScheduleStatus.ongoing;
+  if (now.isAfter(end)) return ScheduleStatus.completed;
+  return ScheduleStatus.upcoming;
 }

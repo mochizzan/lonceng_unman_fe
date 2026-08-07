@@ -74,3 +74,8 @@ CLAUDE.md
 # Firebase config (sensitive)
 android/app/google-services.json
 lib/firebase_options.dart
+
+# Hive test files
+repo_test_*.hive
+test_notifications_*.hive
+test_settings_*.hive

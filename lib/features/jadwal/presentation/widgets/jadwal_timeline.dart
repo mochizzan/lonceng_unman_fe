@@ -11,6 +11,19 @@ class JadwalTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimens.space32),
+          child: Text(
+            'Tidak ada jadwal untuk hari ini',
+            style: Theme.of(context).textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     final cs = Theme.of(context).colorScheme;
 
     return Padding(

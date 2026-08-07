@@ -35,7 +35,7 @@ class HomeModel extends HomeEntity {
   const HomeModel({
     required super.userName,
     required super.avatarUrl,
-    required super.nextClass,
+    super.nextClass,
     required super.scheduleItems,
     required super.sksTaken,
     required super.sksTotal,
@@ -46,13 +46,15 @@ class HomeModel extends HomeEntity {
   });
 
   factory HomeModel.fromJson(Map<String, dynamic> json) {
-    final nextClassJson = json['nextClass'] as Map<String, dynamic>;
+    final nextClassJson = json['nextClass'] as Map<String, dynamic>?;
     final scheduleJson = json['scheduleItems'] as List<dynamic>;
 
     return HomeModel(
       userName: json['userName'] as String,
       avatarUrl: json['avatarUrl'] as String,
-      nextClass: NextClassModel.fromJson(nextClassJson),
+      nextClass: nextClassJson != null
+          ? NextClassModel.fromJson(nextClassJson)
+          : null,
       scheduleItems: scheduleJson
           .map((e) => ScheduleItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),

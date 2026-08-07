@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
@@ -75,7 +76,201 @@ class _ProfilePageView extends StatelessWidget {
   }
 
   Widget _buildLoading(BuildContext context) {
-    return const AppLoadingIndicator();
+    return _buildSkeleton(context);
+  }
+
+  Widget _buildSkeleton(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final cardColor = cs.surfaceContainerHighest.withValues(alpha: 0.7);
+    final shapeColor = cs.surfaceContainerHighest;
+
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            title: const Text(AppStrings.profileTitleFull),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.edit_outlined, color: cs.onSurface),
+                onPressed: null,
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.screenPaddingHorizontal,
+            ).copyWith(bottom: AppDimens.space80),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: AppDimens.space16),
+                // ── Profile Header Card skeleton ──
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(sp(context, 32)),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(sp(context, 32)),
+                  ),
+                  child: Column(
+                    children: [
+                      // Avatar circle
+                      Container(
+                        width: sp(context, 112),
+                        height: sp(context, 112),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: shapeColor,
+                        ),
+                      ),
+                      SizedBox(height: sp(context, 16)),
+                      // Name line
+                      Container(
+                        height: 20,
+                        width: sp(context, 160),
+                        decoration: BoxDecoration(
+                          color: shapeColor,
+                          borderRadius: BorderRadius.circular(
+                            AppDimens.radiusSM,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: sp(context, 8)),
+                      // Badge line
+                      Container(
+                        height: 28,
+                        width: sp(context, 120),
+                        decoration: BoxDecoration(
+                          color: shapeColor,
+                          borderRadius: BorderRadius.circular(
+                            AppDimens.radiusXL,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space16),
+                // ── Academic Info Section skeleton (3 rows) ──
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(sp(context, 20)),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(sp(context, 20)),
+                  ),
+                  child: Column(
+                    children: List.generate(3, (i) {
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i < 2 ? sp(context, 16) : 0,
+                        ),
+                        child: Row(
+                          children: [
+                            // Icon badge circle
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: shapeColor,
+                              ),
+                            ),
+                            SizedBox(width: sp(context, 12)),
+                            // Label + value lines
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 12,
+                                    width: 80,
+                                    decoration: BoxDecoration(
+                                      color: shapeColor,
+                                      borderRadius: BorderRadius.circular(
+                                        AppDimens.radiusXS,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: sp(context, 6)),
+                                  Container(
+                                    height: 14,
+                                    width: 140,
+                                    decoration: BoxDecoration(
+                                      color: shapeColor,
+                                      borderRadius: BorderRadius.circular(
+                                        AppDimens.radiusXS,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space16),
+                // ── Tab section header skeleton ──
+                Container(
+                  height: 24,
+                  width: sp(context, 100),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(AppDimens.radiusXS),
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space12),
+                // ── Bio section skeleton ──
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(sp(context, 20)),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(sp(context, 16)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(4, (i) {
+                      final widths = [1.0, 0.9, 0.95, 0.7];
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i < 3 ? sp(context, 10) : 0,
+                        ),
+                        child: FractionallySizedBox(
+                          widthFactor: widths[i],
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: shapeColor,
+                              borderRadius: BorderRadius.circular(
+                                AppDimens.radiusXS,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space24),
+                // ── Action button skeleton ──
+                Container(
+                  height: 52,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildError(BuildContext context, String message) {

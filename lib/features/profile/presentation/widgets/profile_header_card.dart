@@ -98,6 +98,7 @@ class ProfileHeaderCard extends StatelessWidget {
           // --- Name ---
           Text(
             data.userName,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: cs.onPrimaryContainer,

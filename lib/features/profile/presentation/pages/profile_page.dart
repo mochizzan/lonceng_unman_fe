@@ -274,7 +274,12 @@ class _ProfilePageView extends StatelessWidget {
   }
 
   Widget _buildError(BuildContext context, String message) {
-    return AppErrorDisplay(message: message);
+    return AppErrorDisplay(
+      message: message,
+      onRetry: () {
+        context.read<ProfileBloc>().add(const ProfileRefreshRequested());
+      },
+    );
   }
 
   Widget _buildContent(BuildContext context, ProfileLoaded state) {

@@ -84,7 +84,10 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   }
 
   /// Finds the next upcoming/ongoing class across today and upcoming days.
-  NextClassModel _findNextClass(
+  ///
+  /// Returns `null` when there are no upcoming/ongoing classes in the
+  /// schedule, allowing the hero card to display its empty state.
+  NextClassModel? _findNextClass(
     List<MataKuliahKrsEntity> mataKuliah,
     DateTime today,
     DateTime now,
@@ -139,13 +142,8 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       }
     }
 
-    // Fallback: no classes found at all
-    return NextClassModel(
-      courseName: 'Tidak ada jadwal',
-      startTime: today.add(const Duration(hours: 24)),
-      endTime: today.add(const Duration(hours: 25)),
-      sks: '0',
-    );
+    // No upcoming or ongoing classes found in the entire schedule.
+    return null;
   }
 
   /// Converts a KRS [MataKuliahKrsEntity] into a [ScheduleItemModel].

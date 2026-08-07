@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -37,6 +38,9 @@ class ErrorHandler {
     }
     if (error is ServerException) {
       return error.message;
+    }
+    if (error is TimeoutException) {
+      return 'Koneksi timeout. Silakan coba lagi.';
     }
     if (error is DataInitStepException) {
       return _pipelineError(error);

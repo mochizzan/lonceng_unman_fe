@@ -4,7 +4,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_state.dart';
@@ -126,6 +129,24 @@ class SettingsPage extends StatelessWidget {
           ),
           const SizedBox(height: AppDimens.space24),
 
+          // ── Section: Account ──
+          _SectionHeader(title: AppStrings.settingsSectionAccount),
+          const SizedBox(height: AppDimens.space8),
+          _SettingsCard(
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.logout, color: cs.error, size: 22),
+              title: Text(
+                AppStrings.settingsLogoutButton,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: cs.error),
+              ),
+              onTap: () => _showLogoutDialog(context),
+            ),
+          ),
+          const SizedBox(height: AppDimens.space24),
+
           // ── Section: About ──
           _SectionHeader(title: AppStrings.settingsSectionAbout),
           const SizedBox(height: AppDimens.space8),
@@ -159,6 +180,38 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Shows a confirmation dialog and triggers logout on confirm.
+void _showLogoutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text(AppStrings.settingsLogoutConfirmTitle),
+      content: const Text(AppStrings.settingsLogoutConfirmBody),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(AppStrings.settingsLogoutCancelAction),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            // Clear credentials and set auth status to unauthenticated.
+            // The router's authRedirect will navigate to /login.
+            Services.get<CredentialCache>().clear();
+            Services.get<AuthStatusNotifier>().setStatus(
+              AuthStatus.unauthenticated,
+            );
+          },
+          child: Text(
+            AppStrings.settingsLogoutConfirmAction,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Shows a bottom sheet for selecting the reminder interval.

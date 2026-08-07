@@ -21,10 +21,13 @@ class ScheduleItemModel extends ScheduleItemEntity {
 
   factory ScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return ScheduleItemModel(
-      courseName: json['courseName'] as String,
-      room: json['room'] as String,
-      startTime: DateTime.parse(json['startTime'] as String),
-      endTime: DateTime.parse(json['endTime'] as String),
+      courseName: json['courseName'] as String? ?? '',
+      room: json['room'] as String? ?? '',
+      startTime:
+          DateTime.tryParse(json['startTime'] as String? ?? '') ??
+          DateTime.now(),
+      endTime:
+          DateTime.tryParse(json['endTime'] as String? ?? '') ?? DateTime.now(),
       lecturer: json['lecturer'] as String?,
       group: json['group'] as String?,
       sks: json['sks'] as String?,

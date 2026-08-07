@@ -39,8 +39,18 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
     final today = DateTime(now.year, now.month, now.day);
     final todayDayName = _weekdayToDayName(now.weekday);
 
+    // All 7 days of the week
+    const allDays = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
+
     // Determine which days have classes
-    const allDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
     final daysWithClasses = <String>{};
     for (final mk in mataKuliah) {
       if (allDays.contains(mk.hari)) {
@@ -48,27 +58,49 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
       }
     }
 
-    final orderedDays = allDays
-        .where((d) => daysWithClasses.contains(d))
-        .toList();
+    // Build day list: "Semua" first, then only days that have classes
+    final orderedDays = <String>[
+      'Semua',
+      ...allDays.where((d) => daysWithClasses.contains(d)),
+    ];
 
-    // If today has classes, select it; otherwise pick the first available day
-    final selectedDay = orderedDays.contains(todayDayName)
+    // Default selection: today if it has classes, otherwise "Semua"
+    final selectedDay = daysWithClasses.contains(todayDayName)
         ? todayDayName
-        : (orderedDays.isNotEmpty ? orderedDays.first : todayDayName);
+        : 'Semua';
 
-    // Build schedule items for the selected day
-    final selectedDate = _dateForDay(selectedDay, today);
-    final scheduleItems =
-        mataKuliah
-            .where((mk) => mk.hari == selectedDay)
-            .map((mk) => _toScheduleItem(mk, selectedDate, now))
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    // Build schedule items
+    List<ScheduleItemModel> scheduleItems;
+    if (selectedDay == 'Semua') {
+      // Show all classes for the week, sorted by day then time
+      scheduleItems =
+          mataKuliah.map((mk) {
+            final dayIndex = allDays.indexOf(mk.hari);
+            final date = today.add(
+              Duration(days: (dayIndex + 1 - today.weekday) % 7),
+            );
+            return _toScheduleItem(mk, date, now);
+          }).toList()..sort((a, b) {
+            final dayCmp = allDays
+                .indexOf(a.courseName)
+                .compareTo(allDays.indexOf(b.courseName));
+            if (dayCmp != 0) return dayCmp;
+            return a.startTime.compareTo(b.startTime);
+          });
+    } else {
+      // Show classes for the selected day only
+      final selectedDate = _dateForDay(selectedDay, today);
+      scheduleItems =
+          mataKuliah
+              .where((mk) => mk.hari == selectedDay)
+              .map((mk) => _toScheduleItem(mk, selectedDate, now))
+              .toList()
+            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    }
 
     return JadwalModel(
       selectedDay: selectedDay,
-      days: orderedDays.isNotEmpty ? orderedDays : allDays,
+      days: orderedDays,
       scheduleItems: scheduleItems,
     );
   }

@@ -60,6 +60,13 @@ abstract final class AppStrings {
   static const String settingsSectionNotification = 'Notifikasi';
   static const String settingsReminderLabel = 'Ingatkan Sebelum Kelas';
   static const String settingsReminderValue = '5 menit';
+  static const String settingsSectionAccount = 'Akun';
+  static const String settingsLogoutButton = 'Keluar';
+  static const String settingsLogoutConfirmTitle = 'Keluar dari Akun?';
+  static const String settingsLogoutConfirmBody =
+      'Kamu perlu masuk kembali untuk mengakses data.';
+  static const String settingsLogoutConfirmAction = 'Keluar';
+  static const String settingsLogoutCancelAction = 'Batal';
   static const String settingsSectionAbout = 'Tentang';
   static const String settingsVersionLabel = 'Versi Aplikasi';
   static const String settingsAppName = 'Lonceng UnMan';

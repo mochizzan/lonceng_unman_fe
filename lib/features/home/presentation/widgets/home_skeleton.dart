@@ -17,8 +17,6 @@ class HomeSkeletonSliver extends StatelessWidget {
             Expanded(child: _SkeletonCard(height: 88)),
             SizedBox(width: AppDimens.space12),
             Expanded(child: _SkeletonCard(height: 88)),
-            SizedBox(width: AppDimens.space12),
-            Expanded(child: _SkeletonCard(height: 88)),
           ],
         ),
         const SizedBox(height: AppDimens.space28),
@@ -35,10 +33,7 @@ class HomeSkeletonSliver extends StatelessWidget {
 }
 
 class _SkeletonCard extends StatelessWidget {
-  const _SkeletonCard({
-    required this.height,
-    this.widthFactor = 1,
-  });
+  const _SkeletonCard({required this.height, this.widthFactor = 1});
 
   final double height;
   final double widthFactor;

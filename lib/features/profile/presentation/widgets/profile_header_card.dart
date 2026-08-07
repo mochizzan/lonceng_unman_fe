@@ -51,7 +51,16 @@ class ProfileHeaderCard extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(sp(context, 999)),
                       child: data.avatarUrl.isNotEmpty
-                          ? Image.network(data.avatarUrl, fit: BoxFit.cover)
+                          ? Image.network(
+                              data.avatarUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(
+                                    Icons.person,
+                                    size: sp(context, 48),
+                                    color: cs.onPrimaryContainer,
+                                  ),
+                            )
                           : Icon(
                               Icons.person,
                               size: sp(context, 48),

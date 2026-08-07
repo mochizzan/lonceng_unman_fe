@@ -44,8 +44,24 @@ class ProfileBioSection extends StatelessWidget {
                 fontSize: responsiveFontSize(context, 14),
               ),
             ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(sp(context, 20)),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(sp(context, 16)),
+            ),
+            child: Text(
+              'Belum ada bio',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontSize: responsiveFontSize(context, 14),
+              ),
+            ),
           ),
-        if (bio != null && bio.isNotEmpty) SizedBox(height: sp(context, 20)),
+        SizedBox(height: sp(context, 20)),
         // --- Grid stats: Total SKS + IPK Terakhir ---
         Row(
           children: [

@@ -5,9 +5,34 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_car
 import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
 class JadwalTimeline extends StatelessWidget {
-  const JadwalTimeline({super.key, required this.items});
+  const JadwalTimeline({super.key, required this.items, this.selectedDay = ''});
 
   final List<ScheduleItemEntity> items;
+  final String selectedDay;
+
+  /// Returns the Indonesian day name for a given DateTime.
+  String _dayName(DateTime date) {
+    const names = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
+    return names[date.weekday - 1];
+  }
+
+  /// Groups items by day name, preserving order.
+  Map<String, List<ScheduleItemEntity>> _groupByDay() {
+    final map = <String, List<ScheduleItemEntity>>{};
+    for (final item in items) {
+      final day = _dayName(item.startTime);
+      map.putIfAbsent(day, () => []).add(item);
+    }
+    return map;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +41,7 @@ class JadwalTimeline extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppDimens.space32),
           child: Text(
-            'Tidak ada jadwal untuk hari ini',
+            'Tidak ada jadwal',
             style: Theme.of(context).textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -25,7 +50,106 @@ class JadwalTimeline extends StatelessWidget {
     }
 
     final cs = Theme.of(context).colorScheme;
+    final showDayHeaders = selectedDay == 'Semua';
 
+    if (showDayHeaders) {
+      final grouped = _groupByDay();
+      final dayOrder = [
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+        'Minggu',
+      ];
+      final sortedDays = dayOrder.where((d) => grouped.containsKey(d)).toList();
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
+        child: Column(
+          children: sortedDays.expand((day) {
+            final dayItems = grouped[day]!;
+            return [
+              // Day header
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: AppDimens.space8,
+                  bottom: AppDimens.space12,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.space12,
+                        vertical: AppDimens.space4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(
+                          AppDimens.radiusFull,
+                        ),
+                      ),
+                      child: Text(
+                        day,
+                        style: TextStyle(
+                          fontSize: AppDimens.textSM,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppDimens.space12),
+                    Expanded(
+                      child: Container(height: 1, color: cs.outlineVariant),
+                    ),
+                  ],
+                ),
+              ),
+              // Items for this day
+              ...dayItems.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final item = entry.value;
+                final globalIdx = items.indexOf(item);
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        child: Column(
+                          children: [
+                            _buildDot(cs, item),
+                            if (idx < dayItems.length - 1)
+                              Expanded(
+                                child: Container(
+                                  width: 2,
+                                  color: cs.outlineVariant,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppDimens.space16),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppDimens.space16,
+                          ),
+                          child: JadwalCard(item: item, index: globalIdx),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ];
+          }).toList(),
+        ),
+      );
+    }
+
+    // Single day view (no day headers)
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
       child: Column(
@@ -34,7 +158,6 @@ class JadwalTimeline extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Timeline dot column
                 SizedBox(
                   width: 24,
                   child: Column(
@@ -48,7 +171,6 @@ class JadwalTimeline extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppDimens.space16),
-                // Card content
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: AppDimens.space16),

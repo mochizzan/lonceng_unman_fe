@@ -16,11 +16,16 @@ class ApiClient {
     required this.baseUrl,
     this.timeout = const Duration(seconds: 30),
     http.Client? client,
+    this.onAuthError,
   }) : _client = client ?? http.Client();
 
   final String baseUrl;
   final Duration timeout;
   final http.Client _client;
+
+  /// Called when a 401 Unauthorized response is received.
+  /// Used to trigger global logout flow (clear credentials, redirect to login).
+  final void Function()? onAuthError;
 
   /// Send a POST request.
   ///
@@ -123,6 +128,7 @@ class ApiClient {
       case 400:
         return ValidationException(message);
       case 401:
+        onAuthError?.call();
         return AuthException(message);
       case 403:
         return ServerException(message, statusCode: 403);

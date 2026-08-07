@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 
@@ -86,11 +87,14 @@ class DataInitializationRemoteDataSource {
 
     // Step 6: Fetch KRS data
     yield DataInitStatus.fetchingKrsData;
-    await _runStep('krs_data', () => _getKrs(npm: npm));
+    final krsData = await _runStep('krs_data', () => _getKrs(npm: npm));
+    if (krsData.krs.mataKuliah.isEmpty) {
+      throw const DataInitStepException('krs_data', 'Data KRS kosong');
+    }
 
     // Step 7: Fetch KHS data
     yield DataInitStatus.fetchingKhsData;
-    await _runStep(
+    final khsData = await _runStep(
       'khs_data',
       () => _getKhs(
         npm: npm,
@@ -98,6 +102,9 @@ class DataInitializationRemoteDataSource {
         semester: latest.semester,
       ),
     );
+    if (khsData.khs.mataKuliah.isEmpty) {
+      throw const DataInitStepException('khs_data', 'Data KHS kosong');
+    }
 
     yield DataInitStatus.completed;
   }
@@ -107,6 +114,8 @@ class DataInitializationRemoteDataSource {
     try {
       return await fn();
     } catch (e) {
+      // Preserve original exception type if it's already an AppException
+      if (e is AppException) rethrow;
       throw DataInitStepException(step, e.toString(), e);
     }
   }

@@ -172,13 +172,23 @@ Future<void> main() async {
         );
       }
 
-      // ── API Client ──
-      final apiClient = ApiClient(baseUrl: AppStrings.apiBaseUrl);
-      Services.register<ApiClient>(apiClient);
-
       // ── Credential Cache ──
       final credentialCache = CredentialCache();
       Services.register<CredentialCache>(credentialCache);
+
+      // ── Auth Status Notifier (global, drives router redirect) ──
+      final authStatusNotifier = AuthStatusNotifier();
+      Services.register<AuthStatusNotifier>(authStatusNotifier);
+
+      // ── API Client (with 401→logout wiring) ──
+      final apiClient = ApiClient(
+        baseUrl: AppStrings.apiBaseUrl,
+        onAuthError: () {
+          credentialCache.clear();
+          authStatusNotifier.setStatus(AuthStatus.unauthenticated);
+        },
+      );
+      Services.register<ApiClient>(apiClient);
 
       // ── Auth (real HTTP) ──
       final authDataSource = AuthRemoteDataSourceImpl(apiClient: apiClient);
@@ -288,7 +298,8 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
   @override
   void initState() {
     super.initState();
-    _authNotifier = widget.authStatusNotifier ?? AuthStatusNotifier();
+    _authNotifier =
+        widget.authStatusNotifier ?? Services.get<AuthStatusNotifier>();
     _themeNotifier = widget.themeNotifier ?? ThemeNotifier();
   }
 

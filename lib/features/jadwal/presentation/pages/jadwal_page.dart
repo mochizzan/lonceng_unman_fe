@@ -129,7 +129,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
             ),
             const SizedBox(height: AppDimens.space24),
             // Timeline list — schedule cards
-            JadwalTimeline(items: items),
+            JadwalTimeline(items: items, selectedDay: _selectedDay),
           ],
         ),
       ),

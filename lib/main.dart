@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
@@ -40,6 +41,7 @@ import 'package:lonceng_unman_fe/features/khs/data/repositories/khs_repository_i
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
@@ -255,6 +257,7 @@ Future<void> main() async {
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
         getKhs: getKhs,
+        academicCacheService: academicCacheService,
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(
@@ -360,18 +363,21 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
       themeNotifier: _themeNotifier,
     );
 
-    return ListenableBuilder(
-      listenable: _themeNotifier,
-      builder: (context, child) {
-        return MaterialApp.router(
-          title: 'Lonceng UnMan',
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: _themeNotifier.themeMode,
-          routerConfig: router,
-          debugShowCheckedModeBanner: false,
-        );
-      },
+    return BlocProvider(
+      create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
+      child: ListenableBuilder(
+        listenable: _themeNotifier,
+        builder: (context, child) {
+          return MaterialApp.router(
+            title: 'Lonceng UnMan',
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: _themeNotifier.themeMode,
+            routerConfig: router,
+            debugShowCheckedModeBanner: false,
+          );
+        },
+      ),
     );
   }
 }

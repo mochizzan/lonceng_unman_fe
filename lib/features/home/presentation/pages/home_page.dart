@@ -10,8 +10,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
+import 'package:lonceng_unman_fe/shared/widgets/data_refresh_overlay.dart';
 
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
@@ -120,7 +124,27 @@ class _HomePageViewState extends State<_HomePageView> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<HomeBloc>().add(const HomeRefreshRequested());
+        // Reset data init state first
+        context.read<DataInitBloc>().add(const DataInitReset());
+
+        // Show full-screen overlay
+        if (!context.mounted) return;
+        DataRefreshOverlay.show(context);
+
+        // Load credentials and start pipeline
+        final cache = Services.get<AcademicCacheService>();
+        final creds = await cache.loadCredentials();
+        if (creds != null && context.mounted) {
+          context.read<DataInitBloc>().add(
+            DataInitStarted(npm: creds['npm']!, password: creds['password']!),
+          );
+        }
+
+        // Wait a moment for pipeline to start, then refresh home
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (context.mounted) {
+          context.read<HomeBloc>().add(const HomeRefreshRequested());
+        }
       },
       child: CustomScrollView(
         slivers: [

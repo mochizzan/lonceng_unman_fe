@@ -2,6 +2,7 @@
 enum DataInitStatus {
   idle,
   authenticating,
+  clearingCache,
   downloadingKrs,
   extractingKrs,
   fetchingKrsData,

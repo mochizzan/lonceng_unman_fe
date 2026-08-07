@@ -193,8 +193,16 @@ class AcademicCacheService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // CLEAR ALL
+  // CLEAR
   // ═══════════════════════════════════════════════════════════════════════
+
+  /// Clear academic data only (KRS + KHS). Keeps credentials.
+  Future<void> clearAcademicData() async {
+    await _krs.clear();
+    await _khs.clear();
+    await _khsList.clear();
+    developer.log('Academic data cleared (KRS + KHS)', name: 'AcademicCache');
+  }
 
   /// Clear all cached data (credentials + KRS + KHS).
   Future<void> clearAll() async {

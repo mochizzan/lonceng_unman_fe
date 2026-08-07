@@ -7,6 +7,8 @@ String dataInitStatusText(DataInitStatus status) {
       return 'Menyiapkan...';
     case DataInitStatus.authenticating:
       return 'Memverifikasi akun...';
+    case DataInitStatus.clearingCache:
+      return 'Membersihkan cache...';
     case DataInitStatus.downloadingKrs:
       return 'Mengunduh KRS...';
     case DataInitStatus.extractingKrs:

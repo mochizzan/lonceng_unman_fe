@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 
 /// Orchestrates the post-login data initialization pipeline.
 ///
-/// Pipeline (7 API calls on home page):
+/// Pipeline (8 steps on home page):
+///   0. Clear cache         → clear KRS + KHS (keeps credentials)
 ///   KRS:
 ///   1. Download KRS PDF  → POST /api/v1/lms/krs
 ///   2. Extract KRS       → POST /api/v1/lms/krs/extract
@@ -21,21 +23,28 @@ import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 /// Login (1 call on login page):
 ///   POST /api/v1/lms/login
 ///
-/// Total: 8 endpoint hits.
+/// Total: 8 endpoint hits + 1 cache clear.
 class DataInitializationRemoteDataSource {
   final GetKrs _getKrs;
   final GetKhs _getKhs;
+  final AcademicCacheService _academicCacheService;
 
   DataInitializationRemoteDataSource({
     required GetKrs getKrs,
     required GetKhs getKhs,
+    required AcademicCacheService academicCacheService,
   }) : _getKrs = getKrs,
-       _getKhs = getKhs;
+       _getKhs = getKhs,
+       _academicCacheService = academicCacheService;
 
   Stream<DataInitStatus> initialize({
     required String npm,
     required String password,
   }) async* {
+    // Step 0: Clear cache
+    yield DataInitStatus.clearingCache;
+    await _academicCacheService.clearAcademicData();
+
     // ── KRS ──
 
     // Step 1: Download KRS PDF

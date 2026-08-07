@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
@@ -11,7 +10,7 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/widge
 
 /// Hosts background data-initialization for the main shell.
 ///
-/// - Loads credentials from [CredentialCache] when the shell mounts
+/// - Loads credentials from [AcademicCacheService] when the shell mounts
 /// - Checks [AcademicCacheService] for cached KRS/KHS data before starting
 ///   the pipeline — skips entirely on cache hit, no snackbar shown
 /// - Dispatches the pipeline on cache miss; surfaces progress / errors via
@@ -40,8 +39,8 @@ class _DataInitShellHostState extends State<DataInitShellHost> {
     final bloc = context.read<DataInitBloc>();
     if (bloc.isRunning || bloc.state is DataInitSuccess) return;
 
-    final cache = Services.get<CredentialCache>();
-    final cached = await cache.load();
+    final cache = Services.get<AcademicCacheService>();
+    final cached = await cache.loadCredentials();
 
     if (!mounted) return;
     if (cached == null) {

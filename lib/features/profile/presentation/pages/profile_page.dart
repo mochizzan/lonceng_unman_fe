@@ -45,15 +45,27 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class _ProfilePageView extends StatelessWidget {
+class _ProfilePageView extends StatefulWidget {
   const _ProfilePageView();
 
   @override
-  Widget build(BuildContext context) {
-    // Dispatch initial fetch when this widget first builds.
-    // The BLoC is lazy — it was not created in BlocProvider.create.
-    context.read<ProfileBloc>().add(const ProfileFetchRequested());
+  State<_ProfilePageView> createState() => _ProfilePageViewState();
+}
 
+class _ProfilePageViewState extends State<_ProfilePageView> {
+  bool _fetchDispatched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_fetchDispatched) {
+      _fetchDispatched = true;
+      context.read<ProfileBloc>().add(const ProfileFetchRequested());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {

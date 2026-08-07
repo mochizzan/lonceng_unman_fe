@@ -11,7 +11,6 @@ import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
@@ -173,10 +172,6 @@ Future<void> main() async {
         );
       }
 
-      // ── Credential Cache ──
-      final credentialCache = CredentialCache();
-      Services.register<CredentialCache>(credentialCache);
-
       // ── Academic Cache Service ──
       final academicCacheService = AcademicCacheService();
       await academicCacheService.initialize();
@@ -190,8 +185,10 @@ Future<void> main() async {
       final apiClient = ApiClient(
         baseUrl: AppStrings.apiBaseUrl,
         onAuthError: () {
-          academicCacheService.clearCredentials();
-          authStatusNotifier.setStatus(AuthStatus.unauthenticated);
+          // Fire-and-forget: callback is sync but performFullLogout is async.
+          // Auth status change (redirect) happens at the end of performFullLogout.
+          // eslint-disable-next-line: unawaited_futures
+          Services.performFullLogout();
         },
       );
       Services.register<ApiClient>(apiClient);

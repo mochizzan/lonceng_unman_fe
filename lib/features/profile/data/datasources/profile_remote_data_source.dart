@@ -3,6 +3,7 @@
 // Defines the contract for fetching profile screen data from a remote source.
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
@@ -32,7 +33,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
     if (npm == null || npm.isEmpty) {
-      throw Exception('NPM not found in credentials. Please log in again.');
+      throw const ValidationException(
+        'NPM tidak ditemukan di kredensial. Silakan login ulang.',
+      );
     }
 
     // Fetch KRS data (student info, semester, schedule)

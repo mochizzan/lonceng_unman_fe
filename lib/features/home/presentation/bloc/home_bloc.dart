@@ -6,9 +6,10 @@
 // Follows the same pattern as auth's AuthBloc.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
-import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
@@ -24,12 +25,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final data = await _getHome();
       emit(HomeLoaded(data: data));
+    } on AuthException catch (_) {
+      // 401 — don't emit error UI; ApiClient callback redirects to login.
     } on NetworkException catch (e) {
-      emit(HomeError(e.message));
+      emit(HomeError(ErrorHandler.toHumanReadable(e)));
     } on ServerException catch (e) {
-      emit(HomeError(e.message));
+      emit(HomeError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
-      emit(HomeError(e.toString()));
+      emit(HomeError(ErrorHandler.toHumanReadable(e)));
     }
   }
 
@@ -40,12 +43,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final data = await _getHome();
       emit(HomeLoaded(data: data));
+    } on AuthException catch (_) {
+      // 401 — don't emit error UI; ApiClient callback redirects to login.
     } on NetworkException catch (e) {
-      emit(HomeError(e.message));
+      emit(HomeError(ErrorHandler.toHumanReadable(e)));
     } on ServerException catch (e) {
-      emit(HomeError(e.message));
+      emit(HomeError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
-      emit(HomeError(e.toString()));
+      emit(HomeError(ErrorHandler.toHumanReadable(e)));
     }
   }
 }

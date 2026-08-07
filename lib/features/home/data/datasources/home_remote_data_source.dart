@@ -2,6 +2,7 @@
 //
 // Defines the contract for fetching home screen data from a remote source.
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
@@ -34,7 +35,9 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
     if (npm == null || npm.isEmpty) {
-      throw Exception('NPM not found in credentials. Please log in again.');
+      throw const ValidationException(
+        'NPM tidak ditemukan di kredensial. Silakan login ulang.',
+      );
     }
 
     // Fetch KRS data (schedule, student info, semester)

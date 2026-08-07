@@ -51,9 +51,11 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       _selectedDay = state.data.selectedDay;
       _days = state.data.days;
     }
-    // Dispatch initial fetch when this widget first builds.
-    // The BLoC is lazy — it was not created in BlocProvider.create.
-    context.read<JadwalBloc>().add(const JadwalFetchRequested());
+    // Only fetch if we don't already have loaded data.
+    // This prevents redundant API calls when switching tabs.
+    if (state is! JadwalLoaded) {
+      context.read<JadwalBloc>().add(const JadwalFetchRequested());
+    }
   }
 
   void _handleDaySelected(String day) {

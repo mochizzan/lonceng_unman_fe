@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
@@ -26,12 +27,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       final data = await _getProfile();
       emit(ProfileLoaded(data: data));
+    } on AuthException catch (_) {
+      // 401 handled by ApiClient global callback
     } on NetworkException catch (e) {
-      emit(ProfileError(e.message));
+      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     } on ServerException catch (e) {
-      emit(ProfileError(e.message));
+      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
-      emit(ProfileError(e.toString()));
+      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     }
   }
 
@@ -42,12 +45,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       final data = await _getProfile();
       emit(ProfileLoaded(data: data));
+    } on AuthException catch (_) {
+      // 401 handled by ApiClient global callback
     } on NetworkException catch (e) {
-      emit(ProfileError(e.message));
+      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     } on ServerException catch (e) {
-      emit(ProfileError(e.message));
+      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
-      emit(ProfileError(e.toString()));
+      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     }
   }
 }

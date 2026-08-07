@@ -6,19 +6,6 @@ import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 
-/// Exception thrown when a pipeline step fails.
-/// Carries the step name and original error for diagnostics.
-class DataInitStepException implements Exception {
-  final String step;
-  final String message;
-  final Object? originalError;
-
-  const DataInitStepException(this.step, this.message, [this.originalError]);
-
-  @override
-  String toString() => 'DataInitStepException($step): $message';
-}
-
 /// Orchestrates the full post-login data initialization pipeline.
 ///
 /// Chains LMS API calls in sequence, yielding [DataInitStatus] updates

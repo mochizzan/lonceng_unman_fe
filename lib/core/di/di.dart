@@ -1,4 +1,8 @@
 // lib/core/di/di.dart
+import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+
 /// Simple service locator for dependency injection.
 ///
 /// This is a lightweight alternative to get_it for small projects.
@@ -37,5 +41,28 @@ class Services {
   /// Clear all registered services (useful for testing).
   static void clear() {
     _services.clear();
+  }
+
+  /// Perform a full logout: clear all caches, cancel notifications,
+  /// and set auth status to unauthenticated.
+  ///
+  /// This is the single source of truth for logout. All logout paths
+  /// (user-initiated, 401 handler) must call this method.
+  static Future<void> performFullLogout() async {
+    // 1. Clear all academic cache (credentials, KRS, KHS, KHS list)
+    final cache = get<AcademicCacheService>();
+    await cache.clearAll();
+
+    // 2. Cancel all scheduled notifications
+    try {
+      final notifService = get<NotificationService>();
+      await notifService.cancelAll();
+    } catch (_) {
+      // Notification service might not be registered in DI yet
+    }
+
+    // 3. Set auth status to unauthenticated
+    final authNotifier = get<AuthStatusNotifier>();
+    authNotifier.setStatus(AuthStatus.unauthenticated);
   }
 }

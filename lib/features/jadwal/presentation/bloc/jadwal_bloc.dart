@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
 
 class JadwalBloc extends Bloc<JadwalEvent, JadwalState> {
@@ -26,12 +27,14 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> {
     try {
       final data = await _getJadwal();
       emit(JadwalLoaded(data: data));
+    } on AuthException catch (_) {
+      // 401 handled by ApiClient global callback
     } on NetworkException catch (e) {
-      emit(JadwalError(e.message));
+      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
     } on ServerException catch (e) {
-      emit(JadwalError(e.message));
+      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
-      emit(JadwalError(e.toString()));
+      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
     }
   }
 
@@ -42,12 +45,14 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> {
     try {
       final data = await _getJadwal();
       emit(JadwalLoaded(data: data));
+    } on AuthException catch (_) {
+      // 401 handled by ApiClient global callback
     } on NetworkException catch (e) {
-      emit(JadwalError(e.message));
+      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
     } on ServerException catch (e) {
-      emit(JadwalError(e.message));
+      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
-      emit(JadwalError(e.toString()));
+      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
     }
   }
 }

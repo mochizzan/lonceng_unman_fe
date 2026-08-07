@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
@@ -35,21 +35,19 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
     emit(const DataInitInProgress(DataInitStatus.downloadingKrs));
 
     try {
-      final stream = _getDataInit(
-        npm: event.npm,
-        password: event.password,
-      ).timeout(
-        kDataInitTimeout,
-        onTimeout: (sink) {
-          sink.addError(
-            TimeoutException(
-              'Inisialisasi data melebihi batas waktu',
-              kDataInitTimeout,
-            ),
+      final stream = _getDataInit(npm: event.npm, password: event.password)
+          .timeout(
+            kDataInitTimeout,
+            onTimeout: (sink) {
+              sink.addError(
+                TimeoutException(
+                  'Inisialisasi data melebihi batas waktu',
+                  kDataInitTimeout,
+                ),
+              );
+              sink.close();
+            },
           );
-          sink.close();
-        },
-      );
 
       // Emit from within the handler so BLoC owns the Emitter lifecycle.
       await for (final status in stream) {

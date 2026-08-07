@@ -38,3 +38,15 @@ final class AuthException extends AppException {
 final class ValidationException extends AppException {
   const ValidationException(super.message, {super.code = 'VALIDATION_ERROR'});
 }
+
+/// Exception thrown when a pipeline step in data initialization fails.
+/// Carries the step name and original error for diagnostics.
+final class DataInitStepException extends AppException {
+  const DataInitStepException(this.step, super.message, [this.originalError]);
+
+  final String step;
+  final Object? originalError;
+
+  @override
+  String toString() => 'DataInitStepException($step): $message';
+}

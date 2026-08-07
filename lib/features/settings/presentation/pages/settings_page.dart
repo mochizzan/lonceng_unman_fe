@@ -4,8 +4,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
-import 'package:lonceng_unman_fe/core/cache/credential_cache.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
@@ -195,14 +193,9 @@ void _showLogoutDialog(BuildContext context) {
           child: const Text(AppStrings.settingsLogoutCancelAction),
         ),
         TextButton(
-          onPressed: () {
+          onPressed: () async {
             Navigator.of(context).pop();
-            // Clear credentials and set auth status to unauthenticated.
-            // The router's authRedirect will navigate to /login.
-            Services.get<CredentialCache>().clear();
-            Services.get<AuthStatusNotifier>().setStatus(
-              AuthStatus.unauthenticated,
-            );
+            await Services.performFullLogout();
           },
           child: Text(
             AppStrings.settingsLogoutConfirmAction,

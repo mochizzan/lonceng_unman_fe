@@ -1,6 +1,4 @@
 // auth - BLoC
-import 'dart:developer' as developer;
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
@@ -85,18 +83,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _onLogoutRequested(AuthLogoutRequested event, Emitter emit) {
+  Future<void> _onLogoutRequested(
+    AuthLogoutRequested event,
+    Emitter emit,
+  ) async {
     _npm = '';
     _password = '';
-    try {
-      _academicCacheService.clearCredentials();
-    } catch (e) {
-      developer.log(
-        'AuthBloc: failed to clear academic cache: $e',
-        name: 'AuthBloc',
-      );
-    }
-    _authStatusNotifier.setStatus(AuthStatus.unauthenticated);
+    await Services.performFullLogout();
     emit(const AuthInitial());
   }
 }

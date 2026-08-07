@@ -10,7 +10,7 @@ import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 class DataInitializationPage extends StatefulWidget {
   const DataInitializationPage({super.key, this.npm, this.password});
 
-  /// Unused — credentials are read from [CredentialCache] by the shell host.
+  /// Unused — credentials are read from [AcademicCacheService] by the shell host.
   final String? npm;
   final String? password;
 
@@ -30,8 +30,6 @@ class _DataInitializationPageState extends State<DataInitializationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

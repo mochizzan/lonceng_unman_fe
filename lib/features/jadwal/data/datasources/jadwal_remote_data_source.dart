@@ -3,6 +3,7 @@
 // Defines the contract for fetching weekly schedule data from a remote source.
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/data/models/jadwal_model.dart';
@@ -29,7 +30,9 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
     final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
     if (npm == null || npm.isEmpty) {
-      throw Exception('NPM not found in credentials. Please log in again.');
+      throw const ValidationException(
+        'NPM tidak ditemukan di kredensial. Silakan login ulang.',
+      );
     }
 
     final krsResponse = await krsDataSource.getKrsData(npm: npm);

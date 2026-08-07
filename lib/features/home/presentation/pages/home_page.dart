@@ -121,11 +121,11 @@ class _HomePageViewState extends State<_HomePageView> {
             avatarUrl: '',
           ),
         ),
-        const SliverPadding(
-          padding: EdgeInsets.symmetric(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.screenPaddingHorizontal,
           ).copyWith(bottom: AppDimens.space80),
-          sliver: HomeSkeletonSliver(),
+          sliver: const HomeSkeletonSliver(),
         ),
       ],
     );

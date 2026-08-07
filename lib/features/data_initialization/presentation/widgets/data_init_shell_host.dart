@@ -38,11 +38,22 @@ class _DataInitShellHostState extends State<DataInitShellHost> {
 
     final cache = Services.get<CredentialCache>();
     final cached = await cache.load();
-    if (!mounted || cached == null) return;
+
+    if (!mounted) return;
+    if (cached == null) {
+      _showErrorSnack(context, 'Sesi tidak ditemukan. Silakan login ulang.');
+      return;
+    }
 
     final npm = cached['npm'] ?? '';
     final password = cached['password'] ?? '';
-    if (npm.isEmpty || password.isEmpty) return;
+    if (npm.isEmpty || password.isEmpty) {
+      _showErrorSnack(
+        context,
+        'Kredensial tidak lengkap. Silakan login ulang.',
+      );
+      return;
+    }
 
     bloc.add(DataInitStarted(npm: npm, password: password));
   }
@@ -73,10 +84,7 @@ class _DataInitShellHostState extends State<DataInitShellHost> {
         content: Text(message),
         duration: const Duration(seconds: 6),
         behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Coba lagi',
-          onPressed: _retry,
-        ),
+        action: SnackBarAction(label: 'Coba lagi', onPressed: _retry),
       ),
     );
   }
@@ -91,7 +99,10 @@ class _DataInitShellHostState extends State<DataInitShellHost> {
           _showProgressSnack(context, dataInitStatusText(state.status));
         } else if (state is DataInitSuccess) {
           _lastSnackStatus = DataInitStatus.completed;
-          _showProgressSnack(context, dataInitStatusText(DataInitStatus.completed));
+          _showProgressSnack(
+            context,
+            dataInitStatusText(DataInitStatus.completed),
+          );
         } else if (state is DataInitFailure) {
           _lastSnackStatus = DataInitStatus.failed;
           _showErrorSnack(

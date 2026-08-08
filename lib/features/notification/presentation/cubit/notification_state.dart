@@ -23,6 +23,7 @@ class NotificationState {
     List<ScheduledNotificationEntity>? notifications,
     int? reminderIntervalMinutes,
     String? errorMessage,
+    bool clearErrorMessage = false,
     bool? notificationPermissionDenied,
   }) {
     return NotificationState(
@@ -30,7 +31,9 @@ class NotificationState {
       notifications: notifications ?? this.notifications,
       reminderIntervalMinutes:
           reminderIntervalMinutes ?? this.reminderIntervalMinutes,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearErrorMessage
+          ? null
+          : (errorMessage ?? this.errorMessage),
       notificationPermissionDenied:
           notificationPermissionDenied ?? this.notificationPermissionDenied,
     );

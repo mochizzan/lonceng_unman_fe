@@ -44,6 +44,7 @@ class NotificationCubit extends Cubit<NotificationState> {
           status: NotificationStatus.loaded,
           notifications: notifications,
           reminderIntervalMinutes: interval,
+          clearErrorMessage: true,
         ),
       );
     } catch (e) {
@@ -80,6 +81,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         state.copyWith(
           status: NotificationStatus.loaded,
           notifications: notifications,
+          clearErrorMessage: true,
         ),
       );
     } catch (e) {
@@ -118,7 +120,9 @@ class NotificationCubit extends Cubit<NotificationState> {
       }
 
       final notifications = await _repository.getAll();
-      emit(state.copyWith(notifications: notifications));
+      emit(
+        state.copyWith(notifications: notifications, clearErrorMessage: true),
+      );
     } catch (e) {
       emit(
         state.copyWith(
@@ -139,6 +143,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         state.copyWith(
           reminderIntervalMinutes: minutes,
           notifications: notifications,
+          clearErrorMessage: true,
         ),
       );
     } catch (e) {
@@ -155,7 +160,7 @@ class NotificationCubit extends Cubit<NotificationState> {
   Future<void> cancelAll() async {
     try {
       await _scheduler.cancelAll();
-      emit(state.copyWith(notifications: []));
+      emit(state.copyWith(notifications: [], clearErrorMessage: true));
     } catch (e) {
       emit(
         state.copyWith(

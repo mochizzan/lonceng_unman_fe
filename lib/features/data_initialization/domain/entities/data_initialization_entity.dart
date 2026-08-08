@@ -11,6 +11,7 @@ enum DataInitStatus {
   extractingKhs,
   fetchingKhsData,
   completed,
+  completedWithErrors,
   failed,
 }
 

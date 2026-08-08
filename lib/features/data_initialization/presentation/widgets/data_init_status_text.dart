@@ -25,6 +25,8 @@ String dataInitStatusText(DataInitStatus status) {
       return 'Mengambil data KHS...';
     case DataInitStatus.completed:
       return 'Data akademik siap';
+    case DataInitStatus.completedWithErrors:
+      return 'Data akademik siap (beberapa data mungkin belum lengkap)';
     case DataInitStatus.failed:
       return 'Gagal memuat data';
   }

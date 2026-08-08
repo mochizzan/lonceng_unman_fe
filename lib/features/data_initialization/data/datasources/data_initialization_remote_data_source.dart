@@ -118,7 +118,15 @@ class DataInitializationRemoteDataSource {
       }
     }
 
-    yield DataInitStatus.completed;
+    if (khsErrors.isNotEmpty) {
+      developer.log(
+        'Data init completed with errors: ${khsErrors.join(', ')}',
+        name: 'DataInitDS',
+      );
+      yield DataInitStatus.completedWithErrors;
+    } else {
+      yield DataInitStatus.completed;
+    }
   }
 
   /// Wraps [fn] in a try/catch, converting errors into [DataInitStepException].

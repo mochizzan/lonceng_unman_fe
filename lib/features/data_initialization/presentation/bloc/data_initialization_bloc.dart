@@ -51,7 +51,8 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
 
       // Emit from within the handler so BLoC owns the Emitter lifecycle.
       await for (final status in stream) {
-        if (status == DataInitStatus.completed) {
+        if (status == DataInitStatus.completed ||
+            status == DataInitStatus.completedWithErrors) {
           emit(const DataInitSuccess());
         } else if (status == DataInitStatus.failed) {
           emit(const DataInitFailure('Gagal memuat data akademik'));

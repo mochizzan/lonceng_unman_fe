@@ -13,10 +13,21 @@ class KhsCacheService {
 
   Future<Box<dynamic>> _openBox(String npm) async {
     final name = _boxName(npm);
-    if (!Hive.isBoxOpen(name)) {
-      return Hive.openBox<dynamic>(name);
+    try {
+      if (!Hive.isBoxOpen(name)) {
+        return await Hive.openBox<dynamic>(name);
+      }
+      return Hive.box<dynamic>(name);
+    } catch (e) {
+      developer.log('KHS box corrupted, recovering: $e', name: 'KhsCache');
+      try {
+        await Hive.deleteBoxFromDisk(name);
+        return await Hive.openBox<dynamic>(name);
+      } catch (e2) {
+        developer.log('KHS recovery failed: $e2', name: 'KhsCache');
+        rethrow;
+      }
     }
-    return Hive.box<dynamic>(name);
   }
 
   Future<void> save({

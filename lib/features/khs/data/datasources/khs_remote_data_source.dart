@@ -111,7 +111,11 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String semester,
   }) async {
     // Check cache first
-    final cachedData = await academicCacheService.loadKhsData(npm: npm);
+    final cachedData = await academicCacheService.loadKhsDataSemester(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+    );
     if (cachedData != null) {
       return KhsModel.fromJson(cachedData);
     }
@@ -123,7 +127,12 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     );
 
     // Save to cache
-    await academicCacheService.saveKhsData(npm: npm, data: response);
+    await academicCacheService.saveKhsDataSemester(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+      data: response,
+    );
 
     return KhsModel.fromJson(response);
   }

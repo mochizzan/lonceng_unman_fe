@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:hive_ce/hive.dart';
+import 'package:lonceng_unman_fe/core/cache/khs_cache_service.dart';
 
 /// Manages 4 separate Hive boxes for academic data caching.
 ///
@@ -22,6 +23,8 @@ class AcademicCacheService {
   late Box<String> _krs;
   late Box<String> _khs;
   late Box<String> _khsList;
+
+  final KhsCacheService _khsCache = KhsCacheService();
 
   bool _initialized = false;
 
@@ -132,10 +135,11 @@ class AcademicCacheService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // KHS DATA (single semester)
+  // KHS DATA (single semester — DEPRECATED, use semester-aware methods)
   // ═══════════════════════════════════════════════════════════════════════
 
   /// Save KHS response data.
+  @Deprecated('Use saveKhsDataSemester with tahunAjaran+semester')
   Future<void> saveKhsData({
     required String npm,
     required Map<String, dynamic> data,
@@ -144,6 +148,7 @@ class AcademicCacheService {
   }
 
   /// Load KHS data. Returns null if not cached.
+  @Deprecated('Use loadKhsDataSemester with tahunAjaran+semester')
   Future<Map<String, dynamic>?> loadKhsData({required String npm}) async {
     final raw = _khs.get(npm);
     if (raw == null) return null;
@@ -156,8 +161,55 @@ class AcademicCacheService {
   }
 
   /// Check if KHS data exists for given NPM.
+  @Deprecated('Use hasKhsDataSemester with tahunAjaran+semester')
   bool hasKhsData({required String npm}) {
     return _khs.get(npm) != null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // KHS DATA (semester-aware, via nested per-NPM boxes)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /// Save KHS data keyed by NPM + tahunAjaran + semester.
+  Future<void> saveKhsDataSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+    required Map<String, dynamic> data,
+  }) async {
+    await _khsCache.save(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+      data: data,
+    );
+  }
+
+  /// Load KHS data keyed by NPM + tahunAjaran + semester.
+  /// Returns null if not cached.
+  Future<Map<String, dynamic>?> loadKhsDataSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+  }) async {
+    return _khsCache.load(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+    );
+  }
+
+  /// Check if KHS data exists for given NPM + tahunAjaran + semester.
+  Future<bool> hasKhsDataSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+  }) async {
+    return _khsCache.has(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════

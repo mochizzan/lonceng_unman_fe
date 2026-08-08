@@ -48,7 +48,11 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     double gpa = 0.0;
     String? khsSemester;
     try {
-      final khsJson = await academicCacheService.loadKhsData(npm: npm);
+      final khsJson = await academicCacheService.loadKhsDataSemester(
+        npm: npm,
+        tahunAjaran: krsData.periode.tahunAjaran,
+        semester: krsData.periode.semester,
+      );
       if (khsJson != null) {
         final khsData = KhsModel.fromJson(khsJson).khs;
         gpa = khsData.rekapitulasi.ipk;

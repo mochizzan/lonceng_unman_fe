@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/khs_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
@@ -28,14 +29,17 @@ class DataInitializationRemoteDataSource {
   final GetKrs _getKrs;
   final GetKhs _getKhs;
   final AcademicCacheService _academicCacheService;
+  final KhsCacheService _khsCacheService;
 
   DataInitializationRemoteDataSource({
     required GetKrs getKrs,
     required GetKhs getKhs,
     required AcademicCacheService academicCacheService,
+    KhsCacheService? khsCacheService,
   }) : _getKrs = getKrs,
        _getKhs = getKhs,
-       _academicCacheService = academicCacheService;
+       _academicCacheService = academicCacheService,
+       _khsCacheService = khsCacheService ?? KhsCacheService();
 
   Stream<DataInitStatus> initialize({
     required String npm,
@@ -44,6 +48,7 @@ class DataInitializationRemoteDataSource {
     // Step 0: Clear cache
     yield DataInitStatus.clearingCache;
     await _academicCacheService.clearAcademicData();
+    await _khsCacheService.clearAll(npm: npm);
 
     // ── KRS ──
 

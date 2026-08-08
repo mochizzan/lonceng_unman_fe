@@ -213,7 +213,7 @@ class _HomePageViewState extends State<_HomePageView>
                 const SizedBox(height: AppDimens.space28),
                 QuickStats(
                   data: data,
-                  onKhsTap: () => context.goNamed(
+                  onKhsTap: () => context.pushNamed(
                     RouteNames.khs,
                     queryParameters: {
                       'tahunAjaran': data.tahunAjaran,

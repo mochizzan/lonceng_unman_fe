@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
@@ -335,6 +336,7 @@ class LoncengUnmanApp extends StatefulWidget {
 class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
   late final AuthStatusNotifier _authNotifier;
   late final ThemeNotifier _themeNotifier;
+  late final GoRouter _router;
 
   @override
   void initState() {
@@ -342,6 +344,10 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
     _authNotifier =
         widget.authStatusNotifier ?? Services.get<AuthStatusNotifier>();
     _themeNotifier = widget.themeNotifier ?? ThemeNotifier();
+    _router = AppRouter.create(
+      authStatusNotifier: _authNotifier,
+      themeNotifier: _themeNotifier,
+    );
   }
 
   @override
@@ -358,11 +364,6 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
 
   @override
   Widget build(BuildContext context) {
-    final router = AppRouter.create(
-      authStatusNotifier: _authNotifier,
-      themeNotifier: _themeNotifier,
-    );
-
     return BlocProvider(
       create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
       child: ListenableBuilder(
@@ -373,7 +374,7 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: _themeNotifier.themeMode,
-            routerConfig: router,
+            routerConfig: _router,
             debugShowCheckedModeBanner: false,
           );
         },

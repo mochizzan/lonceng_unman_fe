@@ -28,11 +28,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> with BlocErrorHandler {
       emit(HomeLoaded(data: data));
     } on AuthException catch (_) {
       rethrow;
-    } catch (e, st) {
-      // ignore: avoid_print
-      print('[HomeBloc] ERROR: ${e.runtimeType}: $e');
-      // ignore: avoid_print
-      print('[HomeBloc] Stack: $st');
+    } catch (e) {
       emit(HomeError(handleError(e)));
     }
   }

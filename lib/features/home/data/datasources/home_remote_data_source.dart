@@ -28,13 +28,8 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
   @override
   Future<HomeModel> getHomeData() async {
-    // ignore: avoid_print
-    print('[HomeDS] getHomeData() — reading from cache');
-
     final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
-    // ignore: avoid_print
-    print('[HomeDS] Credentials: npm=${npm ?? "null"}');
     if (npm == null || npm.isEmpty) {
       throw const ValidationException(
         'NPM tidak ditemukan di kredensial. Silakan login ulang.',
@@ -43,8 +38,6 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
     // Read KRS data from cache
     final krsJson = await academicCacheService.loadKrsData(npm: npm);
-    // ignore: avoid_print
-    print('[HomeDS] KRS: ${krsJson != null ? "found" : "null"}');
     if (krsJson == null) {
       throw const ValidationException(
         'Data KRS belum tersedia. Silakan login ulang.',
@@ -88,18 +81,12 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     final todayDayName = weekdayToDayName(now.weekday);
 
     // Build today's schedule from KRS mata_kuliah
-    // ignore: avoid_print
-    print(
-      '[HomeDS] Today: $todayDayName, MataKuliah: ${krsData.mataKuliah.length}',
-    );
     final todaySchedule =
         krsData.mataKuliah
             .where((mk) => mk.hari == todayDayName)
             .map((mk) => toScheduleItem(mk, today, now))
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    // ignore: avoid_print
-    print('[HomeDS] Today schedule: ${todaySchedule.length}');
 
     // Find next upcoming/ongoing class
     final nextClass = _findNextClass(krsData.mataKuliah, today, now);

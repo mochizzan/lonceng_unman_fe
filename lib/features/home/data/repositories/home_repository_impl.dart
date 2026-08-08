@@ -19,11 +19,7 @@ class HomeRepositoryImpl implements HomeRepository {
       return await remoteDataSource.getHomeData();
     } on AppException {
       rethrow;
-    } catch (e, st) {
-      // ignore: avoid_print
-      print('[HomeRepo] ERROR: ${e.runtimeType}: $e');
-      // ignore: avoid_print
-      print('[HomeRepo] Stack: $st');
+    } catch (e) {
       throw ServerException(
         'Gagal memuat data beranda: ${e.toString()}',
         statusCode: 0,

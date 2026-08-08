@@ -162,7 +162,15 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     }
 
     // No more classes today — find next day with classes (up to 14 days)
-    const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+    const dayNames = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
     for (int offset = 1; offset <= 14; offset++) {
       final futureDate = today.add(Duration(days: offset));
       final futureDayName = weekdayToDayName(futureDate.weekday);

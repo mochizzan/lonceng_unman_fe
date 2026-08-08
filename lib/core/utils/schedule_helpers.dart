@@ -3,14 +3,29 @@ import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/entities/krs_entity.dart';
 
 /// Converts Dart weekday int (1=Monday..7=Sunday) to Indonesian day name.
-/// Returns empty string for weekend (6=Saturday, 7=Sunday).
 String weekdayToDayName(int weekday) {
-  const names = {1: 'Senin', 2: 'Selasa', 3: 'Rabu', 4: 'Kamis', 5: 'Jumat'};
+  const names = {
+    1: 'Senin',
+    2: 'Selasa',
+    3: 'Rabu',
+    4: 'Kamis',
+    5: 'Jumat',
+    6: 'Sabtu',
+    7: 'Minggu',
+  };
   return names[weekday] ?? '';
 }
 
-/// Returns ordered list of business day names for sorting.
-const List<String> kDayOrder = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+/// Returns ordered list of day names for sorting (Mon–Sun).
+const List<String> kDayOrder = [
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+  'Sabtu',
+  'Minggu',
+];
 
 /// Parses "HH:MM" or "HH:MM:SS" time string into DateTime combined with date.
 /// Returns [date] unchanged if [timeStr] is empty.

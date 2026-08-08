@@ -81,24 +81,35 @@ Future<void> main() async {
       WidgetsFlutterBinding.ensureInitialized();
 
       // Initialize Firebase before using any Firebase services.
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      bool firebaseReady = false;
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        firebaseReady = true;
+      } catch (e) {
+        developer.log(
+          'Firebase init failed, running without FCM: $e',
+          name: 'main',
+        );
+      }
 
-      // Register the background message handler.
-      FirebaseMessaging.onBackgroundMessage(
-        _firebaseMessagingBackgroundHandler,
-      );
+      if (firebaseReady) {
+        // Register the background message handler.
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
 
-      // Initialize FCM for foreground message handling.
-      // Notification taps are handled by the router via GoRouter's redirect.
-      await FcmService.instance.initialize(
-        onNotificationTap: (message) {
-          // Handle navigation based on message data type.
-          // Example: if message.data['type'] == 'jadwal_update', navigate to jadwal.
-          developer.log('Notification tap: ${message.data}', name: 'FCM');
-        },
-      );
+        // Initialize FCM for foreground message handling.
+        // Notification taps are handled by the router via GoRouter's redirect.
+        await FcmService.instance.initialize(
+          onNotificationTap: (message) {
+            // Handle navigation based on message data type.
+            // Example: if message.data['type'] == 'jadwal_update', navigate to jadwal.
+            developer.log('Notification tap: ${message.data}', name: 'FCM');
+          },
+        );
+      }
 
       // ── Hive local persistence (with corruption recovery, EH-3) ──
       // Store Hive boxes in external cache so data survives app updates
@@ -236,11 +247,9 @@ Future<void> main() async {
       // ── API Client (with 401→logout wiring) ──
       final apiClient = ApiClient(
         baseUrl: AppStrings.apiBaseUrl,
-        onAuthError: () {
-          // Fire-and-forget: callback is sync but performFullLogout is async.
-          // Auth status change (redirect) happens at the end of performFullLogout.
-          // eslint-disable-next-line: unawaited_futures
-          Services.performFullLogout();
+        onAuthError: () async {
+          // Await logout so cache is cleared before redirect.
+          await Services.performFullLogout();
         },
       );
       Services.register<ApiClient>(apiClient);
@@ -318,6 +327,47 @@ Future<void> main() async {
           ),
         ),
       );
+
+      // Set auth status to unknown while we validate credentials
+      authStatusNotifier.setStatus(AuthStatus.unknown);
+
+      // Credential validation on app restart
+      final cache = Services.get<AcademicCacheService>();
+      final credentials = await cache.loadCredentials();
+
+      if (credentials != null &&
+          credentials['npm'] != null &&
+          credentials['npm']!.isNotEmpty &&
+          credentials['password'] != null &&
+          credentials['password']!.isNotEmpty) {
+        // Credentials exist — try to validate via login API
+        try {
+          final getAuth = Services.get<GetAuth>();
+          await getAuth(
+            npm: credentials['npm']!,
+            password: credentials['password']!,
+          );
+          // Login succeeded — check if data exists in cache
+          final hasKrs = cache.hasKrsData(npm: credentials['npm']!);
+          final hasKhsList = cache.hasKhsList(npm: credentials['npm']!);
+
+          if (hasKrs && hasKhsList) {
+            // Creds + data → authenticated, go to home
+            authStatusNotifier.setStatus(AuthStatus.authenticated);
+          } else {
+            // Creds + no data → unauthenticated, login page runs data-init
+            authStatusNotifier.setStatus(AuthStatus.unauthenticated);
+          }
+        } catch (e) {
+          // Network error or invalid creds → clear creds, go to login
+          developer.log('Credential validation failed: $e', name: 'main');
+          await cache.clearCredentials();
+          authStatusNotifier.setStatus(AuthStatus.unauthenticated);
+        }
+      } else {
+        // No credentials → go to login
+        authStatusNotifier.setStatus(AuthStatus.unauthenticated);
+      }
 
       runApp(const LoncengUnmanApp());
     },

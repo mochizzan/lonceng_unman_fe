@@ -12,7 +12,6 @@ import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
@@ -25,22 +24,13 @@ import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({
-    super.key,
-    required this.authStatusNotifier,
-    this.authBloc,
-    this.dataInitBloc,
-  });
+  const LoginPage({super.key, required this.authStatusNotifier, this.authBloc});
 
   final AuthStatusNotifier authStatusNotifier;
 
   /// Optional pre-built AuthBloc for testing.
   /// When null, a new BLoC is created internally.
   final AuthBloc? authBloc;
-
-  /// Optional pre-built DataInitBloc for testing.
-  /// When null, a new BLoC is created internally.
-  final DataInitBloc? dataInitBloc;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -51,7 +41,6 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   late final AuthBloc _authBloc;
   bool _loginSuccess = false;
-  late final DataInitBloc _dataInitBloc;
 
   @override
   void initState() {
@@ -62,9 +51,6 @@ class _LoginPageState extends State<LoginPage> {
           Services.get<GetAuth>(),
           academicCacheService: Services.get<AcademicCacheService>(),
         );
-    _dataInitBloc =
-        widget.dataInitBloc ??
-        DataInitBloc(Services.get<GetDataInitialization>());
     _checkCachedLogin();
   }
 
@@ -84,7 +70,6 @@ class _LoginPageState extends State<LoginPage> {
     _npmController.dispose();
     _passwordController.dispose();
     _authBloc.close();
-    _dataInitBloc.close();
     super.dispose();
   }
 
@@ -100,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
           if (state is AuthAuthenticated) {
             setState(() => _loginSuccess = true);
             // Trigger data-init pipeline on the login page.
-            _dataInitBloc.add(
+            context.read<DataInitBloc>().add(
               DataInitStarted(
                 npm: _npmController.text,
                 password: _passwordController.text,
@@ -211,74 +196,71 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildProgressUI(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return BlocProvider.value(
-      value: _dataInitBloc,
-      child: BlocBuilder<DataInitBloc, DataInitBlocState>(
-        builder: (context, state) {
-          final statusText = state is DataInitInProgress
-              ? dataInitStatusText(state.status)
-              : 'Menyiapkan data...';
+    return BlocBuilder<DataInitBloc, DataInitBlocState>(
+      builder: (context, state) {
+        final statusText = state is DataInitInProgress
+            ? dataInitStatusText(state.status)
+            : 'Menyiapkan data...';
 
-          final isCompleted = state is DataInitSuccess;
+        final isCompleted = state is DataInitSuccess;
 
-          if (isCompleted && mounted) {
-            // Navigate to home after the current frame so the widget tree
-            // can settle before GoRouter replaces the route.
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              // Mark authenticated so the router guard allows /home.
-              widget.authStatusNotifier.setStatus(AuthStatus.authenticated);
-            });
-          }
+        if (isCompleted && mounted) {
+          // Navigate to home after the current frame so the widget tree
+          // can settle before GoRouter replaces the route.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            // Mark authenticated so the router guard allows /home.
+            widget.authStatusNotifier.setStatus(AuthStatus.authenticated);
+          });
+        }
 
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo
-              const BellLogo(),
-              SizedBox(height: sp(context, AppDimens.space32)),
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo
+            const BellLogo(),
+            SizedBox(height: sp(context, AppDimens.space32)),
 
-              // Status text
-              Text(
-                isCompleted ? 'Data akademik siap' : statusText,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: cs.onSurface,
-                  fontSize: responsiveFontSize(context, AppDimens.textMD),
-                ),
-                textAlign: TextAlign.center,
+            // Status text
+            Text(
+              isCompleted ? 'Data akademik siap' : statusText,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: cs.onSurface,
+                fontSize: responsiveFontSize(context, AppDimens.textMD),
               ),
-              SizedBox(height: sp(context, AppDimens.space24)),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: sp(context, AppDimens.space24)),
 
-              // Progress indicator
-              if (!isCompleted) CircularProgressIndicator(color: cs.primary),
+            // Progress indicator
+            if (!isCompleted) CircularProgressIndicator(color: cs.primary),
 
-              // Error message with retry button
-              if (state is DataInitFailure)
-                Column(
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: cs.error),
-                    SizedBox(height: sp(context, AppDimens.space16)),
-                    Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
-                    ),
-                    SizedBox(height: sp(context, AppDimens.space24)),
-                    FilledButton(
-                      onPressed: () {
-                        _dataInitBloc.add(const DataInitReset());
-                        setState(() => _loginSuccess = false);
-                      },
-                      child: const Text('Coba lagi'),
-                    ),
-                  ],
-                ),
-            ],
-          );
-        },
-      ),
+            // Error message with retry button
+            if (state is DataInitFailure)
+              Column(
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: cs.error),
+                  SizedBox(height: sp(context, AppDimens.space16)),
+                  Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
+                  ),
+                  SizedBox(height: sp(context, AppDimens.space24)),
+                  FilledButton(
+                    onPressed: () {
+                      context.read<DataInitBloc>().add(const DataInitReset());
+                      setState(() => _loginSuccess = false);
+                    },
+                    child: const Text('Coba lagi'),
+                  ),
+                ],
+              ),
+          ],
+        );
+      },
     );
   }
 }

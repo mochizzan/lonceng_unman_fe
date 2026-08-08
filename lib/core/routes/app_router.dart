@@ -156,6 +156,7 @@ List<RouteBase> _buildRoutes(
 
     // --- Onboarding (first-time users) ---
     GoRoute(
+      name: RouteNames.onboarding,
       path: RouteNames.onboarding,
       builder: (context, state) => const OnboardingPage(),
     ),

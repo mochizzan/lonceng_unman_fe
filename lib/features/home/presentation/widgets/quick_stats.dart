@@ -63,10 +63,10 @@ class QuickStats extends StatelessWidget {
             color: cs.secondaryContainer.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(AppDimens.radius2XL),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Kiri: icon + tahun ajaran + program studi
+              // ── Header: icon + tahun ajaran + program studi ──
               Row(
                 children: [
                   Container(
@@ -83,97 +83,71 @@ class QuickStats extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppDimens.space12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.tahunAjaran,
-                        style: TextStyle(
-                          fontSize: AppDimens.textLG,
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSecondaryContainer,
-                        ),
-                      ),
-                      Text(
-                        data.studyProgram,
-                        style: TextStyle(
-                          fontSize: AppDimens.textSM,
-                          color: cs.onSecondaryContainer.withValues(
-                            alpha: ColorValues.opacityMax,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.tahunAjaran,
+                          style: TextStyle(
+                            fontSize: AppDimens.textLG,
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSecondaryContainer,
                           ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          data.studyProgram,
+                          style: TextStyle(
+                            fontSize: AppDimens.textSM,
+                            color: cs.onSecondaryContainer.withValues(
+                              alpha: ColorValues.opacityMax,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              // Kanan: IPK ganjil + genap + tombol Lihat KHS
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              const SizedBox(height: AppDimens.space16),
+              // ── IPK section: chips + Lihat KHS button ──
+              Row(
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // IPK Ganjil
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Ganjil',
-                            style: TextStyle(
-                              fontSize: AppDimens.textXS,
-                              color: cs.onSecondaryContainer.withValues(
-                                alpha: ColorValues.opacityMax,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            data.gpaGanjil.toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: AppDimens.textLG,
-                              fontWeight: FontWeight.bold,
-                              color: cs.onSecondaryContainer,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: AppDimens.space12),
-                      // IPK Genap
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Genap',
-                            style: TextStyle(
-                              fontSize: AppDimens.textXS,
-                              color: cs.onSecondaryContainer.withValues(
-                                alpha: ColorValues.opacityMax,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            data.gpaGenap.toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: AppDimens.textLG,
-                              fontWeight: FontWeight.bold,
-                              color: cs.onSecondaryContainer,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  // IPK Ganjil chip
+                  _buildIpkChip(
+                    label: 'Ganjil',
+                    value: data.gpaGanjil.toStringAsFixed(2),
+                    cs: cs,
                   ),
-                  const SizedBox(height: AppDimens.space4),
+                  const SizedBox(width: AppDimens.space12),
+                  // IPK Genap chip
+                  _buildIpkChip(
+                    label: 'Genap',
+                    value: data.gpaGenap.toStringAsFixed(2),
+                    cs: cs,
+                  ),
+                  const Spacer(),
                   // Tombol Lihat KHS
                   GestureDetector(
                     onTap: onKhsTap,
-                    child: Text(
-                      'Lihat KHS >',
-                      style: TextStyle(
-                        fontSize: AppDimens.textXS,
-                        color: cs.onSecondaryContainer,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Lihat KHS',
+                          style: TextStyle(
+                            fontSize: AppDimens.textSM,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSecondaryContainer,
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: AppDimens.iconSM,
+                          color: cs.onSecondaryContainer,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -182,6 +156,47 @@ class QuickStats extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Builds a small chip displaying IPK label and value.
+  static Widget _buildIpkChip({
+    required String label,
+    required String value,
+    required ColorScheme cs,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space12,
+        vertical: AppDimens.space8,
+      ),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: AppDimens.textXS,
+              color: cs.onSecondaryContainer.withValues(
+                alpha: ColorValues.opacityMax,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimens.space2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: AppDimens.textLG,
+              fontWeight: FontWeight.bold,
+              color: cs.onSecondaryContainer,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

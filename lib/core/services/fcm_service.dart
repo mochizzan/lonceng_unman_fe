@@ -10,8 +10,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 const String _webVapidKey =
     'BEOyeFCQemJDI3vFVnrFP5meGjaMmnEFfnt0XaZUz5ciIT46x5EmdhPqGdxHiYX7U4dB12Q76K6E1mxwgu6s0rk';
 
-/// Callback type for handling notification interactions.
-typedef NotificationTapCallback = void Function(RemoteMessage message);
+/// Callback type for handling FCM notification interactions.
+typedef FcmNotificationTapCallback = void Function(RemoteMessage message);
 
 /// Service for managing Firebase Cloud Messaging.
 ///
@@ -48,8 +48,8 @@ class FcmService {
   /// Stream subscription for notification taps from background.
   StreamSubscription<RemoteMessage>? _backgroundTapSubscription;
 
-  /// Callback for handling notification taps (set by the app).
-  NotificationTapCallback? _onNotificationTap;
+  /// Callback for handling FCM notification taps (set by the app).
+  FcmNotificationTapCallback? _onNotificationTap;
 
   /// Initialize FCM: request permission, get token, set up listeners.
   ///
@@ -57,7 +57,9 @@ class FcmService {
   ///
   /// [onNotificationTap] is called when user taps a notification
   /// (both from terminated and background states).
-  Future<void> initialize({NotificationTapCallback? onNotificationTap}) async {
+  Future<void> initialize({
+    FcmNotificationTapCallback? onNotificationTap,
+  }) async {
     _onNotificationTap = onNotificationTap;
 
     try {

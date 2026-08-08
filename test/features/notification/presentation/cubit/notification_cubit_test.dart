@@ -98,6 +98,8 @@ class MockNotificationService implements NotificationService {
     required NotificationChannel channel,
     required tz.TZDateTime scheduledDate,
     DateTimeComponents? matchDateTimeComponents,
+    AndroidScheduleMode androidScheduleMode =
+        AndroidScheduleMode.exactAllowWhileIdle,
   }) async {}
 
   @override

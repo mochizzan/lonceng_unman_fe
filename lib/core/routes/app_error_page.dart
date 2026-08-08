@@ -33,13 +33,23 @@ class AppErrorPage extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppDimens.space8),
+              Text(
+                AppStrings.errorNotFoundDesc,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
               if (state?.error?.toString().isNotEmpty ?? false)
-                Text(
-                  state!.error.toString(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    state!.error.toString(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               const SizedBox(height: AppDimens.space24),
               FilledButton(

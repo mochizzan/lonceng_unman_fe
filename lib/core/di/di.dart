@@ -2,6 +2,7 @@
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 /// Simple service locator for dependency injection.
 ///
@@ -60,6 +61,12 @@ class Services {
     } catch (_) {
       // Notification service might not be registered in DI yet
     }
+
+    // 2b. Delete FCM token so the device is unregistered from FCM
+    try {
+      final messaging = FirebaseMessaging.instance;
+      await messaging.deleteToken();
+    } catch (_) {}
 
     // 3. Set auth status to unauthenticated
     final authNotifier = get<AuthStatusNotifier>();

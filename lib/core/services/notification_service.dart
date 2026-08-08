@@ -7,6 +7,9 @@ import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 
+/// Callback type for handling notification taps.
+typedef NotificationTapCallback = void Function(int id, String? payload);
+
 /// Thin wrapper around flutter_local_notifications plugin.
 ///
 /// Handles initialization, channel creation, and alarm scheduling.
@@ -114,6 +117,8 @@ class NotificationService {
     required NotificationChannel channel,
     required tz.TZDateTime scheduledDate,
     DateTimeComponents? matchDateTimeComponents,
+    AndroidScheduleMode androidScheduleMode =
+        AndroidScheduleMode.exactAllowWhileIdle,
   }) async {
     await _plugin.zonedSchedule(
       id: id,
@@ -121,12 +126,17 @@ class NotificationService {
       body: body,
       scheduledDate: scheduledDate,
       notificationDetails: _detailsFor(channel),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: androidScheduleMode,
       matchDateTimeComponents: matchDateTimeComponents,
     );
 
     developer.log(
       'Scheduled [#${channel.id}] #$id: $title at $scheduledDate',
+      name: 'NotificationService',
+    );
+  } on Exception catch (e) {
+    developer.log(
+      'WARNING: Failed to schedule notification — timezone data may be missing or invalid: $e',
       name: 'NotificationService',
     );
   }

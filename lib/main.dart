@@ -49,7 +49,6 @@ import 'package:lonceng_unman_fe/features/notification/data/models/scheduled_not
 import 'package:lonceng_unman_fe/features/notification/data/repositories/notification_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
-import 'package:lonceng_unman_fe/core/services/notification_permission.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Background message handler — must be top-level (not inside a class).
@@ -80,9 +79,6 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-
-      // Request notification permission (Android 13+ POST_NOTIFICATIONS).
-      await NotificationPermission.request();
 
       // Register the background message handler.
       FirebaseMessaging.onBackgroundMessage(

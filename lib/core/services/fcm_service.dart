@@ -1,7 +1,7 @@
 // lib/core/services/fcm_service.dart
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -9,30 +9,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 /// Obtain from Firebase Console → Settings → Cloud Messaging → Web Push certificates.
 const String _webVapidKey =
     'BEOyeFCQemJDI3vFVnrFP5meGjaMmnEFfnt0XaZUz5ciIT46x5EmdhPqGdxHiYX7U4dB12Q76K6E1mxwgu6s0rk';
-
-/// Top-level background message handler.
-///
-/// Must be a top-level function (not a class method or anonymous closure)
-/// and annotated with @pragma('vm:entry-point') to prevent tree-shaking
-/// in release builds.
-///
-/// This runs in a separate isolate — cannot update app state or UI.
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  developer.log(
-    'Background message received: ${message.messageId}',
-    name: 'FCM.Background',
-  );
-
-  if (message.notification != null) {
-    developer.log(
-      'Title: ${message.notification!.title}, Body: ${message.notification!.body}',
-      name: 'FCM.Background',
-    );
-  }
-
-  developer.log('Data: ${message.data}', name: 'FCM.Background');
-}
 
 /// Callback type for handling notification interactions.
 typedef NotificationTapCallback = void Function(RemoteMessage message);
@@ -56,6 +32,9 @@ class FcmService {
   /// Stream of notification taps (app opened from background).
   Stream<RemoteMessage> get onMessageOpenedApp =>
       FirebaseMessaging.onMessageOpenedApp;
+
+  /// Stream of messages received while the app is in the foreground.
+  Stream<RemoteMessage> get onForegroundMessage => _messageController.stream;
 
   /// Current FCM registration token. Cached after first retrieval.
   String? _currentToken;
@@ -90,11 +69,15 @@ class FcmService {
         name: 'FCM',
       );
 
-      // Step 2: For iOS, ensure APNs token is available before FCM API calls.
-      if (Platform.isIOS) {
-        developer.log('Step 2: Checking APNs token (iOS)...', name: 'FCM');
-        final apnsToken = await _messaging.getAPNSToken();
-        developer.log('APNs token: $apnsToken', name: 'FCM');
+      // Step 2: For non-web platforms, ensure APNs token is available before FCM API calls.
+      if (!kIsWeb) {
+        try {
+          developer.log('Step 2: Checking APNs token (iOS)...', name: 'FCM');
+          final apnsToken = await _messaging.getAPNSToken();
+          developer.log('APNs token: $apnsToken', name: 'FCM');
+        } catch (e) {
+          developer.log('APNs token check skipped: $e', name: 'FCM');
+        }
       }
 
       // Step 3: Get and cache the FCM token.
@@ -110,11 +93,13 @@ class FcmService {
     _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
       _currentToken = token;
       developer.log('Token refreshed: $token', name: 'FCM');
-    });
+    }, onError: (e) => developer.log('Token refresh error: $e', name: 'FCM'));
 
     // Listen for foreground messages.
     _foregroundSubscription = FirebaseMessaging.onMessage.listen(
       _handleForegroundMessage,
+      onError: (e) =>
+          developer.log('Foreground message error: $e', name: 'FCM'),
     );
 
     // Enable foreground notification display on iOS.
@@ -140,7 +125,7 @@ class FcmService {
     ) {
       developer.log('App opened from background via notification', name: 'FCM');
       _onNotificationTap?.call(message);
-    });
+    }, onError: (e) => developer.log('Background tap error: $e', name: 'FCM'));
   }
 
   /// Request notification permissions from the user.
@@ -165,5 +150,13 @@ class FcmService {
     }
     developer.log('Data: ${message.data}', name: 'FCM');
     _messageController.add(message);
+  }
+
+  /// Release all stream subscriptions and the message controller.
+  void dispose() {
+    _tokenRefreshSubscription?.cancel();
+    _foregroundSubscription?.cancel();
+    _backgroundTapSubscription?.cancel();
+    _messageController.close();
   }
 }

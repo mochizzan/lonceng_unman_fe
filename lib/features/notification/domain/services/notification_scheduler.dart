@@ -135,7 +135,10 @@ class NotificationScheduler {
     try {
       tzTrigger = tz.TZDateTime.from(triggerTime, tz.local);
     } catch (e) {
-      developer.log('Timezone fallback: $e', name: 'NotificationScheduler');
+      developer.log(
+        'WARNING: Timezone fallback — tz data may be missing or invalid: $e',
+        name: 'NotificationScheduler',
+      );
       tzTrigger = tz.TZDateTime(
         tz.local,
         triggerTime.year,
@@ -163,6 +166,9 @@ class NotificationScheduler {
       channel: NotificationChannel.classReminders,
       scheduledDate: tzTrigger,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      androidScheduleMode: canUseExact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }
 

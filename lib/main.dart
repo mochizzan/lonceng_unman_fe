@@ -67,22 +67,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
-  // Ensure bindings are initialized in the root zone (required before runZonedGuarded)
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Global error handling
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    developer.log(
-      'FlutterError: ${details.exceptionAsString()}',
-      name: 'ErrorHandler',
-      error: details.exception,
-      stackTrace: details.stack,
-    );
-  };
-
   runZonedGuarded(
     () async {
+      // Ensure bindings are initialized inside runZonedGuarded (same zone as runApp)
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Global error handling
+      FlutterError.onError = (FlutterErrorDetails details) {
+        FlutterError.presentError(details);
+        developer.log(
+          'FlutterError: ${details.exceptionAsString()}',
+          name: 'ErrorHandler',
+          error: details.exception,
+          stackTrace: details.stack,
+        );
+      };
+
       // Initialize Firebase before using any Firebase services.
       bool firebaseReady = false;
       try {

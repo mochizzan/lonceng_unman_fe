@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:hive_ce/hive.dart';
 
 /// Manages 3 Hive boxes for academic data caching.
@@ -35,6 +37,39 @@ class AcademicCacheService {
     }
   }
 
+  /// Ensures Hive boxes are open and accessible.
+  ///
+  /// After a hot restart, [initialize] is not re-called (main() doesn't
+  /// re-execute), but the boxes may need re-opening. This method
+  /// re-opens them safely if they are closed or inaccessible.
+  Future<void> _ensureReady() async {
+    if (!_initialized) {
+      await initialize();
+      return;
+    }
+    // Verify boxes are actually open; re-open if needed.
+    if (!_credentials.isOpen || !_academic.isOpen) {
+      developer.log(
+        'Hive boxes closed after restart, re-opening',
+        name: 'AcademicCache',
+      );
+      try {
+        _credentials = await Hive.openBox<dynamic>(_credentialsBox);
+        _academic = await Hive.openBox<dynamic>(_academicBox);
+      } catch (e) {
+        developer.log(
+          'Failed to re-open Hive boxes: $e',
+          name: 'AcademicCache',
+        );
+        // Corruption recovery
+        await Hive.deleteBoxFromDisk(_credentialsBox);
+        await Hive.deleteBoxFromDisk(_academicBox);
+        _credentials = await Hive.openBox<dynamic>(_credentialsBox);
+        _academic = await Hive.openBox<dynamic>(_academicBox);
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // CREDENTIALS
   // ═══════════════════════════════════════════════════════════════
@@ -43,10 +78,12 @@ class AcademicCacheService {
     required String npm,
     required String password,
   }) async {
+    await _ensureReady();
     await _credentials.put(npm, {'npm': npm, 'password': password});
   }
 
   Future<Map<String, String>?> loadCredentials() async {
+    await _ensureReady();
     // Get all credentials (first user for now)
     if (_credentials.isEmpty) return null;
     final data = _credentials.values.first as Map<dynamic, dynamic>;
@@ -57,6 +94,7 @@ class AcademicCacheService {
   }
 
   Future<Map<String, String>?> loadCredentialsByNpm(String npm) async {
+    await _ensureReady();
     final raw = _credentials.get(npm);
     if (raw == null) return null;
     final data = raw as Map<dynamic, dynamic>;
@@ -66,9 +104,13 @@ class AcademicCacheService {
     };
   }
 
-  bool hasCredentials() => _credentials.isNotEmpty;
+  bool hasCredentials() {
+    if (!_initialized || !_credentials.isOpen) return false;
+    return _credentials.isNotEmpty;
+  }
 
   Future<void> clearCredentials() async {
+    await _ensureReady();
     await _credentials.clear();
   }
 
@@ -81,6 +123,7 @@ class AcademicCacheService {
     required String npm,
     required Map<String, dynamic> data,
   }) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     final existing = (raw != null
         ? Map<String, dynamic>.from(raw as Map)
@@ -90,6 +133,7 @@ class AcademicCacheService {
   }
 
   Future<Map<String, dynamic>?> loadKrsData({required String npm}) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     if (raw == null) return null;
     final data = raw as Map<dynamic, dynamic>;
@@ -98,6 +142,7 @@ class AcademicCacheService {
   }
 
   bool hasKrsData({required String npm}) {
+    if (!_initialized || !_academic.isOpen) return false;
     final raw = _academic.get(npm);
     if (raw == null) return false;
     final data = raw as Map<dynamic, dynamic>;
@@ -109,6 +154,7 @@ class AcademicCacheService {
     required String npm,
     required List<dynamic> data,
   }) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     final existing = (raw != null
         ? Map<String, dynamic>.from(raw as Map)
@@ -118,6 +164,7 @@ class AcademicCacheService {
   }
 
   Future<List<dynamic>?> loadKhsList({required String npm}) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     if (raw == null) return null;
     final data = raw as Map<dynamic, dynamic>;
@@ -125,6 +172,7 @@ class AcademicCacheService {
   }
 
   bool hasKhsList({required String npm}) {
+    if (!_initialized || !_academic.isOpen) return false;
     final raw = _academic.get(npm);
     if (raw == null) return false;
     final data = raw as Map<dynamic, dynamic>;
@@ -141,6 +189,7 @@ class AcademicCacheService {
     required String semester,
     required Map<String, dynamic> data,
   }) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     final existing = (raw != null
         ? Map<String, dynamic>.from(raw as Map)
@@ -159,6 +208,7 @@ class AcademicCacheService {
     required String tahunAjaran,
     required String semester,
   }) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     if (raw == null) return null;
     final data = raw as Map<dynamic, dynamic>;
@@ -174,6 +224,7 @@ class AcademicCacheService {
     required String tahunAjaran,
     required String semester,
   }) async {
+    await _ensureReady();
     final raw = _academic.get(npm);
     if (raw == null) return false;
     final data = raw as Map<dynamic, dynamic>;
@@ -185,6 +236,7 @@ class AcademicCacheService {
 
   // CHECK DATA EXISTS
   bool hasAcademicData({required String npm}) {
+    if (!_initialized || !_academic.isOpen) return false;
     final raw = _academic.get(npm);
     if (raw == null) return false;
     final data = raw as Map<dynamic, dynamic>;
@@ -196,6 +248,7 @@ class AcademicCacheService {
   // ═══════════════════════════════════════════════════════════════
 
   Future<void> clearKrsData() async {
+    await _ensureReady();
     // Clear KRS for all users
     for (final key in _academic.keys) {
       final raw = _academic.get(key);
@@ -208,6 +261,7 @@ class AcademicCacheService {
   }
 
   Future<void> clearKhsData() async {
+    await _ensureReady();
     // Clear KHS for all users
     for (final key in _academic.keys) {
       final raw = _academic.get(key);
@@ -221,10 +275,12 @@ class AcademicCacheService {
   }
 
   Future<void> clearAcademicData() async {
+    await _ensureReady();
     await _academic.clear();
   }
 
   Future<void> clearAll() async {
+    await _ensureReady();
     await _credentials.clear();
     await _academic.clear();
   }

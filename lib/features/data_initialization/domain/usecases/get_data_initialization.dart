@@ -6,7 +6,10 @@ class GetDataInitialization {
 
   const GetDataInitialization(this.repository);
 
-  Stream<DataInitStatus> call({required String npm, required String password}) {
+  Stream<DataInitProgress> call({
+    required String npm,
+    required String password,
+  }) {
     return repository.initialize(npm: npm, password: password);
   }
 }

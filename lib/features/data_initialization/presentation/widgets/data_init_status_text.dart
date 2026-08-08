@@ -1,7 +1,10 @@
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 
 /// Human-readable progress labels for the data-init pipeline.
-String dataInitStatusText(DataInitStatus status) {
+///
+/// When [detail] is provided (e.g. tahun ajaran info), it is appended
+/// to KHS-related status messages.
+String dataInitStatusText(DataInitStatus status, {String? detail}) {
   switch (status) {
     case DataInitStatus.idle:
       return 'Menyiapkan...';
@@ -18,11 +21,15 @@ String dataInitStatusText(DataInitStatus status) {
     case DataInitStatus.fetchingKhsSemesters:
       return 'Mengambil daftar KHS...';
     case DataInitStatus.downloadingKhs:
-      return 'Mengunduh data KHS...';
+      return detail != null
+          ? 'Mengunduh KHS $detail...'
+          : 'Mengunduh data KHS...';
     case DataInitStatus.extractingKhs:
-      return 'Mengekstrak data KHS...';
+      return detail != null
+          ? 'Mengekstrak KHS $detail...'
+          : 'Mengekstrak data KHS...';
     case DataInitStatus.fetchingKhsData:
-      return 'Mengambil data KHS...';
+      return detail != null ? 'Memuat KHS $detail...' : 'Mengambil data KHS...';
     case DataInitStatus.completed:
       return 'Data akademik siap';
     case DataInitStatus.completedWithErrors:

@@ -8,7 +8,7 @@ class DataInitializationRepositoryImpl implements DataInitializationRepository {
   const DataInitializationRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Stream<DataInitStatus> initialize({
+  Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
   }) {

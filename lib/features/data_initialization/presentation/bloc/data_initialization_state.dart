@@ -18,18 +18,20 @@ class DataInitIdle extends DataInitBlocState {
 
 class DataInitInProgress extends DataInitBlocState {
   final DataInitStatus status;
+  final String? detail;
 
-  const DataInitInProgress(this.status);
+  const DataInitInProgress(this.status, {this.detail});
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is DataInitInProgress &&
           runtimeType == other.runtimeType &&
-          status == other.status;
+          status == other.status &&
+          detail == other.detail;
 
   @override
-  int get hashCode => status.hashCode;
+  int get hashCode => Object.hash(status, detail);
 }
 
 class DataInitSuccess extends DataInitBlocState {

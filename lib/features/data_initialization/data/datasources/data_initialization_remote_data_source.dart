@@ -34,28 +34,28 @@ class DataInitializationRemoteDataSource {
   }) : _getKrs = getKrs,
        _getKhs = getKhs;
 
-  Stream<DataInitStatus> initialize({
+  Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
   }) async* {
     // ── KRS ──
 
     // Step 1: Download KRS PDF
-    yield DataInitStatus.downloadingKrs;
+    yield const DataInitProgress(DataInitStatus.downloadingKrs);
     await _runStep(
       'krs_download',
       () => _getKrs.download(npm: npm, password: password),
     );
 
     // Step 2: Extract KRS
-    yield DataInitStatus.extractingKrs;
+    yield const DataInitProgress(DataInitStatus.extractingKrs);
     await _runStep(
       'krs_extract',
       () => _getKrs.extract(npm: npm, password: password),
     );
 
     // Step 3: Fetch KRS data
-    yield DataInitStatus.fetchingKrsData;
+    yield const DataInitProgress(DataInitStatus.fetchingKrsData);
     final krsData = await _runStep('krs_data', () => _getKrs(npm: npm));
     if (krsData.krs.mataKuliah.isEmpty) {
       throw const DataInitStepException('krs_data', 'Data KRS kosong');
@@ -64,7 +64,7 @@ class DataInitializationRemoteDataSource {
     // ── KHS ──
 
     // Step 4: Get available KHS semesters
-    yield DataInitStatus.fetchingKhsSemesters;
+    yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
     final semesters = await _runStep(
       'khs_semesters',
       () => _getKhs.getSemesters(npm: npm, password: password),
@@ -73,9 +73,10 @@ class DataInitializationRemoteDataSource {
     // Steps 5-7: Process ALL available KHS semesters
     final List<String> khsErrors = [];
     for (final semesterEntry in semesters) {
+      final detail = '${semesterEntry.tahunAjaran} ${semesterEntry.semester}';
       try {
         // Step 5: Download KHS PDF
-        yield DataInitStatus.downloadingKhs;
+        yield DataInitProgress(DataInitStatus.downloadingKhs, detail: detail);
         await _runStep(
           'khs_download_${semesterEntry.semester}',
           () => _getKhs.download(
@@ -87,7 +88,7 @@ class DataInitializationRemoteDataSource {
         );
 
         // Step 6: Extract KHS
-        yield DataInitStatus.extractingKhs;
+        yield DataInitProgress(DataInitStatus.extractingKhs, detail: detail);
         await _runStep(
           'khs_extract_${semesterEntry.semester}',
           () => _getKhs.extract(
@@ -99,7 +100,7 @@ class DataInitializationRemoteDataSource {
         );
 
         // Step 7: Fetch KHS data
-        yield DataInitStatus.fetchingKhsData;
+        yield DataInitProgress(DataInitStatus.fetchingKhsData, detail: detail);
         await _runStep(
           'khs_data_${semesterEntry.semester}',
           () => _getKhs(
@@ -123,9 +124,9 @@ class DataInitializationRemoteDataSource {
         'Data init completed with errors: ${khsErrors.join(', ')}',
         name: 'DataInitDS',
       );
-      yield DataInitStatus.completedWithErrors;
+      yield const DataInitProgress(DataInitStatus.completedWithErrors);
     } else {
-      yield DataInitStatus.completed;
+      yield const DataInitProgress(DataInitStatus.completed);
     }
   }
 

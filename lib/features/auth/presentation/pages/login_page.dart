@@ -203,7 +203,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocBuilder<DataInitBloc, DataInitBlocState>(
       builder: (context, state) {
         final statusText = state is DataInitInProgress
-            ? dataInitStatusText(state.status)
+            ? dataInitStatusText(state.status, detail: state.detail)
             : 'Menyiapkan data...';
 
         final isCompleted = state is DataInitSuccess;

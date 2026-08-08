@@ -57,7 +57,7 @@ class DataRefreshOverlay extends StatelessWidget {
         body: BlocBuilder<DataInitBloc, DataInitBlocState>(
           builder: (context, state) {
             final statusText = state is DataInitInProgress
-                ? dataInitStatusText(state.status)
+                ? dataInitStatusText(state.status, detail: state.detail)
                 : state is DataInitSuccess
                 ? 'Data siap!'
                 : state is DataInitFailure

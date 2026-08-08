@@ -187,7 +187,7 @@ class _FakeAcademicCacheService extends AcademicCacheService {
 
 class _FakeDataInitRepo implements DataInitializationRepository {
   @override
-  Stream<DataInitStatus> initialize({
+  Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
   }) async* {}

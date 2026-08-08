@@ -6,7 +6,6 @@ import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
-import 'dart:developer' as developer;
 
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
@@ -29,11 +28,13 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
   @override
   Future<HomeModel> getHomeData() async {
-    developer.log('getHomeData() called — reading from cache', name: 'HomeDS');
+    // ignore: avoid_print
+    print('[HomeDS] getHomeData() — reading from cache');
 
     final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
-    developer.log('Credentials loaded: npm=${npm ?? "null"}', name: 'HomeDS');
+    // ignore: avoid_print
+    print('[HomeDS] Credentials: npm=${npm ?? "null"}');
     if (npm == null || npm.isEmpty) {
       throw const ValidationException(
         'NPM tidak ditemukan di kredensial. Silakan login ulang.',
@@ -42,10 +43,8 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
     // Read KRS data from cache
     final krsJson = await academicCacheService.loadKrsData(npm: npm);
-    developer.log(
-      'KRS loaded: ${krsJson != null ? "found" : "null"}',
-      name: 'HomeDS',
-    );
+    // ignore: avoid_print
+    print('[HomeDS] KRS: ${krsJson != null ? "found" : "null"}');
     if (krsJson == null) {
       throw const ValidationException(
         'Data KRS belum tersedia. Silakan login ulang.',
@@ -89,9 +88,9 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     final todayDayName = weekdayToDayName(now.weekday);
 
     // Build today's schedule from KRS mata_kuliah
-    developer.log(
-      'Today: $todayDayName, MataKuliah count: ${krsData.mataKuliah.length}',
-      name: 'HomeDataSource',
+    // ignore: avoid_print
+    print(
+      '[HomeDS] Today: $todayDayName, MataKuliah: ${krsData.mataKuliah.length}',
     );
     final todaySchedule =
         krsData.mataKuliah
@@ -99,10 +98,8 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
             .map((mk) => toScheduleItem(mk, today, now))
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    developer.log(
-      'Today schedule count: ${todaySchedule.length}',
-      name: 'HomeDataSource',
-    );
+    // ignore: avoid_print
+    print('[HomeDS] Today schedule: ${todaySchedule.length}');
 
     // Find next upcoming/ongoing class
     final nextClass = _findNextClass(krsData.mataKuliah, today, now);

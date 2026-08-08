@@ -5,8 +5,6 @@
 // live in HeroCountdownCard via a Timer.periodic.
 // Follows the same pattern as auth's AuthBloc.
 
-import 'dart:developer' as developer;
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/errors/bloc_error_handler.dart';
@@ -31,12 +29,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> with BlocErrorHandler {
     } on AuthException catch (_) {
       rethrow;
     } catch (e, st) {
-      developer.log(
-        'HomeFetch error: ${e.runtimeType}: $e',
-        name: 'HomeBloc',
-        error: e,
-        stackTrace: st,
-      );
+      // ignore: avoid_print
+      print('[HomeBloc] ERROR: ${e.runtimeType}: $e');
+      // ignore: avoid_print
+      print('[HomeBloc] Stack: $st');
       emit(HomeError(handleError(e)));
     }
   }

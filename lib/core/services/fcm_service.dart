@@ -1,7 +1,6 @@
 // lib/core/services/fcm_service.dart
 import 'dart:async';
-import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -51,6 +50,9 @@ class FcmService {
   /// Callback for handling FCM notification taps (set by the app).
   FcmNotificationTapCallback? _onNotificationTap;
 
+  /// Current FCM token (for debugging).
+  String? get currentToken => _currentToken;
+
   /// Initialize FCM: get token, set up listeners.
   ///
   /// Permission is NOT requested here — it is deferred to the onboarding
@@ -65,72 +67,140 @@ class FcmService {
     FcmNotificationTapCallback? onNotificationTap,
   }) async {
     _onNotificationTap = onNotificationTap;
+    debugPrint('[FCM] ============================================');
+    debugPrint('[FCM] FcmService.initialize() START');
 
     try {
-      // Step 1: For non-web platforms, ensure APNs token is available before FCM API calls.
+      // Step 1: Check notification authorization status.
+      debugPrint('[FCM] Step 1: Checking notification settings...');
+      final settings = await _messaging.getNotificationSettings();
+      debugPrint('[FCM]   Authorization: ${settings.authorizationStatus}');
+      debugPrint('[FCM]   Alert: ${settings.alert}');
+      debugPrint('[FCM]   Badge: ${settings.badge}');
+      debugPrint('[FCM]   Sound: ${settings.sound}');
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        debugPrint('[FCM]   WARNING: Notification permission DENIED!');
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.authorized) {
+        debugPrint('[FCM]   OK: Notification permission GRANTED');
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.provisional) {
+        debugPrint('[FCM]   Notification permission PROVISIONAL (iOS)');
+      }
+
+      // Step 2: For non-web platforms, check APNs token (iOS only).
       if (!kIsWeb) {
         try {
-          developer.log('Step 1: Checking APNs token (iOS)...', name: 'FCM');
+          debugPrint('[FCM] Step 2: Checking APNs token (iOS)...');
           final apnsToken = await _messaging.getAPNSToken();
-          developer.log('APNs token: $apnsToken', name: 'FCM');
+          if (apnsToken != null) {
+            final preview = apnsToken.substring(
+              0,
+              apnsToken.length > 20 ? 20 : apnsToken.length,
+            );
+            debugPrint('[FCM]   APNs token: PRESENT ($preview...)');
+          } else {
+            debugPrint('[FCM]   APNs token: NULL');
+          }
         } catch (e) {
-          developer.log('APNs token check skipped: $e', name: 'FCM');
+          debugPrint('[FCM]   APNs check skipped (not iOS): $e');
         }
       }
 
-      // Step 2: Get and cache the FCM token.
-      // Token may be null if notification permission is not yet granted;
-      // it will be fetched again after the user grants permission in onboarding.
-      developer.log('Step 2: Getting FCM token...', name: 'FCM');
+      // Step 3: Get and cache the FCM token.
+      debugPrint('[FCM] Step 3: Getting FCM token...');
+      debugPrint('[FCM]   Platform: ${kIsWeb ? "web" : "mobile"}');
       _currentToken = await _messaging.getToken(vapidKey: _webVapidKey);
-      developer.log('Token: $_currentToken', name: 'FCM');
+
+      if (_currentToken != null && _currentToken!.isNotEmpty) {
+        debugPrint('[FCM]   Token obtained SUCCESSFULLY');
+        debugPrint('[FCM]   Token length: ${_currentToken!.length}');
+        debugPrint('[FCM]   ==========================================');
+        debugPrint('[FCM]   TOKEN (copy ini untuk testing):');
+        debugPrint('[FCM]   $_currentToken');
+        debugPrint('[FCM]   ==========================================');
+      } else {
+        debugPrint('[FCM]   ERROR: Token is NULL or EMPTY!');
+        debugPrint('[FCM]   Penyebab kemungkinan:');
+        debugPrint('[FCM]     1. Permission belum di-grant');
+        debugPrint(
+          '[FCM]     2. Google Play Services tidak tersedia (emulator)',
+        );
+        debugPrint('[FCM]     3. Firebase project tidak terkonfigurasi');
+      }
     } catch (e, stack) {
-      developer.log('FAILED: $e', name: 'FCM', error: e);
-      developer.log('Stack: $stack', name: 'FCM');
+      debugPrint('[FCM]   FCM INITIALIZATION FAILED!');
+      debugPrint('[FCM]   Error: $e');
+      debugPrint('[FCM]   Stack: $stack');
     }
 
-    // Listen for token refreshes.
+    // Step 4: Listen for token refreshes.
+    debugPrint('[FCM] Step 4: Setting up token refresh listener...');
     _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
       _currentToken = token;
-      developer.log('Token refreshed: $token', name: 'FCM');
-    }, onError: (e) => developer.log('Token refresh error: $e', name: 'FCM'));
+      final preview = token.substring(0, token.length > 30 ? 30 : token.length);
+      debugPrint('[FCM]   Token refreshed: $preview...');
+    }, onError: (e) => debugPrint('[FCM]   Token refresh error: $e'));
 
-    // Listen for foreground messages.
+    // Step 5: Listen for foreground messages.
+    debugPrint('[FCM] Step 5: Setting up foreground message listener...');
     _foregroundSubscription = FirebaseMessaging.onMessage.listen(
       _handleForegroundMessage,
-      onError: (e) =>
-          developer.log('Foreground message error: $e', name: 'FCM'),
+      onError: (e) => debugPrint('[FCM]   Foreground message error: $e'),
     );
+    debugPrint('[FCM]   onMessage listener registered');
 
-    // Enable foreground notification display on iOS.
-    await _messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    // Handle notification tap when app was terminated.
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      developer.log(
-        'App opened from terminated state via notification',
-        name: 'FCM',
+    // Step 6: Enable foreground notification display on iOS.
+    if (!kIsWeb) {
+      debugPrint(
+        '[FCM] Step 6: Setting foreground notification options (iOS)...',
       );
-      _onNotificationTap?.call(initialMessage);
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint('[FCM]   iOS foreground display enabled');
     }
 
-    // Handle notification tap when app was in background.
+    // Step 7: Handle notification tap when app was terminated.
+    debugPrint(
+      '[FCM] Step 7: Checking for initial message (app killed -> tap)...',
+    );
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint('[FCM]   App opened from KILLED state via notification');
+      debugPrint('[FCM]   Title: ${initialMessage.notification?.title}');
+      debugPrint('[FCM]   Body: ${initialMessage.notification?.body}');
+      _onNotificationTap?.call(initialMessage);
+    } else {
+      debugPrint(
+        '[FCM]   No initial message (app not opened via notification)',
+      );
+    }
+
+    // Step 8: Handle notification tap when app was in background.
+    debugPrint('[FCM] Step 8: Setting up background tap listener...');
     _backgroundTapSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
       message,
     ) {
-      developer.log('App opened from background via notification', name: 'FCM');
+      debugPrint('[FCM]   App opened from BACKGROUND via notification');
+      debugPrint('[FCM]   Title: ${message.notification?.title}');
+      debugPrint('[FCM]   Body: ${message.notification?.body}');
       _onNotificationTap?.call(message);
-    }, onError: (e) => developer.log('Background tap error: $e', name: 'FCM'));
+    }, onError: (e) => debugPrint('[FCM]   Background tap error: $e'));
+    debugPrint('[FCM]   onMessageOpenedApp listener registered');
+
+    debugPrint('[FCM] ============================================');
+    debugPrint('[FCM] FcmService.initialize() COMPLETE');
+    debugPrint('[FCM] ============================================');
   }
 
   /// Request notification permissions from the user.
   Future<NotificationSettings> requestPermission() async {
-    return _messaging.requestPermission(
+    debugPrint('[FCM] Requesting notification permission...');
+    final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -139,6 +209,11 @@ class FcmService {
       criticalAlert: false,
       provisional: false,
     );
+    debugPrint('[FCM]   Authorization: ${settings.authorizationStatus}');
+    debugPrint('[FCM]   Alert: ${settings.alert}');
+    debugPrint('[FCM]   Badge: ${settings.badge}');
+    debugPrint('[FCM]   Sound: ${settings.sound}');
+    return settings;
   }
 
   /// Re-fetch the FCM token after notification permission is granted.
@@ -147,29 +222,37 @@ class FcmService {
   /// The token may have been null during initialize() if permission was not
   /// yet granted.
   Future<void> refreshToken() async {
+    debugPrint('[FCM] Refreshing FCM token after permission grant...');
     try {
       _currentToken = await _messaging.getToken(vapidKey: _webVapidKey);
-      developer.log(
-        'Token refreshed after permission grant: $_currentToken',
-        name: 'FCM',
-      );
+      if (_currentToken != null && _currentToken!.isNotEmpty) {
+        debugPrint('[FCM]   Token refreshed successfully');
+        debugPrint('[FCM]   Token: $_currentToken');
+      } else {
+        debugPrint('[FCM]   Token refresh returned NULL/EMPTY');
+      }
     } catch (e) {
-      developer.log(
-        'Token refresh after permission failed: $e',
-        name: 'FCM',
-        error: e,
-      );
+      debugPrint('[FCM]   Token refresh FAILED: $e');
     }
   }
 
   /// Handle messages received while the app is in the foreground.
   void _handleForegroundMessage(RemoteMessage message) {
-    developer.log('Foreground message: ${message.messageId}', name: 'FCM');
+    debugPrint('[FCM] --------------------------------------------');
+    debugPrint('[FCM] FOREGROUND MESSAGE RECEIVED!');
+    debugPrint('[FCM]   Message ID: ${message.messageId}');
+    debugPrint('[FCM]   Sent Time: ${message.sentTime}');
     if (message.notification != null) {
-      developer.log('Title: ${message.notification!.title}', name: 'FCM');
-      developer.log('Body: ${message.notification!.body}', name: 'FCM');
+      debugPrint('[FCM]   Title: ${message.notification!.title}');
+      debugPrint('[FCM]   Body: ${message.notification!.body}');
+      debugPrint(
+        '[FCM]   Image: ${message.notification!.android?.imageUrl ?? "none"}',
+      );
+    } else {
+      debugPrint('[FCM]   DATA-ONLY message (no notification payload)');
     }
-    developer.log('Data: ${message.data}', name: 'FCM');
+    debugPrint('[FCM]   Data: ${message.data}');
+    debugPrint('[FCM] --------------------------------------------');
     _messageController.add(message);
   }
 

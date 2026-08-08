@@ -23,9 +23,6 @@ class NextClassEntity {
   final String? lecturer;
   final String? location;
 
-  /// Time remaining from now until [startTime].
-  Duration timeRemaining(DateTime now) => startTime.difference(now);
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

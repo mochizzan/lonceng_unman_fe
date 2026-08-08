@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 
@@ -128,6 +129,8 @@ class ApiClient {
       case 400:
         return ValidationException(message);
       case 401:
+        debugPrint('[API] HTTP 401 detected - unauthorized');
+        debugPrint('[API]   Triggering auth error callback...');
         onAuthError?.call();
         return AuthException(message);
       case 403:

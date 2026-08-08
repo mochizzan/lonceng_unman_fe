@@ -62,8 +62,14 @@ import 'package:path_provider/path_provider.dart';
 /// Registered before runApp() so it works even when the app is terminated.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  debugPrint('[FCM-BG] Background handler triggered!');
+  debugPrint('[FCM-BG]   Message ID: ${message.messageId}');
+  debugPrint('[FCM-BG]   Title: ${message.notification?.title}');
+  debugPrint('[FCM-BG]   Body: ${message.notification?.body}');
+  debugPrint('[FCM-BG]   Data: ${message.data}');
   // Initialize Firebase in background isolate (required before using FCM).
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('[FCM-BG] Firebase initialized in background isolate');
 }
 
 Future<void> main() async {
@@ -84,48 +90,48 @@ Future<void> main() async {
       };
 
       // Initialize Firebase before using any Firebase services.
+      debugPrint('[MAIN] Initializing Firebase...');
       bool firebaseReady = false;
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
         firebaseReady = true;
+        debugPrint('[MAIN] Firebase initialized SUCCESSFULLY');
       } catch (e) {
-        developer.log(
-          'Firebase init failed, running without FCM: $e',
-          name: 'main',
-        );
+        debugPrint('[MAIN] Firebase init FAILED: $e');
       }
 
       if (firebaseReady) {
         // Register the background message handler.
+        debugPrint('[MAIN] Registering background message handler...');
         FirebaseMessaging.onBackgroundMessage(
           _firebaseMessagingBackgroundHandler,
         );
+        debugPrint('[MAIN] Background handler registered');
 
         // Initialize FCM for foreground message handling.
         // Fire-and-forget with timeout to prevent blocking runApp().
+        debugPrint('[MAIN] Initializing FcmService...');
         FcmService.instance
             .initialize(
               onNotificationTap: (message) {
-                developer.log('Notification tap: ${message.data}', name: 'FCM');
+                debugPrint('[FCM] Notification tap: ${message.data}');
               },
             )
             .timeout(
               const Duration(seconds: 10),
               onTimeout: () {
-                developer.log(
-                  'FCM init timed out, continuing without FCM',
-                  name: 'main',
+                debugPrint(
+                  '[MAIN] FCM init TIMED OUT (10s), continuing without FCM',
                 );
               },
             )
             .catchError((e) {
-              developer.log(
-                'FCM init failed, continuing without FCM: $e',
-                name: 'main',
-              );
+              debugPrint('[MAIN] FCM init FAILED: $e');
             });
+      } else {
+        debugPrint('[MAIN] Firebase not ready, skipping FCM setup');
       }
 
       // ── Hive local persistence (with corruption recovery, EH-3) ──

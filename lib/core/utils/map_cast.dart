@@ -10,12 +10,12 @@
 /// If [value] is a [Map<dynamic, dynamic>], converts all keys to [String]
 /// and recursively casts nested maps and lists.
 /// For any other type, returns [value] unchanged.
-dynamic deepStringMap(dynamic value) {
+dynamic _deepStringMap(dynamic value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) {
-    return value.map((key, v) => MapEntry(key.toString(), deepStringMap(v)));
+    return value.map((key, v) => MapEntry(key.toString(), _deepStringMap(v)));
   }
-  if (value is List) return value.map(deepStringMap).toList();
+  if (value is List) return value.map(_deepStringMap).toList();
   return value;
 }
 
@@ -25,7 +25,7 @@ dynamic deepStringMap(dynamic value) {
 Map<String, dynamic> asStringMap(dynamic value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) {
-    return value.map((key, v) => MapEntry(key.toString(), deepStringMap(v)));
+    return value.map((key, v) => MapEntry(key.toString(), _deepStringMap(v)));
   }
   return <String, dynamic>{};
 }

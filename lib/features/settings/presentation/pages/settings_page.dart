@@ -182,6 +182,8 @@ class SettingsPage extends StatelessWidget {
 
 /// Shows a confirmation dialog and triggers logout on confirm.
 void _showLogoutDialog(BuildContext context) {
+  debugPrint('[SETTINGS] _showLogoutDialog() START');
+  debugPrint('[SETTINGS] Logout dialog shown');
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
@@ -194,8 +196,11 @@ void _showLogoutDialog(BuildContext context) {
         ),
         TextButton(
           onPressed: () async {
+            debugPrint('[SETTINGS] User confirmed logout');
             Navigator.of(context).pop();
+            debugPrint('[SETTINGS] Calling performFullLogout...');
             await Services.performFullLogout();
+            debugPrint('[SETTINGS] Logout OK');
           },
           child: Text(
             AppStrings.settingsLogoutConfirmAction,
@@ -205,6 +210,7 @@ void _showLogoutDialog(BuildContext context) {
       ],
     ),
   );
+  debugPrint('[SETTINGS] _showLogoutDialog() END');
 }
 
 /// Shows a bottom sheet for selecting the reminder interval.

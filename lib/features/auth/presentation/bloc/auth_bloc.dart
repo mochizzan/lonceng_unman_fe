@@ -1,4 +1,5 @@
 // auth - BLoC
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
@@ -89,9 +90,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter emit,
   ) async {
+    debugPrint('[AUTH] _onLogoutRequested() START');
+    debugPrint('[AUTH]   Clearing credentials...');
     _npm = '';
     _password = '';
+    debugPrint('[AUTH]   Credentials cleared OK');
+    debugPrint('[AUTH]   Calling performFullLogout...');
     await Services.performFullLogout();
+    debugPrint('[AUTH]   performFullLogout OK');
     emit(const AuthInitial());
+    debugPrint('[AUTH] _onLogoutRequested() END');
   }
 }

@@ -9,7 +9,6 @@ abstract final class AppStrings {
 
   // ─── Auth ─────────────────────────────────────────────
   static const String loginGreeting = 'Halo Mahasiswa!';
-  static const String loginSubtitle = 'Masuk dengan NPM dan password kamu';
   static const String loginSubtitleDetail =
       'Masuk dengan NPM kamu untuk melihat jadwal & info perkuliahan.';
   static const String loginButton = 'Masuk Akun';
@@ -18,8 +17,6 @@ abstract final class AppStrings {
   static const String loginNpmHelper = 'Gunakan NPM aktif kamu';
   static const String loginHelpdesk = 'Butuh bantuan? ';
   static const String loginHelpdeskLink = 'Helpdesk IT';
-  static const String loginNoAccount = 'NPM belum terdaftar? ';
-  static const String loginContactAdmin = 'Hubungi Admin';
 
   // ─── Home ─────────────────────────────────────────────
   static const String homeNextClassIn = 'Kelas berikutnya dalam';
@@ -38,7 +35,6 @@ abstract final class AppStrings {
   static const String homeClassUnit = 'Kelas';
   static const String homeSksSemester = 'SKS Semester Ini';
   static const String homeKuliahHariIni = 'Kuliah Hari Ini';
-  static const String homeIpkTerakhir = 'IPK Terakhir';
 
   // ─── Jadwal ───────────────────────────────────────────
   static const String jadwalStatusOngoing = 'SEDANG BERLANGSUNG';
@@ -61,7 +57,6 @@ abstract final class AppStrings {
   static const String settingsThemeSystem = 'Sistem';
   static const String settingsSectionNotification = 'Notifikasi';
   static const String settingsReminderLabel = 'Ingatkan Sebelum Kelas';
-  static const String settingsReminderValue = '5 menit';
   static const String settingsSectionAccount = 'Akun';
   static const String settingsLogoutButton = 'Keluar';
   static const String settingsLogoutConfirmTitle = 'Keluar dari Akun?';
@@ -175,7 +170,7 @@ abstract final class AppStrings {
   static const String onboardingGetStarted = 'Mulai';
 
   // ── KHS (Kartu Hasil Studi) ──────────────────────────────────────
-  static const String khsTitle = 'Kartu Hasil Studi';
+  static const String khsTitle = 'KHS';
   static const String khsTabGanjil = 'Ganjil';
   static const String khsTabGenap = 'Genap';
   static const String khsNoData = 'Belum ada data KHS';
@@ -183,6 +178,4 @@ abstract final class AppStrings {
   static const String khsBelumAdaDataMk = 'Belum ada data mata kuliah';
   static const String khsMataKuliah = 'Mata Kuliah';
   static const String khsRekapitulasi = 'Rekapitulasi';
-  static const String khsNpmTidakDitemukan = 'NPM tidak ditemukan';
-  static const String khsGagalMemuat = 'Gagal memuat data KHS';
 }

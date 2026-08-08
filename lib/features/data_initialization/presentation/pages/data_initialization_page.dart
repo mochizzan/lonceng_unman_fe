@@ -8,11 +8,7 @@ import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 /// ([DataInitShellHost]). This page immediately redirects to home so
 /// users are never stuck on a full-screen loading gate.
 class DataInitializationPage extends StatefulWidget {
-  const DataInitializationPage({super.key, this.npm, this.password});
-
-  /// Unused — credentials are read from [AcademicCacheService] by the shell host.
-  final String? npm;
-  final String? password;
+  const DataInitializationPage({super.key});
 
   @override
   State<DataInitializationPage> createState() => _DataInitializationPageState();

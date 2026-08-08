@@ -104,6 +104,10 @@ class _KhsDetailPageState extends State<KhsDetailPage>
           labelColor: cs.primary,
           unselectedLabelColor: cs.onSurfaceVariant,
           indicatorColor: cs.primary,
+          dividerColor: Colors.transparent,
+          indicator: UnderlineTabIndicator(
+            borderSide: BorderSide(color: cs.primary, width: 2),
+          ),
           tabs: const [
             Tab(text: AppStrings.khsTabGanjil),
             Tab(text: AppStrings.khsTabGenap),

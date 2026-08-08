@@ -1,4 +1,5 @@
 // lib/core/di/di.dart
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
@@ -50,26 +51,48 @@ class Services {
   /// This is the single source of truth for logout. All logout paths
   /// (user-initiated, 401 handler) must call this method.
   static Future<void> performFullLogout() async {
+    debugPrint('[DI] performFullLogout() START');
+
     // 1. Clear all academic cache (credentials, KRS, KHS, KHS list)
-    final cache = get<AcademicCacheService>();
-    await cache.clearAll();
+    debugPrint('[DI]   Step 1: Clearing all academic cache...');
+    try {
+      final cache = get<AcademicCacheService>();
+      await cache.clearAll();
+      debugPrint('[DI]   Step 1: Cache cleared OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 1: Cache clear FAILED: $e');
+    }
 
     // 2. Cancel all scheduled notifications
+    debugPrint('[DI]   Step 2: Cancelling all notifications...');
     try {
       final notifService = get<NotificationService>();
       await notifService.cancelAll();
-    } catch (_) {
-      // Notification service might not be registered in DI yet
+      debugPrint('[DI]   Step 2: Notifications cancelled OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 2: Cancel notifications FAILED: $e');
     }
 
     // 2b. Delete FCM token so the device is unregistered from FCM
+    debugPrint('[DI]   Step 2b: Deleting FCM token...');
     try {
       final messaging = FirebaseMessaging.instance;
       await messaging.deleteToken();
-    } catch (_) {}
+      debugPrint('[DI]   Step 2b: FCM token deleted OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 2b: Delete FCM token FAILED: $e');
+    }
 
     // 3. Set auth status to unauthenticated
-    final authNotifier = get<AuthStatusNotifier>();
-    authNotifier.setStatus(AuthStatus.unauthenticated);
+    debugPrint('[DI]   Step 3: Setting auth status to unauthenticated...');
+    try {
+      final authNotifier = get<AuthStatusNotifier>();
+      authNotifier.setStatus(AuthStatus.unauthenticated);
+      debugPrint('[DI]   Step 3: Auth status set OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 3: Set auth status FAILED: $e');
+    }
+
+    debugPrint('[DI] performFullLogout() END');
   }
 }

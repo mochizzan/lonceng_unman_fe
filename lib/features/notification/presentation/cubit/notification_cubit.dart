@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
@@ -27,18 +28,22 @@ class NotificationCubit extends Cubit<NotificationState> {
   /// Emits [notificationPermissionDenied] on the state if denied.
   /// Returns `true` if permission is granted, `false` otherwise.
   Future<bool> checkPermission() async {
+    debugPrint('[NOTIF] checkPermission() START');
     final enabled = await _notificationService.requestPermission();
+    debugPrint('[NOTIF]   OK: permission enabled=$enabled');
     emit(state.copyWith(notificationPermissionDenied: !enabled));
     return enabled;
   }
 
   /// Load all scheduled notifications and current reminder interval.
   Future<void> loadNotifications() async {
+    debugPrint('[NOTIF] loadNotifications() START');
     emit(state.copyWith(status: NotificationStatus.loading));
     try {
       await checkPermission();
       final notifications = await _repository.getAll();
       final interval = _repository.getReminderInterval();
+      debugPrint('[NOTIF]   OK: loaded ${notifications.length} notifikasi');
       emit(
         state.copyWith(
           status: NotificationStatus.loaded,
@@ -48,6 +53,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         ),
       );
     } catch (e) {
+      debugPrint('[NOTIF] loadNotifications() CATCH: $e');
       emit(
         state.copyWith(
           status: NotificationStatus.error,
@@ -63,10 +69,12 @@ class NotificationCubit extends Cubit<NotificationState> {
   /// Checks notification permission first — if denied, emits error and returns
   /// early to avoid scheduling notifications that will never display.
   Future<void> scheduleFromJadwal(JadwalEntity jadwal) async {
+    debugPrint('[NOTIF] scheduleFromJadwal() START');
     emit(state.copyWith(status: NotificationStatus.loading));
     try {
       final hasPermission = await checkPermission();
       if (!hasPermission) {
+        debugPrint('[NOTIF]   ERROR: permission ditolak, batal menjadwalkan');
         emit(
           state.copyWith(
             status: NotificationStatus.error,
@@ -77,6 +85,9 @@ class NotificationCubit extends Cubit<NotificationState> {
       }
       await _scheduler.scheduleForDay(jadwal);
       final notifications = await _repository.getAll();
+      debugPrint(
+        '[NOTIF]   OK: ${notifications.length} notifikasi dijadwalkan',
+      );
       emit(
         state.copyWith(
           status: NotificationStatus.loaded,
@@ -85,6 +96,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         ),
       );
     } catch (e) {
+      debugPrint('[NOTIF] scheduleFromJadwal() CATCH: $e');
       emit(
         state.copyWith(
           status: NotificationStatus.error,
@@ -96,9 +108,13 @@ class NotificationCubit extends Cubit<NotificationState> {
 
   /// Toggle a specific notification on/off.
   Future<void> toggleNotification(int id) async {
+    debugPrint('[NOTIF] toggleNotification($id) START');
     try {
       final existing = await _repository.getById(id);
-      if (existing == null) return;
+      if (existing == null) {
+        debugPrint('[NOTIF]   ERROR: notifikasi id=$id tidak ditemukan');
+        return;
+      }
 
       final toggled = ScheduledNotificationEntity(
         id: existing.id,
@@ -120,10 +136,12 @@ class NotificationCubit extends Cubit<NotificationState> {
       }
 
       final notifications = await _repository.getAll();
+      debugPrint('[NOTIF]   OK: toggled id=$id -> active=${toggled.isActive}');
       emit(
         state.copyWith(notifications: notifications, clearErrorMessage: true),
       );
     } catch (e) {
+      debugPrint('[NOTIF] toggleNotification($id) CATCH: $e');
       emit(
         state.copyWith(
           status: NotificationStatus.error,
@@ -135,10 +153,12 @@ class NotificationCubit extends Cubit<NotificationState> {
 
   /// Update reminder interval and reschedule all active notifications.
   Future<void> updateReminderInterval(int minutes) async {
+    debugPrint('[NOTIF] updateReminderInterval($minutes) START');
     try {
       _repository.setReminderInterval(minutes);
       await _scheduler.rescheduleAllWithNewOffset(minutes);
       final notifications = await _repository.getAll();
+      debugPrint('[NOTIF]   OK: interval diupdate ke ${minutes}m');
       emit(
         state.copyWith(
           reminderIntervalMinutes: minutes,
@@ -147,6 +167,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         ),
       );
     } catch (e) {
+      debugPrint('[NOTIF] updateReminderInterval($minutes) CATCH: $e');
       emit(
         state.copyWith(
           status: NotificationStatus.error,
@@ -158,10 +179,13 @@ class NotificationCubit extends Cubit<NotificationState> {
 
   /// Cancel all scheduled notifications.
   Future<void> cancelAll() async {
+    debugPrint('[NOTIF] cancelAll() START');
     try {
       await _scheduler.cancelAll();
+      debugPrint('[NOTIF]   OK: semua notifikasi dibatalkan');
       emit(state.copyWith(notifications: [], clearErrorMessage: true));
     } catch (e) {
+      debugPrint('[NOTIF] cancelAll() CATCH: $e');
       emit(
         state.copyWith(
           status: NotificationStatus.error,

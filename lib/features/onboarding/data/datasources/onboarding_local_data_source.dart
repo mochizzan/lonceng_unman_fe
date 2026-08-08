@@ -23,9 +23,4 @@ class OnboardingLocalDataSource {
   Future<void> markCompleted() async {
     await _box.put(_completedKey, true);
   }
-
-  /// Reset onboarding state (for testing or re-onboarding).
-  Future<void> reset() async {
-    await _box.delete(_completedKey);
-  }
 }

@@ -34,8 +34,6 @@ class KhsDetailError extends KhsDetailState {
   final String? ganjilError;
   final String? genapError;
 
-  bool get hasAnyError => ganjilError != null || genapError != null;
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

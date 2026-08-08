@@ -311,9 +311,12 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
                 // Tab Section header
                 _buildTabSection(cs),
                 const SizedBox(height: AppDimens.space12),
-                // Tentang tab content (bio + SKS/IPK stat cards)
+                // Tentang tab content (bio)
                 ProfileBioSection(data: data),
-                const SizedBox(height: AppDimens.space24),
+                const SizedBox(height: AppDimens.space16),
+                // Divider + label before action buttons
+                _buildSectionDivider(cs, 'Lainnya'),
+                const SizedBox(height: AppDimens.space16),
                 // Action button — Pengaturan
                 const ProfileActionButton(),
               ]),
@@ -342,6 +345,37 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
               fontSize: AppDimens.textMD,
               fontWeight: FontWeight.bold,
               color: cs.primary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: cs.outlineVariant.withValues(alpha: ColorValues.opacityHigh),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Section divider with centered label (e.g., "Lainnya").
+  Widget _buildSectionDivider(ColorScheme cs, String label) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            color: cs.outlineVariant.withValues(alpha: ColorValues.opacityHigh),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: AppDimens.textSM,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurfaceVariant,
             ),
           ),
         ),

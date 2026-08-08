@@ -88,7 +88,7 @@ class QuickStats extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data.tahunAjaran,
+                          'Tahun Ajaran ${data.tahunAjaran}',
                           style: TextStyle(
                             fontSize: AppDimens.textLG,
                             fontWeight: FontWeight.bold,
@@ -115,14 +115,14 @@ class QuickStats extends StatelessWidget {
                 children: [
                   // IPK Ganjil chip
                   _buildIpkChip(
-                    label: 'Ganjil',
+                    label: 'IPK Ganjil',
                     value: data.gpaGanjil.toStringAsFixed(2),
                     cs: cs,
                   ),
                   const SizedBox(width: AppDimens.space12),
                   // IPK Genap chip
                   _buildIpkChip(
-                    label: 'Genap',
+                    label: 'IPK Genap',
                     value: data.gpaGenap.toStringAsFixed(2),
                     cs: cs,
                   ),

@@ -7,9 +7,6 @@ import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 
-/// Callback type for handling notification taps.
-typedef NotificationTapCallback = void Function(int id, String? payload);
-
 /// Thin wrapper around flutter_local_notifications plugin.
 ///
 /// Handles initialization, channel creation, and alarm scheduling.

@@ -29,8 +29,11 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
   @override
   Future<HomeModel> getHomeData() async {
+    developer.log('getHomeData() called — reading from cache', name: 'HomeDS');
+
     final creds = await academicCacheService.loadCredentials();
     final npm = creds?['npm'];
+    developer.log('Credentials loaded: npm=${npm ?? "null"}', name: 'HomeDS');
     if (npm == null || npm.isEmpty) {
       throw const ValidationException(
         'NPM tidak ditemukan di kredensial. Silakan login ulang.',
@@ -39,6 +42,10 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
     // Read KRS data from cache
     final krsJson = await academicCacheService.loadKrsData(npm: npm);
+    developer.log(
+      'KRS loaded: ${krsJson != null ? "found" : "null"}',
+      name: 'HomeDS',
+    );
     if (krsJson == null) {
       throw const ValidationException(
         'Data KRS belum tersedia. Silakan login ulang.',

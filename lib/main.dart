@@ -49,6 +49,7 @@ import 'package:lonceng_unman_fe/features/notification/data/models/scheduled_not
 import 'package:lonceng_unman_fe/features/notification/data/repositories/notification_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
+import 'package:lonceng_unman_fe/core/services/notification_scheduler_noop.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Background message handler — must be top-level (not inside a class).
@@ -202,6 +203,9 @@ Future<void> main() async {
             notificationService: Services.get<NotificationService>(),
           ),
         );
+      } else {
+        // Register no-op fallback to prevent StateError on all main routes
+        Services.register<NotificationScheduler>(NotificationSchedulerNoop());
       }
 
       // ── Academic Cache Service ──

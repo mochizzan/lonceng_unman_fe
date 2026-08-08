@@ -139,19 +139,6 @@ class _FakeAcademicCacheService extends AcademicCacheService {
   bool hasKrsData({required String npm}) => false;
 
   @override
-  Future<void> saveKhsData({
-    required String npm,
-    required Map<String, dynamic> data,
-  }) async {}
-
-  @override
-  Future<Map<String, dynamic>?> loadKhsData({required String npm}) async =>
-      null;
-
-  @override
-  bool hasKhsData({required String npm}) => false;
-
-  @override
   Future<void> saveKhsDataSemester({
     required String npm,
     required String tahunAjaran,

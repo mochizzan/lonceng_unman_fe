@@ -45,14 +45,9 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> {
     try {
       final data = await _getJadwal();
       emit(JadwalLoaded(data: data));
-    } on AuthException catch (_) {
-      // 401 handled by ApiClient global callback
-    } on NetworkException catch (e) {
-      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
-    } on ServerException catch (e) {
-      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
-    } catch (e) {
-      emit(JadwalError(ErrorHandler.toHumanReadable(e)));
+    } catch (_) {
+      // Keep previous JadwalLoaded state.
+      // Do NOT emit JadwalError — schedule stays visible.
     }
   }
 }

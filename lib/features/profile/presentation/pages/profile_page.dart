@@ -14,9 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
-import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_state.dart';
@@ -27,21 +25,11 @@ import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_h
 import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key, this.getProfile});
-
-  /// Optional usecase injection for testing.
-  /// When null, a stub implementation is used.
-  final GetProfile? getProfile;
-
-  static GetProfile _defaultGetProfile() => Services.get<GetProfile>();
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      lazy: true,
-      create: (_) => ProfileBloc(getProfile ?? _defaultGetProfile()),
-      child: const _ProfilePageView(),
-    );
+    return const _ProfilePageView();
   }
 }
 
@@ -53,17 +41,6 @@ class _ProfilePageView extends StatefulWidget {
 }
 
 class _ProfilePageViewState extends State<_ProfilePageView> {
-  bool _fetchDispatched = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!_fetchDispatched) {
-      _fetchDispatched = true;
-      context.read<ProfileBloc>().add(const ProfileFetchRequested());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -22,6 +22,9 @@ import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dar
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/pages/data_initialization_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
@@ -141,7 +144,12 @@ List<RouteBase> _buildRoutes(
         GoRoute(
           name: RouteNames.profile,
           path: '/${RouteNames.profile}',
-          builder: (context, state) => const ProfilePage(),
+          builder: (context, state) => BlocProvider(
+            create: (_) =>
+                ProfileBloc(Services.get<GetProfile>())
+                  ..add(const ProfileFetchRequested()),
+            child: const ProfilePage(),
+          ),
         ),
       ],
     ),

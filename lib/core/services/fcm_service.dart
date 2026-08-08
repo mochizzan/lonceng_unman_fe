@@ -51,7 +51,11 @@ class FcmService {
   /// Callback for handling FCM notification taps (set by the app).
   FcmNotificationTapCallback? _onNotificationTap;
 
-  /// Initialize FCM: request permission, get token, set up listeners.
+  /// Initialize FCM: get token, set up listeners.
+  ///
+  /// Permission is NOT requested here — it is deferred to the onboarding
+  /// notification slide ("Izinkan" button) so the user is only prompted once
+  /// during the first-time flow, not on every app launch.
   ///
   /// Call this after Firebase.initializeApp() in main().
   ///
@@ -63,18 +67,10 @@ class FcmService {
     _onNotificationTap = onNotificationTap;
 
     try {
-      // Step 1: Request notification permission (required for Android 13+ and iOS).
-      developer.log('Step 1: Requesting permission...', name: 'FCM');
-      final settings = await requestPermission();
-      developer.log(
-        'Permission status: ${settings.authorizationStatus}',
-        name: 'FCM',
-      );
-
-      // Step 2: For non-web platforms, ensure APNs token is available before FCM API calls.
+      // Step 1: For non-web platforms, ensure APNs token is available before FCM API calls.
       if (!kIsWeb) {
         try {
-          developer.log('Step 2: Checking APNs token (iOS)...', name: 'FCM');
+          developer.log('Step 1: Checking APNs token (iOS)...', name: 'FCM');
           final apnsToken = await _messaging.getAPNSToken();
           developer.log('APNs token: $apnsToken', name: 'FCM');
         } catch (e) {
@@ -82,8 +78,10 @@ class FcmService {
         }
       }
 
-      // Step 3: Get and cache the FCM token.
-      developer.log('Step 3: Getting FCM token...', name: 'FCM');
+      // Step 2: Get and cache the FCM token.
+      // Token may be null if notification permission is not yet granted;
+      // it will be fetched again after the user grants permission in onboarding.
+      developer.log('Step 2: Getting FCM token...', name: 'FCM');
       _currentToken = await _messaging.getToken(vapidKey: _webVapidKey);
       developer.log('Token: $_currentToken', name: 'FCM');
     } catch (e, stack) {
@@ -141,6 +139,27 @@ class FcmService {
       criticalAlert: false,
       provisional: false,
     );
+  }
+
+  /// Re-fetch the FCM token after notification permission is granted.
+  ///
+  /// Called from the onboarding permission slide after the user taps "Izinkan".
+  /// The token may have been null during initialize() if permission was not
+  /// yet granted.
+  Future<void> refreshToken() async {
+    try {
+      _currentToken = await _messaging.getToken(vapidKey: _webVapidKey);
+      developer.log(
+        'Token refreshed after permission grant: $_currentToken',
+        name: 'FCM',
+      );
+    } catch (e) {
+      developer.log(
+        'Token refresh after permission failed: $e',
+        name: 'FCM',
+        error: e,
+      );
+    }
   }
 
   /// Handle messages received while the app is in the foreground.

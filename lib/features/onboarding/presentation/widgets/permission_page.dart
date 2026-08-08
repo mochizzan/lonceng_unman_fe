@@ -40,8 +40,9 @@ class _PermissionPageState extends State<PermissionPage> {
     try {
       final status = await Permission.notification.request();
       if (status.isGranted) {
-        // Also request FCM-level permission (iOS APNs).
+        // Request FCM-level permission (iOS APNs) and re-fetch token.
         await FcmService.instance.requestPermission();
+        await FcmService.instance.refreshToken();
       }
       if (mounted) {
         setState(() => _isGranted = status.isGranted);

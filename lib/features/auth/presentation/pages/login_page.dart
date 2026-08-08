@@ -252,18 +252,28 @@ class _LoginPageState extends State<LoginPage> {
               // Progress indicator
               if (!isCompleted) CircularProgressIndicator(color: cs.primary),
 
-              // Error message
+              // Error message with retry button
               if (state is DataInitFailure)
-                Padding(
-                  padding: EdgeInsets.only(top: sp(context, AppDimens.space16)),
-                  child: Text(
-                    state.message,
-                    style: TextStyle(
-                      color: cs.error,
-                      fontSize: responsiveFontSize(context, AppDimens.textSM),
+                Column(
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: cs.error),
+                    SizedBox(height: sp(context, AppDimens.space16)),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    SizedBox(height: sp(context, AppDimens.space24)),
+                    FilledButton(
+                      onPressed: () {
+                        _dataInitBloc.add(const DataInitReset());
+                        setState(() => _loginSuccess = false);
+                      },
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
                 ),
             ],
           );

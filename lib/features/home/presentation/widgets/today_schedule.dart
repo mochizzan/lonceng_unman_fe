@@ -111,6 +111,7 @@ class _TimelineItem extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final successColor = _getSuccessColor(context);
     final isOngoing = item.status == ScheduleStatus.ongoing;
+    final isSegera = item.status == ScheduleStatus.upcoming && index == 0;
 
     // Standard Flutter timeline pattern: Row with dot column + content
     // Line uses Expanded to follow content height automatically
@@ -122,7 +123,7 @@ class _TimelineItem extends StatelessWidget {
           width: AppDimens.space24,
           child: Column(
             children: [
-              _buildDot(cs, successColor, isOngoing),
+              _buildDot(cs, successColor, isOngoing, isSegera),
               if (!isLast)
                 Expanded(
                   child: Container(
@@ -147,7 +148,12 @@ class _TimelineItem extends StatelessWidget {
     );
   }
 
-  Widget _buildDot(ColorScheme cs, Color successColor, bool isOngoing) {
+  Widget _buildDot(
+    ColorScheme cs,
+    Color successColor,
+    bool isOngoing,
+    bool isSegera,
+  ) {
     if (isOngoing) {
       return SizedBox(
         width: AppDimens.dotLG,
@@ -157,6 +163,13 @@ class _TimelineItem extends StatelessWidget {
           size: AppDimens.dotSM,
           duration: AppDurations.slow,
         ),
+      );
+    }
+    if (isSegera) {
+      return Container(
+        width: AppDimens.dotLG,
+        height: AppDimens.dotLG,
+        decoration: BoxDecoration(color: successColor, shape: BoxShape.circle),
       );
     }
     return Container(
@@ -250,50 +263,67 @@ class _TimelineItem extends StatelessWidget {
   }
 
   Widget _buildUpcomingCard(ColorScheme cs, int index) {
-    final timeStr = formatTime(item.startTime);
-    // Index 1: secondaryContainer (segera) - softer than primaryContainer
-    // Index 2+: surfaceContainerHighest (akan datang)
-    final bool isSoon = index == 1;
-    final Color bgColor = isSoon
-        ? cs.secondaryContainer
-        : cs.surfaceContainerHighest;
-    final Color textColor = isSoon
-        ? cs.onSecondaryContainer
-        : cs.onSurfaceVariant;
+    final timeRange =
+        '${formatTime(item.startTime)} – ${formatTime(item.endTime)}';
+
+    // Status-based styling
+    final bool isSegera = item.status == ScheduleStatus.upcoming && index == 0;
+    final bool isMendatang =
+        item.status == ScheduleStatus.upcoming && index > 0;
+    final bool isSelesai = item.status == ScheduleStatus.completed;
+
+    final Color bgColor = cs.surfaceContainerHighest;
+    final Color textColor = cs.onSurfaceVariant;
+
+    // Status text + colors
+    String? statusText;
+    Color statusBgColor = bgColor;
+    Color statusTextColor = textColor;
+
+    if (isSegera) {
+      statusText = AppStrings.homeStatusUpcoming;
+      statusBgColor = cs.secondaryContainer;
+      statusTextColor = cs.onSecondaryContainer;
+    } else if (isMendatang) {
+      statusText = AppStrings.homeStatusMendatang;
+    } else if (isSelesai) {
+      statusText = AppStrings.homeStatusSelesai;
+    }
 
     return Container(
       padding: const EdgeInsets.all(AppDimens.space14),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: statusBgColor,
         borderRadius: BorderRadius.circular(AppDimens.radiusLG),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isSoon)
+          if (statusText != null) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  AppStrings.homeStatusUpcoming,
+                  statusText,
                   style: TextStyle(
                     fontSize: AppDimens.textXS,
                     fontWeight: FontWeight.bold,
-                    color: textColor,
+                    color: statusTextColor,
                     letterSpacing: AppDimens.letterSpacingWide,
                   ),
                 ),
                 Text(
-                  timeStr,
+                  timeRange,
                   style: TextStyle(
                     fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w600,
-                    color: textColor,
+                    color: statusTextColor,
                   ),
                 ),
               ],
             ),
-          if (isSoon) const SizedBox(height: AppDimens.space4),
+            const SizedBox(height: AppDimens.space4),
+          ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -328,9 +358,9 @@ class _TimelineItem extends StatelessWidget {
                   ),
                 ],
               ),
-              if (!isSoon)
+              if (statusText == null)
                 Text(
-                  timeStr,
+                  timeRange,
                   style: TextStyle(
                     fontSize: AppDimens.textSM,
                     fontWeight: FontWeight.w600,

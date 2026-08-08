@@ -32,6 +32,8 @@ abstract final class AppStrings {
   static const String homeNoSchedule = 'Tidak ada jadwal hari ini';
   static const String homeStatusOngoing = 'Sedang Berlangsung';
   static const String homeStatusUpcoming = 'Segera';
+  static const String homeStatusMendatang = 'Mendatang';
+  static const String homeStatusSelesai = 'Selesai';
   static const String homeSksUnit = 'SKS';
   static const String homeClassUnit = 'Kelas';
   static const String homeSksSemester = 'SKS Semester Ini';

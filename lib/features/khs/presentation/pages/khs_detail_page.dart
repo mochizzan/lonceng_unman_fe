@@ -6,6 +6,7 @@
 // Row for horizontal, Expanded/Flexible for flexible children.
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
@@ -159,7 +160,7 @@ class _KhsDetailPageState extends State<KhsDetailPage>
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: cs.onSurface),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
         ),
         bottom: TabBar(
           controller: _tabController,

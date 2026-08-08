@@ -190,7 +190,7 @@ class _HomePageViewState extends State<_HomePageView> {
                   onKhsTap: () => context.goNamed(
                     RouteNames.khs,
                     queryParameters: {
-                      'tahunAjaran': '',
+                      'tahunAjaran': data.tahunAjaran,
                       'semester': data.semester,
                     },
                   ),

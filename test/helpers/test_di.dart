@@ -53,6 +53,7 @@ class _FakeHomeRepo implements HomeRepository {
     sksTaken: 20,
     todayClassCount: 2,
     semester: 'Semester 5',
+    tahunAjaran: '2025/2026',
     studyProgram: 'Teknik Informatika',
     gpaGanjil: 3.8,
     gpaGenap: 3.9,

@@ -108,6 +108,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       sksTaken: krsData.totalSks,
       todayClassCount: todaySchedule.length,
       semester: khsSemester ?? krsData.periode.semester,
+      tahunAjaran: krsData.periode.tahunAjaran,
       studyProgram: krsData.mahasiswa.programStudi,
       gpaGanjil: gpaGanjil,
       gpaGenap: gpaGenap,

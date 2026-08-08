@@ -53,6 +53,7 @@ class HomeEntity {
     required this.sksTaken,
     required this.todayClassCount,
     required this.semester,
+    required this.tahunAjaran,
     required this.studyProgram,
     required this.gpaGanjil,
     required this.gpaGenap,
@@ -65,6 +66,7 @@ class HomeEntity {
   final int sksTaken;
   final int todayClassCount;
   final String semester;
+  final String tahunAjaran;
   final String studyProgram;
   final double gpaGanjil;
   final double gpaGenap;
@@ -81,6 +83,7 @@ class HomeEntity {
           sksTaken == other.sksTaken &&
           todayClassCount == other.todayClassCount &&
           semester == other.semester &&
+          tahunAjaran == other.tahunAjaran &&
           studyProgram == other.studyProgram &&
           gpaGanjil == other.gpaGanjil &&
           gpaGenap == other.gpaGenap;
@@ -94,6 +97,7 @@ class HomeEntity {
     sksTaken,
     todayClassCount,
     semester,
+    tahunAjaran,
     studyProgram,
     gpaGanjil,
     gpaGenap,

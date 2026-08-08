@@ -103,14 +103,28 @@ Future<void> main() async {
         );
 
         // Initialize FCM for foreground message handling.
-        // Notification taps are handled by the router via GoRouter's redirect.
-        await FcmService.instance.initialize(
-          onNotificationTap: (message) {
-            // Handle navigation based on message data type.
-            // Example: if message.data['type'] == 'jadwal_update', navigate to jadwal.
-            developer.log('Notification tap: ${message.data}', name: 'FCM');
-          },
-        );
+        // Fire-and-forget with timeout to prevent blocking runApp().
+        FcmService.instance
+            .initialize(
+              onNotificationTap: (message) {
+                developer.log('Notification tap: ${message.data}', name: 'FCM');
+              },
+            )
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                developer.log(
+                  'FCM init timed out, continuing without FCM',
+                  name: 'main',
+                );
+              },
+            )
+            .catchError((e) {
+              developer.log(
+                'FCM init failed, continuing without FCM: $e',
+                name: 'main',
+              );
+            });
       }
 
       // ── Hive local persistence (with corruption recovery, EH-3) ──
@@ -335,10 +349,7 @@ Future<void> main() async {
         ),
       );
 
-      // Set auth status to unknown while we validate credentials
-      authStatusNotifier.setStatus(AuthStatus.unknown);
-
-      // Credential validation on app restart
+      // Validate credentials locally (no backend call) to avoid blocking runApp().
       final cache = Services.get<AcademicCacheService>();
       final credentials = await cache.loadCredentials();
 
@@ -347,32 +358,15 @@ Future<void> main() async {
           credentials['npm']!.isNotEmpty &&
           credentials['password'] != null &&
           credentials['password']!.isNotEmpty) {
-        // Credentials exist — try to validate via login API
-        try {
-          final getAuth = Services.get<GetAuth>();
-          await getAuth(
-            npm: credentials['npm']!,
-            password: credentials['password']!,
-          );
-          // Login succeeded — check if data exists in cache
-          final hasKrs = cache.hasKrsData(npm: credentials['npm']!);
-          final hasKhsList = cache.hasKhsList(npm: credentials['npm']!);
+        final hasKrs = cache.hasKrsData(npm: credentials['npm']!);
+        final hasKhsList = cache.hasKhsList(npm: credentials['npm']!);
 
-          if (hasKrs && hasKhsList) {
-            // Creds + data → authenticated, go to home
-            authStatusNotifier.setStatus(AuthStatus.authenticated);
-          } else {
-            // Creds + no data → unauthenticated, login page runs data-init
-            authStatusNotifier.setStatus(AuthStatus.unauthenticated);
-          }
-        } catch (e) {
-          // Network error or invalid creds → clear creds, go to login
-          developer.log('Credential validation failed: $e', name: 'main');
-          await cache.clearCredentials();
+        if (hasKrs && hasKhsList) {
+          authStatusNotifier.setStatus(AuthStatus.authenticated);
+        } else {
           authStatusNotifier.setStatus(AuthStatus.unauthenticated);
         }
       } else {
-        // No credentials → go to login
         authStatusNotifier.setStatus(AuthStatus.unauthenticated);
       }
 
@@ -384,6 +378,44 @@ Future<void> main() async {
         name: 'ErrorHandler',
         error: error,
         stackTrace: stackTrace,
+      );
+      // If runApp() hasn't been called yet, show error UI instead of blackscreen
+      WidgetsFlutterBinding.ensureInitialized();
+      runApp(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Terjadi kesalahan saat startup',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$error',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       );
     },
   );

@@ -33,12 +33,23 @@ class DataRefreshOverlay extends StatelessWidget {
 
     return BlocListener<DataInitBloc, DataInitBlocState>(
       listener: (context, state) {
-        if (state is DataInitSuccess || state is DataInitFailure) {
+        if (state is DataInitSuccess) {
           Future.delayed(const Duration(milliseconds: 500), () {
             if (context.mounted) {
               Navigator.of(context).pop();
             }
           });
+        } else if (state is DataInitFailure) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Gagal memperbarui data'),
+              action: SnackBarAction(
+                label: 'Coba lagi',
+                onPressed: () => DataRefreshOverlay.show(context),
+              ),
+            ),
+          );
         }
       },
       child: Scaffold(

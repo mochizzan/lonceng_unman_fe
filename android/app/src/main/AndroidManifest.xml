@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <!-- Android 14+ (API 34): foreground services require a typed permission.
-         workmanager and flutter_local_notifications use dataSync type. -->
+         flutter_local_notifications uses dataSync type. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
     <application
@@ -62,13 +62,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-
-        <!-- Disable AndroidX Startup auto-init (WorkManager initialized manually) -->
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="remove" />
 
         <!-- flutter_local_notifications: notification display receiver -->
         <receiver

@@ -65,7 +65,7 @@ class FcmService {
     try {
       // Step 1: Request notification permission (required for Android 13+ and iOS).
       developer.log('Step 1: Requesting permission...', name: 'FCM');
-      final settings = await _requestPermission();
+      final settings = await requestPermission();
       developer.log(
         'Permission status: ${settings.authorizationStatus}',
         name: 'FCM',
@@ -131,7 +131,7 @@ class FcmService {
   }
 
   /// Request notification permissions from the user.
-  Future<NotificationSettings> _requestPermission() async {
+  Future<NotificationSettings> requestPermission() async {
     return _messaging.requestPermission(
       alert: true,
       badge: true,

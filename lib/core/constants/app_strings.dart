@@ -142,4 +142,33 @@ abstract final class AppStrings {
   // For emulator builds, we use 10.0.2.2 as the default.
   // To switch per environment, use --dart-define or flavor.
   static const String apiBaseUrl = 'http://10.0.2.2:3000';
+
+  // ─── Onboarding ─────────────────────────────────────
+  static const String appName = 'Lonceng UnMan';
+  static const String onboardingWelcomeTagline =
+      'Jadwal kuliahmu, tepat waktu.';
+  static const String onboardingFeaturesTitle = 'Yang Bisa Kamu Lakukan';
+  static const String onboardingFeatureCountdown = 'Countdown Jadwal Kuliah';
+  static const String onboardingFeatureCountdownDesc =
+      'Lihat waktu tersisa sebelum kelas berikutnya dimulai.';
+  static const String onboardingFeatureNotification = 'Notifikasi Otomatis';
+  static const String onboardingFeatureNotificationDesc =
+      'Dapat pengingat otomatis sebelum jadwal kuliahmu.';
+  static const String onboardingFeatureSchedule = 'Manajemen Jadwal Mingguan';
+  static const String onboardingFeatureScheduleDesc =
+      'Lihat seluruh jadwal kuliahmu dalam satu minggu.';
+  static const String onboardingFeatureProfile = 'Profil Akademik';
+  static const String onboardingFeatureProfileDesc =
+      'Kelola data NPM, Program Studi, dan Semester.';
+  static const String onboardingPermissionTitle = 'Izinkan Notifikasi';
+  static const String onboardingPermissionDescription =
+      'Izinkan Lonceng UnMan mengirim notifikasi pengingat jadwal kuliah.';
+  static const String onboardingPermissionAllow = 'Izinkan';
+  static const String onboardingPermissionGranted = 'Izin Diberikan';
+  static const String onboardingPermissionGrantedDesc =
+      'Notifikasi sudah aktif. Kamu akan mendapat pengingat jadwal kuliah.';
+  static const String onboardingThemeTitle = 'Pilih Tampilan';
+  static const String onboardingThemeDescription =
+      'Pilih tampilan yang nyaman untukmu.';
+  static const String onboardingGetStarted = 'Mulai';
 }

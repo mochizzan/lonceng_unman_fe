@@ -42,6 +42,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> with BlocErrorHandler {
     } on AuthException catch (_) {
       rethrow;
     } catch (e) {
+      // Keep previous loaded state on refresh failure
+      if (state is HomeLoaded) return;
       emit(HomeError(handleError(e)));
     }
   }

@@ -51,6 +51,9 @@ import 'package:lonceng_unman_fe/features/notification/data/repositories/notific
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/core/services/notification_scheduler_noop.dart';
+import 'package:lonceng_unman_fe/features/onboarding/data/datasources/onboarding_local_data_source.dart';
+import 'package:lonceng_unman_fe/features/onboarding/data/repositories/onboarding_repository_impl.dart';
+import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Background message handler — must be top-level (not inside a class).
@@ -167,6 +170,14 @@ Future<void> main() async {
         );
       }
 
+      // ── Onboarding local data source ──
+      final onboardingDataSource = OnboardingLocalDataSource();
+      await onboardingDataSource.init();
+      Services.register<OnboardingLocalDataSource>(onboardingDataSource);
+      Services.register<OnboardingRepository>(
+        OnboardingRepositoryImpl(onboardingDataSource),
+      );
+
       // ── Notification local data source ──
       Services.register<NotificationLocalDataSource>(
         NotificationLocalDataSource(
@@ -213,6 +224,10 @@ Future<void> main() async {
       final academicCacheService = AcademicCacheService();
       await academicCacheService.initialize();
       Services.register<AcademicCacheService>(academicCacheService);
+
+      // ── Theme Notifier (global, drives theme mode) ──
+      final themeNotifier = ThemeNotifier();
+      Services.register<ThemeNotifier>(themeNotifier);
 
       // ── Auth Status Notifier (global, drives router redirect) ──
       final authStatusNotifier = AuthStatusNotifier();
@@ -343,7 +358,7 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
     super.initState();
     _authNotifier =
         widget.authStatusNotifier ?? Services.get<AuthStatusNotifier>();
-    _themeNotifier = widget.themeNotifier ?? ThemeNotifier();
+    _themeNotifier = widget.themeNotifier ?? Services.get<ThemeNotifier>();
     _router = AppRouter.create(
       authStatusNotifier: _authNotifier,
       themeNotifier: _themeNotifier,
@@ -356,7 +371,9 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
     if (widget.authStatusNotifier == null) {
       _authNotifier.dispose();
     }
-    if (widget.themeNotifier == null) {
+    // DI-registered ThemeNotifier lifecycle is managed by DI; don't dispose it.
+    // Only dispose an injected (test) instance.
+    if (widget.themeNotifier != null) {
       _themeNotifier.dispose();
     }
     super.dispose();

@@ -14,4 +14,5 @@ class RouteNames {
   static const jadwal = 'jadwal';
   static const profile = 'profile';
   static const settings = 'settings';
+  static const String onboarding = '/onboarding';
 }

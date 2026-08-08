@@ -47,6 +47,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   void dispose() {
+    _authBloc.close();
     _pageController.dispose();
     super.dispose();
   }

@@ -29,6 +29,8 @@ import 'package:lonceng_unman_fe/features/notification/domain/services/notificat
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
+import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
 ///
@@ -144,6 +146,12 @@ List<RouteBase> _buildRoutes(
       ],
     ),
 
+    // --- Onboarding (first-time users) ---
+    GoRoute(
+      path: RouteNames.onboarding,
+      builder: (context, state) => const OnboardingPage(),
+    ),
+
     // --- Settings (standalone; accessible from Profile via pushNamed) ---
     GoRoute(
       name: RouteNames.settings,
@@ -172,8 +180,15 @@ final class AppRouter {
     return GoRouter(
       initialLocation: initialLocation,
       refreshListenable: _StreamListenable(authStatusNotifier.status),
-      redirect: (context, state) =>
-          authRedirect(state.topRoute?.name, authStatusNotifier),
+      redirect: (context, state) {
+        // First-time users must complete onboarding
+        final onboardingRepo = Services.get<OnboardingRepository>();
+        if (!onboardingRepo.isCompleted &&
+            state.matchedLocation != RouteNames.onboarding) {
+          return RouteNames.onboarding;
+        }
+        return authRedirect(state.topRoute?.name, authStatusNotifier);
+      },
       routes: _buildRoutes(authStatusNotifier, themeNotifier),
       errorBuilder: (context, state) {
         return AppErrorPage(state: state);

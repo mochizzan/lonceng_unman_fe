@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
@@ -25,7 +24,7 @@ class _PermissionPageState extends State<PermissionPage> {
   }
 
   Future<void> _checkPermission() async {
-    if (!Platform.isAndroid) {
+    if (kIsWeb) {
       setState(() => _isGranted = true);
       return;
     }

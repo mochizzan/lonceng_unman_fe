@@ -1,224 +1,125 @@
-# Onboarding Guide: Lonceng UnMan
+# Repository Guidelines
 
-## Overview
+## Project Overview
 
-**Lonceng UnMan** is a Flutter mobile application for university students — a class schedule reminder with countdown, academic profile management (NPM, Program, Semester), and local notifications. Built with Material 3, seed color yellow `#FFC107`, supporting Light/Dark mode. Single-app monolith, no backend split.
+**Lonceng UnMan** is a Flutter mobile application for university students — a class schedule reminder with countdown, academic profile management (NPM, Program, Semester), and local notifications. Built with Material 3, seed color yellow `#FFC107`, supporting Light/Dark mode. Backend is a Go server (`lonceng_unman_be`) handling LMS integration (login, KRS/KHS PDF download + extraction). Single-app monolith, no backend split.
 
----
-
-## Runtime Environment (MUST)
-
-- **OS**: Windows 10 Pro — native, NOT Linux, macOS, WSL, Ubuntu, Debian, or any other OS.
-- **Shell**: Git Bash (MSYS2) — pure Git Bash, NOT from WSL, Docker, Ubuntu, or Mac.
-- **AI Agent**: OMP (OhMyPi) — the coding agent for this project.
-- **Testing**: Android 15 emulator via MuMu Player.
-- **Path separator**: `\` on disk, `/` in code and Git Bash. Always use `/` in code paths.
-- **NEVER use absolute paths** — always use paths relative to project root.
-- **NEVER write to `/tmp/`** — on Windows this resolves to `D:\D\tmp\` or `D:\tmp\`, creating unwanted folders.
-- Sub-agent temp files: use `local://` scheme or the `tmp/` folder at project root.
+**Runtime**: Windows 10 Pro with Git Bash (MSYS2). Android emulator via MuMu Player (Android 15). Testing on `http://10.0.2.2:3000` (emulator loopback to host).
 
 ---
 
-## Agent Behavior Rules (ALL MANDATORY)
+## Architecture & Data Flow
 
-### Commit Rule
-Every code/file change MUST be committed — no matter how small. Use conventional commit format: `type(scope): description`.
-
-### Sub-Agent Task Rule
-Every delegation to a sub-agent MUST include complete details: **input, process, output, goals, and prohibitions**. Applies to all tasks, no matter how small. Never delegate without a clear description.
-
-### Read Before Edit Rule
-ALWAYS read the file and the exact line of code BEFORE making any change — no matter how small. Never assume line numbers. Always `read` first, confirm the line, then edit. Re-read if the file was edited earlier in the session (line numbers shift).
-
-### Clarification Rule
-If an instruction is ambiguous or confusing → **ASK FIRST**. Never take action without clarification. Example: user says "delete the new file" but it's unclear which file is "new" → ask before proceeding.
-
-### Artifact Rule
-NEVER create artifact files at the project root. Artifacts MUST go inside the `tmp/` folder at the project root. Use `local://` scheme for temporary files.
-
-### Merge Rule
-NEVER merge without explicit instruction from the user. Wait for explicit approval.
-
-### Delete Rule
-NEVER delete or remove files/folders without asking first. Always confirm destructive operations (delete, overwrite, migrate).
-
-### Code Quality Rules
-- Follow **Clean Architecture** — presentation → domain → data, never reverse.
-- **Avoid hardcoding** — use constants, configuration, or parameters.
-- **No code duplication** — before every change, verify no duplicate code exists.
-- Code MUST be readable and clean — follow project naming conventions.
-
-### Linting Rule
-ALWAYS run LSP/linting after every code change on the modified files. Full analysis: `flutter analyze`.
-
-### Edit Mode — Hashline with 0.90/90% Threshold
-OMP uses hashline edit mode with a matching threshold of 0.90 (90%).
-- Read the file and identify the **exact line number** before any edit.
-- The edit tool fuzzy-matches content above 90% similarity. If content has drifted, re-read first.
-- Provide 2–4 lines of surrounding context so the fuzzy matcher lands on the correct location.
-- If a file has been edited multiple times in one session, re-read before each subsequent edit.
-
----
-
-## Tech Stack
-
-|Layer|Technology|Version|
-|---|---|---|
-|Language|Dart|^3.12.0|
-|Framework|Flutter|>=3.44.0|
-|Routing|go_router|^17.3.0|
-|State Management|bloc + flutter_bloc|^9.2.1 / ^9.0.1|
-|Fonts|google_fonts|^8.2.1|
-|Lint Rules|flutter_lints|^6.0.0|
-|Firebase|firebase_core + firebase_messaging|^4.13.0 / ^16.5.0|
-|Firebase|firebase_in_app_messaging|^0.9.2+7|
-|Firebase|firebase_analytics|^12.4.6|
-|HTTP Client|http|^1.2.0|
-|Local Storage|hive_ce + hive_ce_flutter|^2.19.0 / ^2.3.4|
-|Local Notifications|flutter_local_notifications|^22.2.0|
-|Background Tasks|workmanager|^0.10.7|
-|Timezone|timezone|^0.11.0|
-|Date Formatting|intl|^0.20.0|
-|Preferences|shared_preferences|^2.5.0|
-|Path Provider|path_provider|^2.1.0|
-|Permissions|permission_handler|^11.3.0|
-|Toast|fluttertoast|^9.0.0|
-|Icons|cupertino_icons|^1.0.8|
-
-### Dev Dependencies
-
-|Package|Version|Purpose|
-|---|---|---|
-|bloc_test|^10.0.0|BLoC/Cubit testing|
-|hive_ce_generator|^1.10.0|Hive type adapter code generation|
-|build_runner|^2.15.1|Code generation runner|
-|flutter_native_splash|^2.4.3|Native splash screen generation|
-
----
-
-## Android Config
-
-|Setting|Value|
-|---|---|
-|minSdk|21|
-|compileSdk|37|
-|targetSdk|34|
-|AGP|9.0.1|
-|Kotlin|2.3.20|
-|Gradle|9.1.0|
-|JVM Target|17|
-|Application ID|com.miproduction.loncengunman|
-
----
-
-## Architecture
-
-**Pattern**: Clean Architecture — feature-based with presentation/data/domain layers.
-
-```
-┌─────────────────────────────────────────────────────┐
-│                   lib/main.dart                      │
-│              Entry Point + DI Wiring                 │
-├──────────┬──────────┬──────────┬─────────────────────┤
-│  core/   │ features/│ shared/  │  test/              │
-│ routes   │ auth/    │ widgets/ │  features/          │
-│ theme    │ home/    │ utils/   │  core/              │
-│ di/      │ jadwal/  │          │  router/            │
-│ services/│ profile/ │          │  helpers/           │
-│ errors/  │ notif/   │          │                     │
-│ constants│ settings/│          │                     │
-│ cache/   │ krs/     │          │                     │
-│ network/ │ khs/     │          │                     │
-│ auth/    │ data_init│          │                     │
-│          │ onboard/ │          │                     │
-└──────────┴──────────┴──────────┴─────────────────────┘
-```
+**Pattern**: Clean Architecture — feature-based with 3-layer modularization (presentation → domain → data).
 
 ### Data Flow (Request Lifecycle)
 
-1. **Entry**: User action triggers navigation via `go_router` (`context.go('/route')`).
-2. **Presentation**: Page widget dispatches event to BLoC/Cubit via `context.read<Bloc>()`.
-3. **Domain**: BLoC calls UseCase, which calls Repository interface.
-4. **Data**: Repository implementation calls DataSource (remote via `ApiClient` or local via Hive cache).
-5. **Response**: Data flows back up — DataSource → Repository → UseCase → BLoC state → UI rebuilds via `BlocBuilder`.
+1. **Entry**: User action triggers navigation via `go_router` (`context.go('/route')`)
+2. **Presentation**: Page widget dispatches event to BLoC/Cubit via `context.read<Bloc>()`
+3. **Domain**: BLoC calls UseCase, which calls Repository interface
+4. **Data**: Repository implementation calls DataSource (remote via `ApiClient` or local via Hive cache)
+5. **Response**: DataSource → Repository → UseCase → BLoC state → UI rebuilds via `BlocBuilder`
 
 ### Dependency Rule
 `presentation → domain → data` — never reverse. Domain defines repository interfaces; data provides implementations.
 
+### State Management
+
+| Pattern | Features | Notes |
+|---------|----------|-------|
+| **BLoC** (event-driven) | auth, home, jadwal, profile, data_initialization | Complex features with multiple events |
+| **Cubit** (method-driven) | notification, khs_detail, permission | Simpler state transitions |
+| **StatefulWidget** | khs (KhsDetailPage), settings | Direct state, no BLoC overhead |
+
 ### Error Handling
-Sealed `AppException` hierarchy: `NetworkException`, `ServerException`, `AuthException`, `ValidationException`, `DataInitStepException`.
-- `BlocErrorHandler` mixin: rethrows `AuthException`, returns Indonesian strings for other errors.
-- `ErrorHandler` utility: converts exceptions to Indonesian user messages, shows Fluttertoast.
+
+Sealed `AppException` hierarchy in `lib/core/errors/app_errors.dart`:
+- `NetworkException` — connectivity/timeout issues
+- `ServerException` — non-200 HTTP responses
+- `AuthException` — 401 unauthorized (triggers auto-logout)
+- `ValidationException` — input validation failures
+- `DataInitStepException` — post-login data pipeline failures
+
+**Mixin**: `BlocErrorHandler` — converts exceptions to Indonesian user messages. Rethrows `AuthException`.
+
+**Utility**: `ErrorHandler` — `toHumanReadable()` for messages, `show()` via Fluttertoast.
+
+**Global**: `runZonedGuarded` + `FlutterError.onError` + fallback error UI.
 
 ### Dependency Injection
-Custom service locator (`Services` class): `Services.register<T>()` / `Services.get<T>()`. All DI wiring in `lib/main.dart` — **21 registrations** total. `performFullLogout()`: clears cache, cancels notifications, deletes FCM token, sets auth unauthenticated.
+
+Custom service locator (`Services` class in `lib/core/di/di.dart`):
+```dart
+Services.register<ApiClient>(ApiClient(baseUrl: AppStrings.apiBaseUrl));
+final api = Services.get<ApiClient>();
+```
+
+- **13+ registrations** in `lib/main.dart` (procedural, no module system)
+- `Services.performFullLogout()` — clears cache, cancels notifications, deletes FCM token, sets auth unauthenticated
+- Constructor fallback pattern: `param ?? Services.get<T>()`
+
+### Caching
+
+`AcademicCacheService` in `lib/core/cache/academic_cache_service.dart`:
+- **2 Hive boxes**: `credentialsBox` (login data) + `academicBox` (KRS/KHS data)
+- Per-NPM keying for multi-student support
+- Corruption recovery on init
+- Hot restart recovery
+
+### API Client
+
+`ApiClient` in `lib/core/network/api_client.dart`:
+- **POST-only** HTTP client
+- Envelope parsing: `{status, data, message}`
+- 30s timeout
+- 401 → automatic `performFullLogout()`
+- Error mapping by HTTP status code
 
 ---
 
-## Key Entry Points
+## Key Directories
 
-|Entry Point|Path|Purpose|
-|---|---|---|
-|App entry|`lib/main.dart`|Bootstrap, DI wiring (21 services), Firebase init, Hive init with corruption recovery|
-|Top barrel|`lib/barrel.dart`|Re-exports 6 feature barrels: auth, data_init, home, jadwal, notification, profile|
-|Router config|`lib/core/routes/app_router.dart`|GoRouter setup, auth guard, onboarding guard, ShellRoute|
-|Route names|`lib/core/routes/route_names.dart`|7 named route constants|
-|Theme|`lib/core/theme/theme.dart`|Material 3 theme, ColorScheme, AppColors ThemeExtension|
-|Theme notifier|`lib/core/theme/theme_notifier.dart`|ThemeNotifier ChangeNotifier, AppThemeMode enum, SharedPreferences persistence|
-|Service locator|`lib/core/di/di.dart`|`Services` class — Map-based registry|
-|API client|`lib/core/network/api_client.dart`|HTTP client, POST-only, 30s timeout, envelope parsing, 401→logout|
-|Cache service|`lib/core/cache/academic_cache_service.dart`|Hive-backed: 2 boxes (credentials + academic), keyed by NPM, no TTL|
-|Auth status|`lib/core/auth/auth_status.dart`|AuthStatus enum + AuthStatusNotifier with broadcast StreamController|
-
----
-
-## Directory Map
-
-|Directory|Purpose|
-|---|---|
-|`lib/main.dart`|Application entry point + all DI wiring (21 registrations)|
-|`lib/barrel.dart`|Top-level barrel exports (6 feature barrels)|
-|`lib/firebase_options.dart`|Firebase config (generated by flutterfire)|
-|`lib/hive_registrar.g.dart`|Hive type adapters (generated)|
-|`lib/core/`|Shared infrastructure|
-|`lib/core/auth/`|Auth status provider (AuthStatusNotifier) for router guard|
-|`lib/core/cache/`|Hive-backed academic cache service (2 boxes: credentials + academic)|
-|`lib/core/constants/`|App-wide constants (strings, colors, dimensions, durations, notification config) — barrel chain: `constants.dart` → `barrel.dart`|
-|`lib/core/data/`|Shared data models (ScheduleItemModel, MetadataModel DTOs)|
-|`lib/core/di/`|Service locator (`Services` class)|
-|`lib/core/domain/`|Shared domain entities (ScheduleItemEntity, MetadataEntity, ScheduleStatus)|
-|`lib/core/errors/`|Sealed AppException hierarchy + BlocErrorHandler mixin|
-|`lib/core/models/`|Empty directory — no files|
-|`lib/core/network/`|API client (HTTP, envelope parsing, 401 handling)|
-|`lib/core/platform/`|Empty directory — all native integration via plugins|
-|`lib/core/routes/`|GoRouter config, route names, shell scaffold, error page|
-|`lib/core/services/`|Core services (fcm_service, notification_service, notification_scheduler_noop)|
-|`lib/core/theme/`|Material 3 theme (ColorScheme variants + AppColors ThemeExtension + ThemeNotifier + AppShadows)|
-|`lib/core/utils/`|Utility functions (schedule_helpers, day_name_mapper, format_utils, credential_body, responsive, error_handler) — `app_utils.dart` is empty|
-|`lib/core/widgets/`|Core reusable widgets (scroll_hide_controller)|
-|`lib/features/<feature>/`|Feature modules (Clean Architecture)|
-|`lib/features/auth/`|Authentication — Login with NPM/Password (full Clean Architecture)|
-|`lib/features/data_initialization/`|Post-login data setup pipeline (full Clean Architecture)|
-|`lib/features/home/`|Home screen — Countdown & Summary (full Clean Architecture, cache-based)|
-|`lib/features/jadwal/`|Weekly schedule timeline (full Clean Architecture)|
-|`lib/features/khs/`|KHS data — has presentation (KhsDetailPage) + domain + data|
-|`lib/features/krs/`|KRS data — domain + data only, no presentation|
-|`lib/features/notification/`|Local notification scheduling (uses Cubit, full Clean Architecture)|
-|`lib/features/onboarding/`|First-run onboarding carousel (full Clean Architecture)|
-|`lib/features/profile/`|Academic info & settings (full Clean Architecture)|
-|`lib/features/settings/`|App settings — theme & notification prefs (presentation-only, no domain/data)|
-|`lib/shared/`|Shared reusable widgets and helpers|
-|`lib/shared/utils/`|Empty directory — no files|
-|`lib/shared/theme/`|Empty directory — no files|
-|`test/`|Widget, unit, and integration tests (31 files, 142 test cases)|
-|`android/`|Android config (compileSdk 37, targetSdk 34, JVM 17)|
-|`ios/`|iOS config (placeholder)|
-|`web/`|Web platform entry point + firebase-messaging-sw.js|
+```
+lib/
+├── main.dart                    # Entry point + DI wiring (492 lines)
+├── barrel.dart                  # Top-level barrel (re-exports 6/10 features)
+├── firebase_options.dart        # Generated by flutterfire (gitignored)
+├── hive_registrar.g.dart        # Generated Hive type adapters
+├── core/                        # Shared infrastructure
+│   ├── auth/                    # AuthStatusNotifier for router guard
+│   ├── cache/                   # AcademicCacheService (Hive)
+│   ├── constants/               # app_strings, app_colors, app_dimens, notification_config, app_durations
+│   ├── data/                    # Shared DTOs (ScheduleItemModel, MetadataModel)
+│   ├── di/                      # Services class (service locator)
+│   ├── domain/                  # Shared entities (ScheduleItemEntity, ScheduleStatus)
+│   ├── errors/                  # AppException + BlocErrorHandler mixin
+│   ├── models/                  # Empty
+│   ├── network/                 # ApiClient
+│   ├── platform/                # Empty (all native via plugins)
+│   ├── routes/                  # GoRouter config, route names, shell scaffold, error page
+│   ├── services/                # fcm_service, notification_service, notification_scheduler_noop
+│   ├── theme/                   # Material 3 theme, AppColors, ThemeNotifier, AppShadows
+│   ├── utils/                   # error_handler, day_name_mapper, responsive, format_utils, credential_body, map_cast
+│   └── widgets/                 # scroll_hide_controller
+├── features/                    # Feature modules (10 total)
+│   ├── auth/                    # Login (full 3-layer)
+│   ├── data_initialization/     # Post-login KRS+KHS pipeline (full 3-layer)
+│   ├── home/                    # Dashboard, countdown, stats (full 3-layer, cache-based)
+│   ├── jadwal/                  # Weekly schedule timeline (full 3-layer)
+│   ├── khs/                     # Grade results (presentation + domain + data, no BLoC)
+│   ├── krs/                     # Course plan pipeline (domain + data only, no UI)
+│   ├── notification/            # Local notifications (full 3-layer, Cubit)
+│   ├── onboarding/              # First-run carousel (full 3-layer)
+│   ├── profile/                 # Student profile (full 3-layer)
+│   └── settings/                # Theme/notification prefs (presentation only)
+└── shared/                      # Reusable widgets
+    ├── widgets/                 # bloc_scaffold, stat_card, app_button, app_text_field, pulsing_dot, bell_logo, auth_background
+    └── utils/                   # Empty
+```
 
 ### Feature Layer Structure
 
-Each feature under `lib/features/<feature>/` follows:
-
+Each feature follows:
 ```
 lib/features/<feature>/
 ├── presentation/
@@ -241,196 +142,389 @@ lib/features/<feature>/
 `auth`, `home`, `jadwal`, `profile`, `notification`, `data_initialization`, `onboarding`
 
 ### Features with Partial Layers
-|Feature|Presentation|Domain|Data|Notes|
-|---|---|---|---|---|
-|`khs`|✅ (KhsDetailPage)|✅|✅|No BLoC — StatefulWidget with cache|
-|`krs`|❌|✅|✅|Service layer only, consumed by other features|
-|`settings`|✅|❌|❌|Uses NotificationCubit from notification feature|
+
+| Feature | Presentation | Domain | Data | Notes |
+|---------|-------------|--------|------|-------|
+| `khs` | ✅ (KhsDetailPage) | ✅ | ✅ | No BLoC — KhsDetailCubit with cache |
+| `krs` | ❌ | ✅ | ✅ | Service layer only, consumed by other features |
+| `settings` | ✅ | ❌ | ❌ | Uses NotificationCubit from notification feature |
 
 ---
 
-## Conventions
+## Development Commands
+
+| Command | Purpose |
+|---------|---------|
+| `flutter run` | Run dev (hot reload: r, hot restart: R) |
+| `flutter test` | Run unit/widget tests |
+| `flutter analyze` | Static analysis (linting) |
+| `dart format .` | Code formatting |
+| `dart run build_runner build --delete-conflicting-outputs` | Hive type adapter code generation |
+| `flutter pub get` | Install dependencies |
+| `flutter build appbundle` | Build Android AAB |
+| `flutter build web` | Build Web |
+| `dart run flutter_native_splash:create` | Generate splash screen assets |
+
+**No CI/CD** — all commands run manually from developer machine. No Makefile, no scripts, no git hooks.
+
+---
+
+## Code Conventions & Common Patterns
 
 ### Naming
 - **Files**: `snake_case` (e.g. `home_page.dart`, `app_router.dart`)
 - **Classes/Widgets**: `PascalCase` (e.g. `HomePage`, `AuthBloc`)
 - **Variables/methods**: `camelCase` (e.g. `_counter`, `fetchSchedule`)
 - **Private members**: prefix `_` (e.g. `_MyHomePageState`)
-- **Route names**: use `RouteNames` constants from `lib/core/routes/route_names.dart`
+- **Constants**: `static const` in dedicated classes (e.g. `AppStrings`, `AppDimens`)
+- **Route names**: `RouteNames` constants from `lib/core/routes/route_names.dart`
 
-### State Management
-- **BLoC** for complex features (auth, home, jadwal, profile, data_initialization)
-- **Cubit** for notification feature only
-- **StatefulWidget** directly for: khs (KhsDetailPage), onboarding, settings
-- Use `BlocBuilder` for UI, `context.read<Bloc>()` for dispatch, `BlocProvider` for injection
+### Barrel Files
+Every feature has a `barrel.dart` that re-exports its public API. Top-level `lib/barrel.dart` re-exports 6 feature barrels (auth, data_init, home, jadwal, notification, profile).
 
-### Testing
-- Tests mirror source: `test/features/<feature>/` matches `lib/features/<feature>/`
-- Widget tests: `flutter_test` + `testWidgets`
-- BLoC/Cubit tests: `bloc_test` package with `blocTest` helper
-- Router tests: `go_router` tester methods
-- **No mocking library** — hand-written fakes/mocks throughout (no mockito/mocktail)
-- Shared test DI: `test/helpers/test_di.dart` with `registerTestDependencies()`
-- **142 test cases** across 31 test files
+### Error Handling Pattern
+```dart
+// In BLoC/Cubit:
+class MyBloc extends Bloc<MyEvent, MyState> with BlocErrorHandler {
+  Future<void> _onFetch(FetchEvent event, Emitter<MyState> emit) async {
+    try {
+      final data = await _useCase();
+      emit(MyState.success(data));
+    } catch (e) {
+      handleError(e);  // BlocErrorHandler mixin
+    }
+  }
+}
 
-### Error Handling
-- Sealed `AppException` class hierarchy for domain exceptions
-- `BlocErrorHandler` mixin on BLoC classes
-- `ErrorHandler` utility for UI-level toast messages
-- Try/catch at BLoC layer, exceptions propagate from data layer
-- HTTP 401 → automatic logout via `ApiClient`
+// In ErrorHandler utility:
+ErrorHandler.show(context, exception);  // Shows Fluttertoast with Indonesian message
+```
 
-### Theme & Colors
-- `MaterialTheme` class in `lib/core/theme/theme.dart`
-- `ThemeMode.system` as default, persisted via `ThemeNotifier` → SharedPreferences
-- All colors as M3 `ColorScheme` + `ThemeExtension<AppColors>` for custom colors
-- Fixed navbar color `#201B11` regardless of light/dark theme
-- `AppShadows` utility for card shadow presets
+### DI Pattern
+```dart
+// Registration (in main.dart):
+Services.register<MyRepository>(MyRepositoryImpl(dataSource: remoteDS));
 
-### Dependency Injection
-- `Services.register<T>()` / `Services.get<T>()` in `lib/core/di/di.dart`
-- All wiring in `lib/main.dart` (21 manual registrations)
-- `performFullLogout()` for complete state cleanup
+// Consumption (constructor fallback):
+class MyBloc {
+  final MyRepository _repo;
+  MyBloc({MyRepository? repo}) : _repo = repo ?? Services.get<MyRepository>();
+}
+```
+
+### API Envelope
+All API responses follow: `{status: int, data: dynamic, message: string}`
+
+### Hive Cache Pattern
+```dart
+// 2 boxes: credentialsBox + academicBox
+// Per-NPM keying: 'krs_$npm', 'khs_$npm'
+// Deep cast utility: mapCast() for Map<dynamic,dynamic> → Map<String,dynamic>
+```
 
 ### Git Conventions
-- Branch naming: not yet established (feature branches recommended)
-- Commit style: conventional commits — `type(scope): description`
-- PR workflow: not yet established
+- **Commits**: Conventional commits — `type(scope): description`
+- **Branch naming**: Feature branches recommended (not yet established)
+- **PR workflow**: Not yet established
 
 ---
 
-## Design System
+## Important Files
 
-|Element|Value|
-|---|---|
-|Seed Color|Yellow `#FFC107`|
-|Light Primary|`#6e5d0e`|
-|Dark Primary|`#dcc66e`|
-|Light Surface|`#FFF8F2` (warm off-white)|
-|Dark Surface|`#181309` (near-black)|
-|Navbar Surface|`#201B11` (fixed, light/dark same)|
-|Fonts|Plus Jakarta Sans (headlines/titles) + Roboto (body/labels)|
-|Hero Card|`Primary Container`, radius 32px|
-|Item Card|`Surface Container`, radius 20px|
-|Stat Card|`Surface Container High`, radius 20px|
-|Button (Filled)|`Primary Container`/`On Primary Container`, radius 24px|
-|Button (Tonal)|`Secondary Container`, radius 24px|
-|Text Field|`Surface Container Highest`, radius 16px|
-|SKS Chip|`Secondary Container`/`On Secondary Container`, pill|
-|Status Chip — Active|`Success`/`On Success` (green)|
-|Status Chip — Done|`Outline Variant`/`On Surface Variant`|
-|Spacing unit|4px base|
-|Screen padding|20-24px|
-|Card spacing|12-16px|
-|Navbar margin|20px bottom, 24px sides|
+### Entry Points
+
+| File | Purpose |
+|------|---------|
+| `lib/main.dart` | Bootstrap: runZonedGuarded, Firebase+Hive init, 13+ DI registrations |
+| `lib/barrel.dart` | Top-level barrel exports (6 feature barrels) |
+| `lib/core/routes/app_router.dart` | GoRouter: ShellRoute (bottom nav), standalone routes, auth/onboarding guards |
+| `lib/core/routes/route_names.dart` | 7 named route constants |
+
+### Configuration
+
+| File | Purpose |
+|------|---------|
+| `pubspec.yaml` | Dependencies (24 deps, 4 dev deps), SDK constraints |
+| `analysis_options.yaml` | Lint rules (flutter_lints default) |
+| `android/app/build.gradle.kts` | Android build: compileSdk 37, targetSdk 34, JVM 17 |
+| `android/settings.gradle.kts` | Plugin versions: AGP 9.0.1, Kotlin 2.3.20 |
+| `flutter_native_splash.yaml` | Splash: color #FFF8F2, no image asset yet |
+| `firebase.json` | FlutterFire config (projectId: lonceng-unman) |
+
+### Core Infrastructure
+
+| File | Purpose |
+|------|---------|
+| `lib/core/di/di.dart` | Service locator (Map-based registry) |
+| `lib/core/network/api_client.dart` | HTTP client, POST-only, envelope parsing, 401→logout |
+| `lib/core/cache/academic_cache_service.dart` | Hive cache: 2 boxes, per-NPM keying, corruption recovery |
+| `lib/core/auth/auth_status.dart` | AuthStatusNotifier (stream-based, drives GoRouter refresh) |
+| `lib/core/errors/app_errors.dart` | Sealed AppException hierarchy (5 types) |
+| `lib/core/errors/bloc_error_handler.dart` | BlocErrorHandler mixin (Indonesian error messages) |
+| `lib/core/theme/theme.dart` | Material 3 dual ColorScheme + AppColors ThemeExtension |
+| `lib/core/theme/theme_notifier.dart` | ThemeNotifier (ChangeNotifier, SharedPreferences persistence) |
+| `lib/core/constants/app_strings.dart` | 80+ Indonesian UI strings, API base URL |
+| `lib/core/constants/app_dimens.dart` | 100+ dimension tokens |
+| `lib/core/services/notification_service.dart` | flutter_local_notifications wrapper, timezone-aware |
+
+### Generated Files
+
+| File | Generator | Notes |
+|------|-----------|-------|
+| `lib/hive_registrar.g.dart` | hive_ce_generator + build_runner | 1 adapter: ScheduledNotificationModelAdapter |
+| `lib/firebase_options.dart` | flutterfire CLI | Gitignored |
+| `android/app/google-services.json` | FlutterFire | Gitignored |
+
+---
+
+## Runtime & Tooling Preferences
+
+### Required Runtime
+- **OS**: Windows 10 Pro — native, NOT Linux, macOS, WSL, Ubuntu
+- **Shell**: Git Bash (MSYS2) — pure Git Bash, NOT from WSL/Docker
+- **Flutter SDK**: >=3.44.0
+- **Dart SDK**: ^3.12.0
+- **JVM**: 17 (required for Gradle/AGP)
+- **Testing emulator**: Android 15 via MuMu Player
+
+### Path Conventions
+- **On disk**: `\` (Windows)
+- **In code and Git Bash**: `/` (always use forward slashes)
+- **Never use absolute paths** — always relative to project root
+- **Never write to `/tmp/`** — resolves to `D:\D\tmp\` or `D:\tmp\` on Windows
+- **Sub-agent temp files**: use `local://` scheme or `tmp/` folder at project root
+
+### Package Manager
+- **pub** (Flutter built-in) — `pubspec.yaml` + `pubspec.lock`
+- No melos, no workspace config
+
+### Code Generation
+- **Hive CE generator**: `dart run build_runner build --delete-conflicting-outputs`
+- **flutter_native_splash**: `dart run flutter_native_splash:create`
+- **FlutterFire**: `flutterfire configure` (generates `firebase_options.dart`)
+
+### Android Build Notes
+- **Kotlin incremental compilation**: Disabled (cross-drive cache: C: pub cache vs D: project)
+- **Core library desugaring**: Enabled (flutter_local_notifications requirement)
+- **Release signing**: Currently uses DEBUG keys — must setup before production release
+- **Gradle JVM args**: `-Xmx8G -XX:MaxMetaspaceSize=4G`
+
+### Firebase Status
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Android | ✅ Active | Full FCM, google-services.json present |
+| iOS | ⚠️ Placeholder | Missing GoogleService-Info.plist — do NOT modify |
+| Web | ✅ Configured | firebase-messaging-sw.js, Firebase compat SDK 10.14.1 |
+
+---
+
+## Testing & QA
+
+### Test Framework
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| flutter_test (SDK) | — | Unit + widget tests |
+| bloc_test | ^10.0.0 | BLoC/Cubit testing with `blocTest` helper |
+
+**No mockito, no mocktail** — 100% hand-written fakes throughout.
+
+### Running Tests
+
+```bash
+flutter test                    # Run all tests
+flutter test test/features/auth # Run auth tests only
+flutter analyze                 # Static analysis
+```
+
+### Test Structure
+
+```
+test/
+├── widget_test.dart                    # App-level widget tests (4 tests)
+├── main_test.dart                      # App-level main tests (2 tests)
+├── helpers/
+│   └── test_di.dart                    # Shared DI with 8 hand-written fakes
+├── integration/                        # EMPTY
+├── router/                             # 7 test files (~27 tests)
+│   ├── auth_guard_test.dart            # 7 tests
+│   ├── app_router_test.dart            # 7 tests (5 unit + 2 widget)
+│   ├── route_names_test.dart           # 3 tests
+│   ├── main_shell_scaffold_test.dart   # 2 widget tests
+│   ├── auth_status_test.dart           # 7 tests
+│   ├── exports_test.dart               # 1 test
+│   └── app_error_page_test.dart        # 2 widget tests
+├── core/                               # 4 test files (~26 tests)
+│   ├── scroll_hide_controller_test.dart # 14 tests (2 unit + 12 widget)
+│   ├── errors/app_errors_test.dart     # 10 tests
+│   ├── services/notification_service_test.dart # 2 tests
+│   └── utils/day_name_mapper_test.dart # 12 tests
+└── features/                           # 18 test files across 3 features
+    ├── auth/                           # 11 files (~37 tests)
+    ├── notification/                   # 6 files (~39 tests)
+    └── settings/                       # 1 file (1 test)
+```
+
+### Test Counts
+
+| Metric | Count |
+|--------|-------|
+| Test files | 30 |
+| Helper files | 1 (test_di.dart) |
+| Total test cases | **152** |
+| — `test()` (unit) | 107 |
+| — `testWidgets()` (widget) | 33 |
+| — `blocTest()` (BLoC) | 12 |
+
+### Test Patterns
+
+**Hand-written fakes** — no code generation:
+```dart
+class FakeAuthRepository implements AuthRepository {
+  AuthEntity? _auth;
+  final Completer<AuthEntity> completer = Completer();
+  
+  @override
+  Future<AuthEntity> getAuth({required String npm, required String password}) async {
+    return completer.future;
+  }
+}
+```
+
+**Shared test DI** (`test/helpers/test_di.dart`):
+- Registers fakes for 8 repositories/services
+- Call `registerTestDependencies()` in `setUpAll`
+
+**BLoC testing**:
+```dart
+blocTest<AuthBloc, AuthState>(
+  'emits [loading, success] when login succeeds',
+  build: () => AuthBloc(authUseCase: FakeGetAuth()),
+  act: (bloc) => bloc.add(AuthSubmitted(npm: '12345', password: 'pass')),
+  expect: () => [
+    AuthState.loading(),
+    AuthState.success(authEntity),
+  ],
+);
+```
+
+### Coverage Gaps
+
+| Feature/Module | Has Tests | Notes |
+|----------------|-----------|-------|
+| auth | ✅ | Full stack (11 files, ~37 tests) |
+| notification | ✅ | Full stack (6 files, ~39 tests) |
+| router | ✅ | Thorough (7 files, ~27 tests) |
+| settings | ⚠️ | Minimal (1 test) |
+| home | ❌ | Zero tests |
+| jadwal | ❌ | Zero tests |
+| profile | ❌ | Zero tests |
+| khs | ❌ | Zero tests |
+| krs | ❌ | Zero tests |
+| onboarding | ❌ | Zero tests |
+| data_initialization | ❌ | Zero tests |
+| core/cache | ❌ | Zero tests |
+| core/network | ❌ | Zero tests |
+| core/theme | ❌ | Zero tests |
+| shared/widgets | ⚠️ | 4/8 widgets tested |
+
+### Lint Configuration
+
+`analysis_options.yaml` — uses `flutter_lints` v6.0.0 (default rules). No custom overrides active.
 
 ---
 
 ## API Endpoints
 
-Backend: Go server at `http://10.0.2.2:3000` (Android emulator loopback).
+Backend: Go server at `http://10.0.2.2:3000` (Android emulator loopback to host localhost:3000).
 
-|Endpoint|Method|Feature|Purpose|
-|---|---|---|---|
-|`/api/v1/lms/login`|POST|auth|Student login (NPM + password)|
-|`/api/v1/lms/krs`|POST|krs|Download KRS PDF from LMS|
-|`/api/v1/lms/krs/extract`|POST|krs|Extract KRS data from PDF|
-|`/api/v1/lms/krs/data`|POST|krs, home, jadwal, profile|Fetch parsed KRS data|
-|`/api/v1/lms/khs/semesters`|POST|khs|List available KHS semesters|
-|`/api/v1/lms/khs`|POST|khs|Download KHS PDF from LMS|
-|`/api/v1/lms/khs/extract`|POST|khs|Extract KHS data from PDF|
-|`/api/v1/lms/khs/data`|POST|khs, profile|Fetch parsed KHS data|
+| Endpoint | Method | Feature | Purpose |
+|----------|--------|---------|---------|
+| `/api/v1/lms/login` | POST | auth | Student login (NPM + password) |
+| `/api/v1/lms/krs` | POST | krs | Download KRS PDF from LMS |
+| `/api/v1/lms/krs/extract` | POST | krs | Extract KRS data from PDF |
+| `/api/v1/lms/krs/data` | POST | krs, home, jadwal, profile | Fetch parsed KRS data |
+| `/api/v1/lms/khs/semesters` | POST | khs | List available KHS semesters |
+| `/api/v1/lms/khs` | POST | khs | Download KHS PDF from LMS |
+| `/api/v1/lms/khs/extract` | POST | khs | Extract KHS data from PDF |
+| `/api/v1/lms/khs/data` | POST | khs, profile | Fetch parsed KHS data |
 
 All endpoints use POST. Body includes `npm` + `password` via `lmsCredentialBody()`.
+
+**Data initialization pipeline**: `DataInitializationRemoteDataSource` orchestrates 8 API calls post-login:
+login → krs download → krs extract → krs data → khs semesters → khs download → khs extract → khs data.
 
 ---
 
 ## Navigation Structure
 
-- Floating Bottom Navigation Bar (pill, 3 tabs):
-  - Home — summary & countdown
-  - Jadwal — weekly class schedule
-  - Profile — student data
+- **Floating Bottom Navigation Bar** (pill, 3 tabs): Home, Jadwal, Profile
 - Active item: background `Navbar Active Pill` (`Primary Container` yellow)
-- Auth flow: Onboarding → Login Screen (NPM/Password) → Data Init → Main App (no navbar on auth)
-- Routes: `/onboarding`, `/login`, `/home`, `/jadwal`, `/profile`, `/settings`, `/khs`
-- Route names: `RouteNames` constants from `lib/core/routes/route_names.dart`
-- Auth guard: `authRedirect()` checks `AuthStatusNotifier` stream
-- Onboarding guard: redirects first-time users to `/onboarding`
-
----
-
-## Screen Layout Reference
-
-- **Onboarding**: 4-slide PageView (Welcome → Features → Permissions → Theme selection)
-- **Login**: warm gradient background, logo, card with NPM/Password inputs, "Masuk" button
-- **Home**: App bar → Hero countdown card → Quick stats (3 cards) → Today's schedule list → Navbar
-- **Jadwal**: App bar → Horizontal day selector pills → Vertical timeline list → Navbar
-- **KHS Detail**: TabBarView (GANJIL/GENAP) → Student info → Course list → Summary card
-- **Profile**: App bar → Profile header card → Academic info → Reminder/theme settings → Tabs (Tentang/Aktivitas) → "Perbarui Data" button → Navbar
-- **Settings**: Theme mode selector, notification preferences → Navbar
+- **Auth flow**: Onboarding → Login → Data Init → Main App (no navbar on auth)
+- **Routes**: `/onboarding`, `/login`, `/home`, `/jadwal`, `/profile`, `/settings`, `/khs`
+- **Auth guard**: `authRedirect()` checks `AuthStatusNotifier` stream
+- **Onboarding guard**: redirects first-time users to `/onboarding`
 
 ---
 
 ## Where to Look
 
-|I want to...|Look at...|
+| I want to... | Look at... |
 |---|---|
-|Add a UI widget|`lib/shared/widgets/` (shared) or `lib/features/<feature>/presentation/widgets/`|
-|Add a screen/page|`lib/features/<feature>/presentation/pages/` + register route in `app_router.dart`|
-|Add a route|`lib/core/routes/app_router.dart` + `lib/core/routes/route_names.dart`|
-|Add a BLoC|`lib/features/<feature>/presentation/bloc/` (event.dart, state.dart, bloc.dart)|
-|Add a Cubit|`lib/features/<feature>/presentation/cubit/` (state.dart, cubit.dart)|
-|Wire BLoC/Cubit to UI|`BlocBuilder` or `BlocProvider` in widgets|
-|Add a usecase|`lib/features/<feature>/domain/usecases/`|
-|Add a repository|Interface in `domain/repositories/`, impl in `data/repositories/`|
-|Add a constant|`lib/core/constants/` (app_strings, app_colors, app_dimens, etc.)|
-|Add a service|`lib/core/services/` or `lib/features/<feature>/data/services/`|
-|Change colors/theme|`lib/core/theme/theme.dart` (follow design system color roles)|
-|Change theme mode|`lib/core/theme/theme_notifier.dart`|
-|Add a test|`test/features/<feature>/` or `test/core/` matching source path|
-|Add a BLoC/Cubit test|`blocTest` helper in `test/features/<feature>/bloc/` or `cubit/`|
-|Add a dependency|`pubspec.yaml` → `dependencies:` section|
-|Change linting rules|`analysis_options.yaml`|
-|Change app metadata|`pubspec.yaml`, `web/manifest.json`|
+| Add a UI widget | `lib/shared/widgets/` (shared) or `lib/features/<feature>/presentation/widgets/` |
+| Add a screen/page | `lib/features/<feature>/presentation/pages/` + register route in `app_router.dart` |
+| Add a route | `lib/core/routes/app_router.dart` + `lib/core/routes/route_names.dart` |
+| Add a BLoC | `lib/features/<feature>/presentation/bloc/` (event.dart, state.dart, bloc.dart) |
+| Add a Cubit | `lib/features/<feature>/presentation/cubit/` (state.dart, cubit.dart) |
+| Add a usecase | `lib/features/<feature>/domain/usecases/` |
+| Add a repository | Interface in `domain/repositories/`, impl in `data/repositories/` |
+| Add a constant | `lib/core/constants/` (app_strings, app_colors, app_dimens, etc.) |
+| Add a service | `lib/core/services/` or `lib/features/<feature>/data/services/` |
+| Change colors/theme | `lib/core/theme/theme.dart` (follow design system color roles) |
+| Change theme mode | `lib/core/theme/theme_notifier.dart` |
+| Add a test | `test/features/<feature>/` or `test/core/` matching source path |
+| Add a BLoC/Cubit test | `blocTest` helper in `test/features/<feature>/bloc/` or `cubit/` |
+| Add a dependency | `pubspec.yaml` → `dependencies:` section |
+| Change linting rules | `analysis_options.yaml` |
+| Change app metadata | `pubspec.yaml`, `web/manifest.json` |
 
 ---
 
-## Common Tasks
+## Design System
 
-- **Run dev**: `flutter run`
-- **Run tests**: `flutter test`
-- **Analyze**: `flutter analyze`
-- **Format**: `dart format .`
-- **Codegen**: `dart run build_runner build --delete-conflicting-outputs`
-- **Build Android**: `flutter build appbundle`
+| Element | Value |
+|---------|-------|
+| Seed Color | Yellow `#FFC107` |
+| Light Primary | `#6e5d0e` |
+| Dark Primary | `#dcc66e` |
+| Light Surface | `#FFF8F2` (warm off-white) |
+| Dark Surface | `#181309` (near-black) |
+| Navbar Surface | `#201B11` (fixed, light/dark same) |
+| Fonts | Plus Jakarta Sans (headlines/titles) + Roboto (body/labels) |
+| Hero Card | `Primary Container`, radius 32px |
+| Item Card | `Surface Container`, radius 20px |
+| Stat Card | `Surface Container High`, radius 20px |
+| Button (Filled) | `Primary Container`/`On Primary Container`, radius 24px |
+| Button (Tonal) | `Secondary Container`, radius 24px |
+| Text Field | `Surface Container Highest`, radius 16px |
+| SKS Chip | `Secondary Container`/`On Secondary Container`, pill |
+| Status Chip — Active | `Success`/`On Success` (green) |
+| Status Chip — Done | `Outline Variant`/`On Surface Variant` |
+| Spacing unit | 4px base |
+| Screen padding | 20-24px |
+| Card spacing | 12-16px |
+| Navbar margin | 20px bottom, 24px sides |
 
 ---
 
-## Platform Notes
+## Documentation
 
-|Platform|Firebase Status|Notes|
-|---|---|---|
-|Android|Active|Full FCM via `flutterfire configure`. `google-services.json` in `android/app/`. compileSdk 37, targetSdk 34.|
-|iOS|Placeholder|**Not using Firebase yet.** Do NOT modify iOS Firebase config until user activates it.|
-|Web|Placeholder|Config exists in `firebase_options.dart` + VAPID key in `fcm_service.dart`, service worker in `web/firebase-messaging-sw.js`.|
-
-> **iOS Agent Note**: Do NOT modify `ios/` for Firebase/FCM. Leave it as-is. If a task requests iOS Firebase setup, ignore or ask the user first.
-
----
-
-## Testing Environment
-
-- **Emulator**: Android 15 (MuMu Player)
-- **API Base URL**: `http://10.0.2.2:3000` (Android emulator loopback to host)
-- **Test command**: `flutter test`
-- **Dev dependencies**: flutter_test + bloc_test only (no mockito/mocktail)
-- **Test patterns**: hand-written fakes, `blocTest` helper, `testWidgets` for widget tests
-- **Test coverage**: 142 test cases across 31 files
-  - auth: 10 files (39 tests)
-  - notification: 6 files (33 tests)
-  - settings: 1 file (1 test)
-  - router: 7 files (27 tests)
-  - core: 4 files (26 tests)
-  - root: 2 files (6 tests)
-- **Features with 0 tests**: home, jadwal, profile, khs, krs, onboarding, data_initialization, shared widgets, core/cache, core/network, core/di, core/constants, core/theme
+| File | Size | Content |
+|------|------|---------|
+| `README.md` | ~3.1 KB | Overview, features, tech stack, project structure |
+| `AGENTS.md` | ~20 KB | This file — AI agent onboarding guide |
+| `API.md` | ~56.8 KB | Full backend API documentation (9 endpoints, Go structs, error handling) |
+| `docs/superpowers/plans/` | 29 files | Plan docs: bugfix audits, feature plans, routing refactor, theme migration |
+| `.superpowers/sdd/` | 8+ files | Software design docs: task briefs, review diffs, progress tracking |
+| `tmp/` | 7 files | Temporary audit artifacts |

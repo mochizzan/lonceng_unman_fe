@@ -6,12 +6,12 @@
 // Row for horizontal, Expanded/Flexible for flexible children.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
-import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubit.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_state.dart';
 
 /// Detail page for KHS data.
 ///
@@ -35,14 +35,6 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  // Per-tab state
-  KhsDataEntity? _ganjilData;
-  KhsDataEntity? _genapData;
-  bool _ganjilLoading = true;
-  bool _genapLoading = true;
-  String? _ganjilError;
-  String? _genapError;
-
   @override
   void initState() {
     super.initState();
@@ -53,7 +45,6 @@ class _KhsDetailPageState extends State<KhsDetailPage>
       vsync: this,
       initialIndex: initialIndex,
     );
-    _loadAllData();
   }
 
   @override
@@ -62,86 +53,32 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     super.dispose();
   }
 
-  // ── Data loading ────────────────────────────────────────────
-
-  Future<void> _loadAllData() async {
-    // Fire both loads concurrently.
-    await Future.wait([
-      _loadSemesterData(semester: 'GANJIL', setGanjil: true),
-      _loadSemesterData(semester: 'GENAP', setGanjil: false),
-    ]);
-  }
-
-  Future<void> _loadSemesterData({
-    required String semester,
-    required bool setGanjil,
-  }) async {
-    try {
-      final cache = Services.get<AcademicCacheService>();
-      final creds = await cache.loadCredentials();
-      final npm = creds?['npm'];
-      if (npm == null || npm.isEmpty) {
-        setState(() {
-          if (setGanjil) {
-            _ganjilError = AppStrings.khsNpmTidakDitemukan;
-            _ganjilLoading = false;
-          } else {
-            _genapError = AppStrings.khsNpmTidakDitemukan;
-            _genapLoading = false;
-          }
-        });
-        return;
-      }
-
-      final khsJson = await cache.loadKhsDataSemester(
-        npm: npm,
-        tahunAjaran: widget.tahunAjaran,
-        semester: semester,
-      );
-
-      if (khsJson == null) {
-        // Null means no cache for this semester — not an error, just empty.
-        setState(() {
-          if (setGanjil) {
-            _ganjilLoading = false;
-          } else {
-            _genapLoading = false;
-          }
-        });
-        return;
-      }
-
-      final khsModel = KhsModel.fromJson(khsJson);
-      setState(() {
-        if (setGanjil) {
-          _ganjilData = khsModel.khs;
-          _ganjilLoading = false;
-        } else {
-          _genapData = khsModel.khs;
-          _genapLoading = false;
-        }
-      });
-    } catch (e) {
-      setState(() {
-        if (setGanjil) {
-          _ganjilError = AppStrings.khsGagalMemuat;
-          _ganjilLoading = false;
-        } else {
-          _genapError = AppStrings.khsGagalMemuat;
-          _genapLoading = false;
-        }
-      });
+  /// Map cubit state to per-tab data for ganjil semester.
+  _TabData _getGanjilData(KhsDetailState state) {
+    if (state is KhsDetailLoading) {
+      return _TabData(isLoading: true);
     }
+    if (state is KhsDetailError) {
+      return _TabData(error: state.ganjilError);
+    }
+    if (state is KhsDetailLoaded) {
+      return _TabData(data: state.ganjilData);
+    }
+    return _TabData(isLoading: true);
   }
 
-  Future<void> _onRefresh() async {
-    setState(() {
-      _ganjilLoading = true;
-      _genapLoading = true;
-      _ganjilError = null;
-      _genapError = null;
-    });
-    await _loadAllData();
+  /// Map cubit state to per-tab data for genap semester.
+  _TabData _getGenapData(KhsDetailState state) {
+    if (state is KhsDetailLoading) {
+      return _TabData(isLoading: true);
+    }
+    if (state is KhsDetailError) {
+      return _TabData(error: state.genapError);
+    }
+    if (state is KhsDetailLoaded) {
+      return _TabData(data: state.genapData);
+    }
+    return _TabData(isLoading: true);
   }
 
   // ── Build ───────────────────────────────────────────────────
@@ -173,22 +110,28 @@ class _KhsDetailPageState extends State<KhsDetailPage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildSemesterTab(
-            cs: cs,
-            isLoading: _ganjilLoading,
-            error: _ganjilError,
-            data: _ganjilData,
-          ),
-          _buildSemesterTab(
-            cs: cs,
-            isLoading: _genapLoading,
-            error: _genapError,
-            data: _genapData,
-          ),
-        ],
+      body: BlocBuilder<KhsDetailCubit, KhsDetailState>(
+        builder: (context, state) {
+          final ganjil = _getGanjilData(state);
+          final genap = _getGenapData(state);
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _buildSemesterTab(
+                cs: cs,
+                isLoading: ganjil.isLoading,
+                error: ganjil.error,
+                data: ganjil.data,
+              ),
+              _buildSemesterTab(
+                cs: cs,
+                isLoading: genap.isLoading,
+                error: genap.error,
+                data: genap.data,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -214,7 +157,9 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     }
 
     return RefreshIndicator(
-      onRefresh: _onRefresh,
+      onRefresh: () async {
+        context.read<KhsDetailCubit>().loadAll();
+      },
       child: _buildContent(cs, data),
     );
   }
@@ -742,4 +687,12 @@ class _KhsDetailPageState extends State<KhsDetailPage>
   }
 
   bool _isNilaiEmpty(String nilai) => nilai.trim().isEmpty;
+}
+
+/// Helper to pass per-tab data from cubit state to the tab builder.
+class _TabData {
+  const _TabData({this.isLoading = false, this.error, this.data});
+  final bool isLoading;
+  final String? error;
+  final KhsDataEntity? data;
 }

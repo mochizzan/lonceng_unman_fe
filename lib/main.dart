@@ -24,6 +24,8 @@ import 'package:lonceng_unman_fe/firebase_options.dart';
 import 'package:lonceng_unman_fe/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/load_auth_credentials.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/save_auth_credentials.dart';
 import 'package:lonceng_unman_fe/features/home/data/datasources/home_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/home/data/repositories/home_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
@@ -259,6 +261,12 @@ Future<void> main() async {
       Services.register<AuthRemoteDataSource>(authDataSource);
       Services.register<GetAuth>(
         GetAuth(AuthRepositoryImpl(remoteDataSource: authDataSource)),
+      );
+      Services.register<SaveAuthCredentials>(
+        SaveAuthCredentials(academicCacheService),
+      );
+      Services.register<LoadAuthCredentials>(
+        LoadAuthCredentials(academicCacheService),
       );
       // ── KRS ──
       final krsDataSource = KrsRemoteDataSourceImpl(

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:lonceng_unman_fe/features/onboarding/presentation/cubit/permission_cubit.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/welcome_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/features_benefits_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/permission_page.dart';
@@ -16,7 +17,14 @@ import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/theme_
 /// Flow: Welcome → Features → Permission → Theme Mode → Done.
 /// After completion, always navigates to the login page.
 class OnboardingPage extends StatefulWidget {
-  const OnboardingPage({super.key});
+  const OnboardingPage({
+    super.key,
+    required this.themeNotifier,
+    required this.onboardingRepository,
+  });
+
+  final ThemeNotifier themeNotifier;
+  final OnboardingRepository onboardingRepository;
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -33,8 +41,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _themeNotifier = Services.get<ThemeNotifier>();
-    _onboardingRepository = Services.get<OnboardingRepository>();
+    _themeNotifier = widget.themeNotifier;
+    _onboardingRepository = widget.onboardingRepository;
   }
 
   @override
@@ -70,18 +78,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
           children: [
             // Page content
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                children: [
-                  const WelcomePage(),
-                  const FeaturesBenefitsPage(),
-                  const PermissionPage(),
-                  ThemeModePage(
-                    themeNotifier: _themeNotifier,
-                    onCompleted: _handleCompleted,
-                  ),
-                ],
+              child: BlocProvider(
+                create: (_) => PermissionCubit()..checkPermission(),
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  children: [
+                    const WelcomePage(),
+                    const FeaturesBenefitsPage(),
+                    const PermissionPage(),
+                    ThemeModePage(
+                      themeNotifier: _themeNotifier,
+                      onCompleted: _handleCompleted,
+                    ),
+                  ],
+                ),
               ),
             ),
             // Dot indicators

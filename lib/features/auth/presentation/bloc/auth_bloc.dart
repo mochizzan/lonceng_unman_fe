@@ -1,21 +1,28 @@
 // auth - BLoC
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/load_auth_credentials.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/save_auth_credentials.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GetAuth _getAuth;
-  final AcademicCacheService _academicCacheService;
+  final SaveAuthCredentials _saveCredentials;
+  final LoadAuthCredentials _loadCredentials;
 
-  AuthBloc(this._getAuth, {AcademicCacheService? academicCacheService})
-    : _academicCacheService =
-          academicCacheService ?? Services.get<AcademicCacheService>(),
-      super(const AuthInitial()) {
+  AuthBloc(
+    this._getAuth, {
+    SaveAuthCredentials? saveCredentials,
+    LoadAuthCredentials? loadCredentials,
+  }) : _saveCredentials =
+           saveCredentials ?? Services.get<SaveAuthCredentials>(),
+       _loadCredentials =
+           loadCredentials ?? Services.get<LoadAuthCredentials>(),
+       super(const AuthInitial()) {
     on<AuthNpmChanged>(_onNpmChanged);
     on<AuthPasswordChanged>(_onPasswordChanged);
     on<AuthSubmitted>(_onSubmitted);
@@ -39,7 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Check for cached credentials and auto-login if found.
   /// Returns true if cached credentials were loaded (caller should skip login).
   Future<bool> checkCachedCredentials() async {
-    final cached = await _academicCacheService.loadCredentials();
+    final cached = await _loadCredentials();
     if (cached == null) return false;
 
     _npm = cached['npm']!;
@@ -65,10 +72,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final AuthEntity user = await _getAuth(npm: _npm, password: _password);
       // Cache credentials for next launch — await to prevent race condition
       // with DataInitializationPage reading the same cache file.
-      await _academicCacheService.saveCredentials(
-        npm: _npm,
-        password: _password,
-      );
+      await _saveCredentials(npm: _npm, password: _password);
       // NOTE: AuthStatusNotifier.setStatus(AuthStatus.authenticated) is NOT
       // called here. The login page calls it after the data-init pipeline
       // completes, so the router redirect to /home only fires once data is

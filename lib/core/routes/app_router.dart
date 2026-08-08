@@ -18,8 +18,14 @@ import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
+import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
+import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
+import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
+import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
@@ -32,6 +38,7 @@ import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notifi
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/pages/khs_detail_page.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubit.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 
@@ -77,7 +84,7 @@ class _StreamListenable extends ChangeNotifier {
   }
 }
 
-int _indexForRoute(String? routeName) {
+int? _indexForRoute(String? routeName) {
   switch (routeName) {
     case RouteNames.home:
       return 0;
@@ -86,7 +93,7 @@ int _indexForRoute(String? routeName) {
     case RouteNames.profile:
       return 2;
     default:
-      return 0;
+      return null;
   }
 }
 
@@ -99,8 +106,10 @@ List<RouteBase> _buildRoutes(
     GoRoute(
       name: RouteNames.login,
       path: '/${RouteNames.login}',
-      builder: (context, state) =>
-          LoginPage(authStatusNotifier: authStatusNotifier),
+      builder: (context, state) => BlocProvider(
+        create: (_) => AuthBloc(Services.get<GetAuth>()),
+        child: LoginPage(authStatusNotifier: authStatusNotifier),
+      ),
     ),
 
     // --- Main app (bottom navigation shell) ---
@@ -115,6 +124,8 @@ List<RouteBase> _buildRoutes(
                 notificationService: Services.get<NotificationService>(),
               )..loadNotifications(),
             ),
+            BlocProvider(create: (_) => HomeBloc(Services.get<GetHome>())),
+            BlocProvider(create: (_) => JadwalBloc(Services.get<GetJadwal>())),
           ],
           child: MainShellScaffold(
             currentIndex: _indexForRoute(state.topRoute?.name),
@@ -143,6 +154,12 @@ List<RouteBase> _buildRoutes(
             child: const ProfilePage(),
           ),
         ),
+        // Settings is inside ShellRoute so it inherits NotificationCubit
+        GoRoute(
+          name: RouteNames.settings,
+          path: '/${RouteNames.settings}',
+          builder: (context, state) => SettingsPage(notifier: themeNotifier),
+        ),
       ],
     ),
 
@@ -150,7 +167,10 @@ List<RouteBase> _buildRoutes(
     GoRoute(
       name: RouteNames.onboarding,
       path: '/${RouteNames.onboarding}',
-      builder: (context, state) => const OnboardingPage(),
+      builder: (context, state) => OnboardingPage(
+        themeNotifier: themeNotifier,
+        onboardingRepository: Services.get<OnboardingRepository>(),
+      ),
     ),
 
     // --- KHS Detail (standalone; accessible from Home IPK section) ---
@@ -160,22 +180,11 @@ List<RouteBase> _buildRoutes(
       builder: (context, state) {
         final tahunAjaran = state.uri.queryParameters['tahunAjaran'] ?? '';
         final semester = state.uri.queryParameters['semester'] ?? '';
-        return KhsDetailPage(tahunAjaran: tahunAjaran, semester: semester);
+        return BlocProvider(
+          create: (_) => KhsDetailCubit(tahunAjaran: tahunAjaran)..loadAll(),
+          child: KhsDetailPage(tahunAjaran: tahunAjaran, semester: semester),
+        );
       },
-    ),
-
-    // --- Settings (standalone; accessible from Profile via pushNamed) ---
-    GoRoute(
-      name: RouteNames.settings,
-      path: '/${RouteNames.settings}',
-      builder: (context, state) => BlocProvider(
-        create: (_) => NotificationCubit(
-          scheduler: Services.get<NotificationScheduler>(),
-          repository: Services.get<NotificationRepository>(),
-          notificationService: Services.get<NotificationService>(),
-        )..loadNotifications(),
-        child: SettingsPage(notifier: themeNotifier),
-      ),
     ),
   ];
 }

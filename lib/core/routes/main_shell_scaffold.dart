@@ -14,12 +14,13 @@ import 'package:lonceng_unman_fe/core/widgets/barrel.dart';
 class MainShellScaffold extends StatefulWidget {
   const MainShellScaffold({
     super.key,
-    required this.currentIndex,
+    this.currentIndex,
     required this.child,
     this.scrollHideConfig,
   });
 
-  final int currentIndex;
+  /// Null hides the bottom nav (e.g. Settings pushed route).
+  final int? currentIndex;
   final Widget child;
 
   /// Optional scroll-hide configuration. Uses [ScrollHideConfig.defaults]
@@ -87,6 +88,9 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
 
   @override
   Widget build(BuildContext context) {
+    // When currentIndex is null (e.g. Settings sub-route), hide the nav bar.
+    final showNav = widget.currentIndex != null;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: true,
@@ -94,28 +98,30 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
         onNotification: _scrollHide.handleScroll,
         child: widget.child,
       ),
-      bottomNavigationBar: AnimatedBuilder(
-        animation: _scrollHide.animation,
-        builder: (_, child) {
-          return Transform.translate(
-            offset: Offset(0, _scrollHide.value * _navBarHeight),
-            child: Opacity(
-              opacity: 1.0 - _scrollHide.value,
-              child: IgnorePointer(
-                ignoring: _scrollHide.isIgnored,
-                child: child,
+      bottomNavigationBar: showNav
+          ? AnimatedBuilder(
+              animation: _scrollHide.animation,
+              builder: (_, child) {
+                return Transform.translate(
+                  offset: Offset(0, _scrollHide.value * _navBarHeight),
+                  child: Opacity(
+                    opacity: 1.0 - _scrollHide.value,
+                    child: IgnorePointer(
+                      ignoring: _scrollHide.isIgnored,
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: _navBarKey,
+                child: FloatingNavBar(
+                  currentIndex: widget.currentIndex!,
+                  onTap: (index) => _onTap(context, index),
+                ),
               ),
-            ),
-          );
-        },
-        child: KeyedSubtree(
-          key: _navBarKey,
-          child: FloatingNavBar(
-            currentIndex: widget.currentIndex,
-            onTap: (index) => _onTap(context, index),
-          ),
-        ),
-      ),
+            )
+          : null,
     );
   }
 }

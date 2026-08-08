@@ -18,6 +18,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> with BlocErrorHandler {
   HomeBloc(this._getHome) : super(const HomeInitial()) {
     on<HomeFetchRequested>(_onFetchRequested);
     on<HomeRefreshRequested>(_onRefreshRequested);
+    on<HomeFullRefreshRequested>(_onFullRefreshRequested);
   }
 
   Future<void> _onFetchRequested(HomeFetchRequested event, Emitter emit) async {
@@ -37,6 +38,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> with BlocErrorHandler {
     Emitter emit,
   ) async {
     try {
+      final data = await _getHome();
+      emit(HomeLoaded(data: data));
+    } on AuthException catch (_) {
+      rethrow;
+    } catch (e) {
+      // Keep previous loaded state on refresh failure
+      if (state is HomeLoaded) return;
+      emit(HomeError(handleError(e)));
+    }
+  }
+
+  Future<void> _onFullRefreshRequested(
+    HomeFullRefreshRequested event,
+    Emitter emit,
+  ) async {
+    try {
+      // Small delay so DataRefreshOverlay is visible before pipeline starts
+      await Future.delayed(const Duration(milliseconds: 500));
       final data = await _getHome();
       emit(HomeLoaded(data: data));
     } on AuthException catch (_) {

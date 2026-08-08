@@ -3,12 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
-import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
-import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
@@ -24,13 +21,9 @@ import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.authStatusNotifier, this.authBloc});
+  const LoginPage({super.key, required this.authStatusNotifier});
 
   final AuthStatusNotifier authStatusNotifier;
-
-  /// Optional pre-built AuthBloc for testing.
-  /// When null, a new BLoC is created internally.
-  final AuthBloc? authBloc;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -39,29 +32,22 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _npmController = TextEditingController();
   final _passwordController = TextEditingController();
-  late final AuthBloc _authBloc;
-  bool _loginSuccess = false;
 
   @override
   void initState() {
     super.initState();
-    _authBloc =
-        widget.authBloc ??
-        AuthBloc(
-          Services.get<GetAuth>(),
-          academicCacheService: Services.get<AcademicCacheService>(),
-        );
     _checkCachedLogin();
   }
 
   /// Check for cached credentials and auto-login if found.
   Future<void> _checkCachedLogin() async {
-    final hasCached = await _authBloc.checkCachedCredentials();
+    final bloc = context.read<AuthBloc>();
+    final hasCached = await bloc.checkCachedCredentials();
     if (hasCached && mounted) {
       // Pre-fill form fields from bloc's cached values (no second disk read).
-      _npmController.text = _authBloc.npm;
-      _passwordController.text = _authBloc.password;
-      _authBloc.add(AuthSubmitted());
+      _npmController.text = bloc.npm;
+      _passwordController.text = bloc.password;
+      bloc.add(AuthSubmitted());
     }
   }
 
@@ -69,7 +55,6 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _npmController.dispose();
     _passwordController.dispose();
-    _authBloc.close();
     super.dispose();
   }
 
@@ -78,74 +63,75 @@ class _LoginPageState extends State<LoginPage> {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return BlocProvider.value(
-      value: _authBloc,
-      child: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            setState(() => _loginSuccess = true);
-            // Reset DataInitBloc state before triggering pipeline.
-            // This handles re-login after logout (state may be DataInitSuccess
-            // from previous session, which would block DataInitStarted).
-            context.read<DataInitBloc>().add(const DataInitReset());
-            // Trigger data-init pipeline on the login page.
-            context.read<DataInitBloc>().add(
-              DataInitStarted(
-                npm: _npmController.text,
-                password: _passwordController.text,
-              ),
-            );
-          } else if (state is AuthError) {
-            // Show Toast for network-level errors that can't display inline.
-            // All other errors display inline via BlocBuilder below.
-            if (state.error is NetworkException ||
-                state.error is ServerException) {
-              ErrorHandler.show(context, state.error!);
-            }
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          // Reset DataInitBloc state before triggering pipeline.
+          // This handles re-login after logout (state may be DataInitSuccess
+          // from previous session, which would block DataInitStarted).
+          context.read<DataInitBloc>().add(const DataInitReset());
+          // Trigger data-init pipeline on the login page.
+          context.read<DataInitBloc>().add(
+            DataInitStarted(
+              npm: _npmController.text,
+              password: _passwordController.text,
+            ),
+          );
+        } else if (state is AuthError) {
+          // Show Toast for network-level errors that can't display inline.
+          // All other errors display inline via BlocBuilder below.
+          if (state.error is NetworkException ||
+              state.error is ServerException) {
+            ErrorHandler.show(context, state.error!);
           }
-        },
-        child: Scaffold(
-          body: Stack(
-            children: [
-              AuthBackground(
-                child: SafeArea(
-                  child: Center(
-                    child: _loginSuccess
-                        ? _buildProgressUI(context)
-                        : SingleChildScrollView(
-                            padding: EdgeInsets.fromLTRB(
-                              sp(context, AppDimens.space24),
-                              sp(context, AppDimens.space16),
-                              sp(context, AppDimens.space24),
-                              sp(context, AppDimens.space32) + bottomInset,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Logo & Greeting
-                                _buildGreeting(cs),
-                                SizedBox(
-                                  height: sp(context, AppDimens.space32),
-                                ),
-                                // Login Card
-                                _LoginCard(
-                                  npmController: _npmController,
-                                  passwordController: _passwordController,
-                                ),
-                                SizedBox(
-                                  height: sp(context, AppDimens.space24),
-                                ),
-                                // Footer
-                                _buildFooter(cs),
-                              ],
-                            ),
-                          ),
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            AuthBackground(
+              child: SafeArea(
+                child: Center(
+                  child: BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, authState) {
+                      final showProgress = authState is AuthAuthenticated;
+                      return showProgress
+                          ? _buildProgressUI(context)
+                          : SingleChildScrollView(
+                              padding: EdgeInsets.fromLTRB(
+                                sp(context, AppDimens.space24),
+                                sp(context, AppDimens.space16),
+                                sp(context, AppDimens.space24),
+                                sp(context, AppDimens.space32) + bottomInset,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Logo & Greeting
+                                  _buildGreeting(cs),
+                                  SizedBox(
+                                    height: sp(context, AppDimens.space32),
+                                  ),
+                                  // Login Card
+                                  _LoginCard(
+                                    npmController: _npmController,
+                                    passwordController: _passwordController,
+                                  ),
+                                  SizedBox(
+                                    height: sp(context, AppDimens.space24),
+                                  ),
+                                  // Footer
+                                  _buildFooter(cs),
+                                ],
+                              ),
+                            );
+                    },
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -256,7 +242,7 @@ class _LoginPageState extends State<LoginPage> {
                   FilledButton(
                     onPressed: () {
                       context.read<DataInitBloc>().add(const DataInitReset());
-                      setState(() => _loginSuccess = false);
+                      context.read<AuthBloc>().add(const AuthLogoutRequested());
                     },
                     child: const Text('Coba lagi'),
                   ),

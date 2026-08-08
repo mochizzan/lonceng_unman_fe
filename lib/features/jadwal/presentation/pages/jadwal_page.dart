@@ -9,8 +9,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
-import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
@@ -24,11 +22,7 @@ class JadwalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      lazy: true,
-      create: (_) => JadwalBloc(Services.get<GetJadwal>()),
-      child: const _JadwalPageView(),
-    );
+    return const _JadwalPageView();
   }
 }
 
@@ -40,30 +34,15 @@ class _JadwalPageView extends StatefulWidget {
 }
 
 class _JadwalPageViewState extends State<_JadwalPageView> {
-  String _selectedDay = '';
-  List<String> _days = [];
-  bool _dayManuallySelected = false;
-
   @override
   void initState() {
     super.initState();
-    final state = context.read<JadwalBloc>().state;
-    if (state is JadwalLoaded) {
-      _selectedDay = state.data.selectedDay;
-      _days = state.data.days;
-    }
     // Only fetch if we don't already have loaded data.
     // This prevents redundant API calls when switching tabs.
+    final state = context.read<JadwalBloc>().state;
     if (state is! JadwalLoaded) {
       context.read<JadwalBloc>().add(const JadwalFetchRequested());
     }
-  }
-
-  void _handleDaySelected(String day) {
-    setState(() {
-      _dayManuallySelected = true;
-      _selectedDay = day;
-    });
   }
 
   @override
@@ -72,12 +51,6 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       body: BlocListener<JadwalBloc, JadwalState>(
         listener: (context, state) {
           if (state is JadwalLoaded) {
-            setState(() {
-              if (!_dayManuallySelected) {
-                _selectedDay = state.data.selectedDay;
-              }
-              _days = state.data.days;
-            });
             context.read<NotificationCubit>().scheduleFromJadwal(state.data);
           }
         },
@@ -130,14 +103,16 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
                 horizontal: AppDimens.space24,
               ),
               child: JadwalDaySelector(
-                days: _days,
-                selectedDay: _selectedDay,
-                onDaySelected: _handleDaySelected,
+                days: state.days,
+                selectedDay: state.selectedDay,
+                onDaySelected: (day) {
+                  context.read<JadwalBloc>().add(JadwalDaySelected(day));
+                },
               ),
             ),
             const SizedBox(height: AppDimens.space16),
             // Timeline list — schedule cards
-            JadwalTimeline(items: items, selectedDay: _selectedDay),
+            JadwalTimeline(items: items, selectedDay: state.selectedDay),
           ],
         ),
       ),

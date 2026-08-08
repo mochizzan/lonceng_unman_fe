@@ -13,10 +13,13 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.
 
 class JadwalBloc extends Bloc<JadwalEvent, JadwalState> with BlocErrorHandler {
   final GetJadwal _getJadwal;
+  String _selectedDay = '';
+  bool _dayManuallySelected = false;
 
   JadwalBloc(this._getJadwal) : super(const JadwalInitial()) {
     on<JadwalFetchRequested>(_onFetchRequested);
     on<JadwalRefreshRequested>(_onRefreshRequested);
+    on<JadwalDaySelected>(_onDaySelected);
   }
 
   Future<void> _onFetchRequested(
@@ -26,7 +29,10 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> with BlocErrorHandler {
     emit(JadwalLoading());
     try {
       final data = await _getJadwal();
-      emit(JadwalLoaded(data: data));
+      _selectedDay = data.selectedDay;
+      emit(
+        JadwalLoaded(data: data, selectedDay: _selectedDay, days: data.days),
+      );
     } on AuthException catch (_) {
       rethrow;
     } catch (e) {
@@ -40,10 +46,30 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> with BlocErrorHandler {
   ) async {
     try {
       final data = await _getJadwal();
-      emit(JadwalLoaded(data: data));
+      if (!_dayManuallySelected) {
+        _selectedDay = data.selectedDay;
+      }
+      emit(
+        JadwalLoaded(data: data, selectedDay: _selectedDay, days: data.days),
+      );
     } catch (_) {
       // Keep previous JadwalLoaded state.
       // Do NOT emit JadwalError — schedule stays visible.
+    }
+  }
+
+  void _onDaySelected(JadwalDaySelected event, Emitter emit) {
+    _dayManuallySelected = true;
+    _selectedDay = event.day;
+    if (state is JadwalLoaded) {
+      final current = state as JadwalLoaded;
+      emit(
+        JadwalLoaded(
+          data: current.data,
+          selectedDay: event.day,
+          days: current.days,
+        ),
+      );
     }
   }
 }

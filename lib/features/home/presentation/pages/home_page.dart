@@ -12,14 +12,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
-import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
-import 'package:lonceng_unman_fe/shared/widgets/data_refresh_overlay.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_refresh_overlay.dart';
 
-import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_state.dart';
@@ -33,21 +30,11 @@ import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key, this.getHome});
-
-  /// Optional usecase injection for testing.
-  /// When null, a stub implementation is used.
-  final GetHome? getHome;
-
-  static GetHome _defaultGetHome() => Services.get<GetHome>();
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      lazy: true,
-      create: (_) => HomeBloc(getHome ?? _defaultGetHome()),
-      child: const _HomePageView(),
-    );
+    return const _HomePageView();
   }
 }
 
@@ -168,20 +155,8 @@ class _HomePageViewState extends State<_HomePageView>
           if (!context.mounted) return;
           DataRefreshOverlay.show(context);
 
-          // Load credentials and start pipeline
-          final cache = Services.get<AcademicCacheService>();
-          final creds = await cache.loadCredentials();
-          if (creds != null && context.mounted) {
-            context.read<DataInitBloc>().add(
-              DataInitStarted(npm: creds['npm']!, password: creds['password']!),
-            );
-          }
-
-          // Wait a moment for pipeline to start, then refresh home
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (context.mounted) {
-            context.read<HomeBloc>().add(const HomeRefreshRequested());
-          }
+          // Trigger full refresh via BLoC (reads credentials internally)
+          context.read<HomeBloc>().add(const HomeFullRefreshRequested());
         } catch (e) {
           if (mounted && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

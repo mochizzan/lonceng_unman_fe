@@ -34,19 +34,27 @@ class JadwalLoading extends JadwalState {
 
 /// Loaded state with jadwal screen data.
 class JadwalLoaded extends JadwalState {
-  const JadwalLoaded({required this.data});
+  const JadwalLoaded({
+    required this.data,
+    required this.selectedDay,
+    required this.days,
+  });
 
   final JadwalEntity data;
+  final String selectedDay;
+  final List<String> days;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is JadwalLoaded &&
           runtimeType == other.runtimeType &&
-          data == other.data;
+          data == other.data &&
+          selectedDay == other.selectedDay &&
+          days == other.days;
 
   @override
-  int get hashCode => data.hashCode;
+  int get hashCode => Object.hash(data, selectedDay, days);
 }
 
 /// Error state when data fetch fails.

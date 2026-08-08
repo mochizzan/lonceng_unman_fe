@@ -32,3 +32,17 @@ class HomeRefreshRequested extends HomeEvent {
   @override
   int get hashCode => runtimeType.hashCode;
 }
+
+/// Full refresh: re-run data-init pipeline then refresh home data.
+/// Credentials are read from cache inside the BLoC.
+class HomeFullRefreshRequested extends HomeEvent {
+  const HomeFullRefreshRequested();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HomeFullRefreshRequested && runtimeType == other.runtimeType;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}

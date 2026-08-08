@@ -32,3 +32,19 @@ class JadwalRefreshRequested extends JadwalEvent {
   @override
   int get hashCode => runtimeType.hashCode;
 }
+
+/// User manually selects a day pill.
+class JadwalDaySelected extends JadwalEvent {
+  const JadwalDaySelected(this.day);
+  final String day;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is JadwalDaySelected &&
+          runtimeType == other.runtimeType &&
+          day == other.day;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, day);
+}

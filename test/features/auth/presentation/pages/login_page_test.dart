@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
@@ -8,6 +9,8 @@ import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/load_auth_credentials.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/save_auth_credentials.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 
@@ -24,16 +27,35 @@ class FakeAuthRepository implements AuthRepository {
   }
 }
 
+/// No-op credential services for tests.
+class _FakeSaveCredentials implements SaveAuthCredentials {
+  @override
+  Future<void> call({required String npm, required String password}) async {}
+}
+
+class _FakeLoadCredentials implements LoadAuthCredentials {
+  @override
+  Future<Map<String, String>?> call() async => null;
+}
+
+AuthBloc _makeBloc(GetAuth getAuth) => AuthBloc(
+  getAuth,
+  saveCredentials: _FakeSaveCredentials(),
+  loadCredentials: _FakeLoadCredentials(),
+);
+
 void main() {
   testWidgets('LoginPage renders all DESIGN.md §5.1 elements', (tester) async {
     final authNotifier = AuthStatusNotifier();
-    // Provide a custom authBloc to avoid DI resolution
     final completer = Completer<AuthEntity>();
-    final authBloc = AuthBloc(GetAuth(FakeAuthRepository(completer)));
+    final authBloc = _makeBloc(GetAuth(FakeAuthRepository(completer)));
     await tester.pumpWidget(
       MaterialApp(
         theme: lightTheme,
-        home: LoginPage(authStatusNotifier: authNotifier, authBloc: authBloc),
+        home: BlocProvider<AuthBloc>.value(
+          value: authBloc,
+          child: LoginPage(authStatusNotifier: authNotifier),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -52,7 +74,7 @@ void main() {
   testWidgets('submit shows loading when pressed', (tester) async {
     final completer = Completer<AuthEntity>();
     final authStatusNotifier = AuthStatusNotifier();
-    final authBloc = AuthBloc(GetAuth(FakeAuthRepository(completer)));
+    final authBloc = _makeBloc(GetAuth(FakeAuthRepository(completer)));
 
     final router = GoRouter(
       initialLocation: '/${RouteNames.login}',
@@ -60,9 +82,9 @@ void main() {
         GoRoute(
           path: '/${RouteNames.login}',
           name: RouteNames.login,
-          builder: (context, state) => LoginPage(
-            authStatusNotifier: authStatusNotifier,
-            authBloc: authBloc,
+          builder: (context, state) => BlocProvider<AuthBloc>.value(
+            value: authBloc,
+            child: LoginPage(authStatusNotifier: authStatusNotifier),
           ),
         ),
         GoRoute(
@@ -100,7 +122,7 @@ void main() {
     // Use a pre-built authBloc that always succeeds
     final completer = Completer<AuthEntity>();
     completer.complete(AuthEntity(npm: '21081010001', password: 'testpass'));
-    final authBloc = AuthBloc(GetAuth(FakeAuthRepository(completer)));
+    final authBloc = _makeBloc(GetAuth(FakeAuthRepository(completer)));
 
     final router = GoRouter(
       initialLocation: '/${RouteNames.login}',
@@ -108,9 +130,9 @@ void main() {
         GoRoute(
           path: '/${RouteNames.login}',
           name: RouteNames.login,
-          builder: (context, state) => LoginPage(
-            authStatusNotifier: authStatusNotifier,
-            authBloc: authBloc,
+          builder: (context, state) => BlocProvider<AuthBloc>.value(
+            value: authBloc,
+            child: LoginPage(authStatusNotifier: authStatusNotifier),
           ),
         ),
         GoRoute(

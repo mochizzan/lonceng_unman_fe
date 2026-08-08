@@ -4,20 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 
-/// Standard loading indicator used by all BLoC-driven pages.
-class AppLoadingIndicator extends StatelessWidget {
-  const AppLoadingIndicator({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    );
-  }
-}
-
 /// Standard error display used by all BLoC-driven pages.
 ///
 /// Shows an error icon, message text, and optionally a retry button.

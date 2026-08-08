@@ -55,7 +55,7 @@ class QuickStats extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppDimens.space12),
-        // Semester + IPK card (full width) — secondary container
+        // Tahun Ajaran + IPK card (full width) — secondary container
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(AppDimens.space16),
@@ -66,7 +66,7 @@ class QuickStats extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Semester info
+              // Kiri: icon + tahun ajaran + program studi
               Row(
                 children: [
                   Container(
@@ -87,7 +87,7 @@ class QuickStats extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        data.semester,
+                        data.tahunAjaran,
                         style: TextStyle(
                           fontSize: AppDimens.textLG,
                           fontWeight: FontWeight.bold,
@@ -107,24 +107,14 @@ class QuickStats extends StatelessWidget {
                   ),
                 ],
               ),
-              // IPK section
+              // Kanan: IPK ganjil + genap + tombol Lihat KHS
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    AppStrings.homeIpkTerakhir,
-                    style: TextStyle(
-                      fontSize: AppDimens.textXS,
-                      color: cs.onSecondaryContainer.withValues(
-                        alpha: ColorValues.opacityMax,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimens.space4),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // GANJIL IPK
+                      // IPK Ganjil
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -148,7 +138,7 @@ class QuickStats extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(width: AppDimens.space12),
-                      // GENAP IPK
+                      // IPK Genap
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -174,7 +164,7 @@ class QuickStats extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppDimens.space4),
-                  // Lihat KHS button
+                  // Tombol Lihat KHS
                   GestureDetector(
                     onTap: onKhsTap,
                     child: Text(

@@ -3,7 +3,7 @@
 // Defines the contract for fetching home screen data from cache.
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
-import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
+import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
@@ -60,13 +60,13 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final todayDayName = _weekdayToDayName(now.weekday);
+    final todayDayName = weekdayToDayName(now.weekday);
 
     // Build today's schedule from KRS mata_kuliah
     final todaySchedule =
         krsData.mataKuliah
             .where((mk) => mk.hari == todayDayName)
-            .map((mk) => _toScheduleItem(mk, today, now))
+            .map((mk) => toScheduleItem(mk, today, now))
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
@@ -97,11 +97,11 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     DateTime now,
   ) {
     // Check today first
-    final todayDayName = _weekdayToDayName(now.weekday);
+    final todayDayName = weekdayToDayName(now.weekday);
     final todayItems =
         mataKuliah
             .where((mk) => mk.hari == todayDayName)
-            .map((mk) => _toScheduleItem(mk, today, now))
+            .map((mk) => toScheduleItem(mk, today, now))
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
@@ -123,13 +123,13 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
     for (int offset = 1; offset <= 7; offset++) {
       final futureDate = today.add(Duration(days: offset));
-      final futureDayName = _weekdayToDayName(futureDate.weekday);
+      final futureDayName = weekdayToDayName(futureDate.weekday);
       if (!dayNames.contains(futureDayName)) continue;
 
       final futureItems =
           mataKuliah
               .where((mk) => mk.hari == futureDayName)
-              .map((mk) => _toScheduleItem(mk, futureDate, now))
+              .map((mk) => toScheduleItem(mk, futureDate, now))
               .toList()
             ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
@@ -149,58 +149,4 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     // No upcoming or ongoing classes found in the entire schedule.
     return null;
   }
-
-  /// Converts a KRS [MataKuliahKrsEntity] into a [ScheduleItemModel].
-  ScheduleItemModel _toScheduleItem(
-    MataKuliahKrsEntity mk,
-    DateTime date,
-    DateTime now,
-  ) {
-    final startTime = _parseTime(mk.jamMulai, date);
-    final endTime = _parseTime(mk.jamSelesai, date);
-
-    return ScheduleItemModel(
-      courseName: mk.nama,
-      room: '',
-      startTime: startTime,
-      endTime: endTime,
-      lecturer: mk.dosen.isNotEmpty ? mk.dosen : null,
-      sks: mk.sks > 0 ? '${mk.sks}' : null,
-      status: _determineStatus(startTime, endTime, now),
-    );
-  }
-}
-
-// ── Shared helpers ──────────────────────────────────────────────────────
-
-/// Parses a "HH:MM" or "HH:MM:SS" time string into a [DateTime]
-/// combined with the given [date].
-DateTime _parseTime(String timeStr, DateTime date) {
-  if (timeStr.isEmpty) return date;
-  final parts = timeStr.split(':');
-  final hour = int.tryParse(parts[0]) ?? 0;
-  final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
-  return DateTime(date.year, date.month, date.day, hour, minute);
-}
-
-/// Converts a Dart weekday int (1=Monday..7=Sunday) to Indonesian day name.
-String _weekdayToDayName(int weekday) {
-  const names = {
-    1: 'Senin',
-    2: 'Selasa',
-    3: 'Rabu',
-    4: 'Kamis',
-    5: 'Jumat',
-    6: 'Sabtu',
-    7: 'Minggu',
-  };
-  return names[weekday] ?? '';
-}
-
-/// Determines whether a class is ongoing, upcoming, or completed
-/// based on the current time.
-ScheduleStatus _determineStatus(DateTime start, DateTime end, DateTime now) {
-  if (now.isAfter(start) && now.isBefore(end)) return ScheduleStatus.ongoing;
-  if (now.isAfter(end)) return ScheduleStatus.completed;
-  return ScheduleStatus.upcoming;
 }

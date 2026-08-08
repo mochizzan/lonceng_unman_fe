@@ -4,6 +4,7 @@
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
@@ -58,7 +59,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
     // Count today's classes
     final now = DateTime.now();
-    final todayDayName = _weekdayToDayName(now.weekday);
+    final todayDayName = weekdayToDayName(now.weekday);
     final todayClassCount = krsData.mataKuliah
         .where((mk) => mk.hari == todayDayName)
         .length;
@@ -79,18 +80,4 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       lastUpdated: DateTime.now(),
     );
   }
-}
-
-/// Converts a Dart weekday int (1=Monday..7=Sunday) to Indonesian day name.
-String _weekdayToDayName(int weekday) {
-  const names = {
-    1: 'Senin',
-    2: 'Selasa',
-    3: 'Rabu',
-    4: 'Kamis',
-    5: 'Jumat',
-    6: 'Sabtu',
-    7: 'Minggu',
-  };
-  return names[weekday] ?? '';
 }

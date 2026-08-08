@@ -8,6 +8,8 @@
 //
 // Shows skeleton placeholders while loading data from cache.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
@@ -56,6 +58,23 @@ class _HomePageView extends StatefulWidget {
 
 class _HomePageViewState extends State<_HomePageView> {
   var _fetchDispatched = false;
+  Timer? _statusTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _statusTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) {
+        context.read<HomeBloc>().add(const HomeRefreshRequested());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    super.dispose();
+  }
 
   String _getDateText() {
     final now = DateTime.now();

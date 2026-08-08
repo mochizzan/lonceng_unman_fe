@@ -98,7 +98,7 @@ class QuickStats extends StatelessWidget {
                         style: TextStyle(
                           fontSize: AppDimens.textSM,
                           color: cs.onSecondaryContainer.withValues(
-                            alpha: AppColors.opacityMax,
+                            alpha: ColorValues.opacityMax,
                           ),
                         ),
                       ),
@@ -115,7 +115,7 @@ class QuickStats extends StatelessWidget {
                     style: TextStyle(
                       fontSize: AppDimens.textXS,
                       color: cs.onSecondaryContainer.withValues(
-                        alpha: AppColors.opacityMax,
+                        alpha: ColorValues.opacityMax,
                       ),
                     ),
                   ),

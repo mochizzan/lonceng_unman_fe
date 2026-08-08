@@ -120,7 +120,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                         fontSize: AppDimens.textBase,
                         fontWeight: FontWeight.w600,
                         color: onPrimaryContainer.withValues(
-                          alpha: AppColors.opacityVeryHigh,
+                          alpha: ColorValues.opacityVeryHigh,
                         ),
                       ),
                     ),
@@ -134,7 +134,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                   ),
                   decoration: BoxDecoration(
                     color: onPrimaryContainer.withValues(
-                      alpha: AppColors.opacityLow,
+                      alpha: ColorValues.opacityLow,
                     ),
                     borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                   ),
@@ -144,7 +144,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                       fontSize: AppDimens.textSM,
                       fontWeight: FontWeight.bold,
                       color: onPrimaryContainer.withValues(
-                        alpha: AppColors.opacityFull,
+                        alpha: ColorValues.opacityFull,
                       ),
                     ),
                   ),
@@ -177,7 +177,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
             Container(
               height: 1,
               color: onPrimaryContainer.withValues(
-                alpha: AppColors.opacityMedium,
+                alpha: ColorValues.opacityMedium,
               ),
             ),
             const SizedBox(height: AppDimens.space20),
@@ -194,7 +194,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                         height: AppDimens.iconXL,
                         decoration: BoxDecoration(
                           color: onPrimaryContainer.withValues(
-                            alpha: AppColors.opacityLow,
+                            alpha: ColorValues.opacityLow,
                           ),
                           shape: BoxShape.circle,
                         ),
@@ -202,7 +202,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                           Icons.person,
                           size: AppDimens.iconSM,
                           color: onPrimaryContainer.withValues(
-                            alpha: AppColors.opacityMax,
+                            alpha: ColorValues.opacityMax,
                           ),
                         ),
                       ),
@@ -217,7 +217,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                                 fontSize: AppDimens.textBase,
                                 fontWeight: FontWeight.bold,
                                 color: onPrimaryContainer.withValues(
-                                  alpha: AppColors.opacityNearFull,
+                                  alpha: ColorValues.opacityNearFull,
                                 ),
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -227,7 +227,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                               style: TextStyle(
                                 fontSize: AppDimens.textXS,
                                 color: onPrimaryContainer.withValues(
-                                  alpha: AppColors.opacityHigh,
+                                  alpha: ColorValues.opacityHigh,
                                 ),
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -247,7 +247,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                         Icons.location_on,
                         size: AppDimens.iconSM,
                         color: onPrimaryContainer.withValues(
-                          alpha: AppColors.opacityVeryHigh,
+                          alpha: ColorValues.opacityVeryHigh,
                         ),
                       ),
                       const SizedBox(width: AppDimens.space6),
@@ -258,7 +258,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                             fontSize: AppDimens.textBase,
                             fontWeight: FontWeight.w500,
                             color: onPrimaryContainer.withValues(
-                              alpha: AppColors.opacityMax,
+                              alpha: ColorValues.opacityMax,
                             ),
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -334,7 +334,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
             Icon(
               Icons.event_available_outlined,
               size: AppDimens.iconLG,
-              color: onSurface.withValues(alpha: AppColors.opacityHigh),
+              color: onSurface.withValues(alpha: ColorValues.opacityHigh),
             ),
             const SizedBox(height: AppDimens.space16),
             Text(
@@ -350,7 +350,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
               AppStrings.homeEmptyClassSubtitle,
               style: TextStyle(
                 fontSize: AppDimens.textBase,
-                color: onSurface.withValues(alpha: AppColors.opacityVeryHigh),
+                color: onSurface.withValues(alpha: ColorValues.opacityVeryHigh),
               ),
             ),
           ],

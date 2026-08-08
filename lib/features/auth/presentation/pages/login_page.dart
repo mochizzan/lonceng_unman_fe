@@ -193,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
       TextSpan(
         text: AppStrings.loginHelpdesk,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: cs.onSurfaceVariant.withValues(alpha: AppColors.opacityMax),
+          color: cs.onSurfaceVariant.withValues(alpha: ColorValues.opacityMax),
           fontSize: responsiveFontSize(context, AppDimens.textSM),
         ),
         children: [

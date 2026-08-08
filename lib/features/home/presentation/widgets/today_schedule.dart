@@ -4,7 +4,7 @@
 // Matches the HTML template's jadwal hari ini section.
 
 import 'package:flutter/material.dart';
-import 'package:lonceng_unman_fe/core/constants/constants.dart' hide AppColors;
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/utils/format_utils.dart';

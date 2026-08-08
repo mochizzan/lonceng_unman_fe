@@ -41,7 +41,7 @@ class AcademicInfoSection extends StatelessWidget {
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(sp(context, 20)),
         border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
+          color: cs.outlineVariant.withValues(alpha: ColorValues.opacityHigh),
           width: AppDimens.borderWidthThin,
         ),
         boxShadow: AppShadows.cardResponsive(context),
@@ -149,7 +149,7 @@ class AcademicInfoSection extends StatelessWidget {
                 Expanded(
                   child: Divider(
                     color: cs.outlineVariant.withValues(
-                      alpha: AppColors.opacityHigh,
+                      alpha: ColorValues.opacityHigh,
                     ),
                     height: 1,
                     thickness: AppDimens.borderWidthThin,

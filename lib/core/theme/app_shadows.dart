@@ -14,7 +14,7 @@ class AppShadows {
   static List<BoxShadow> card(ColorScheme cs) {
     return [
       BoxShadow(
-        color: cs.shadow.withValues(alpha: AppColors.shadowLow),
+        color: cs.shadow.withValues(alpha: ColorValues.shadowLow),
         blurRadius: 12,
         offset: const Offset(0, 4),
       ),
@@ -27,7 +27,7 @@ class AppShadows {
     final cs = Theme.of(context).colorScheme;
     return [
       BoxShadow(
-        color: cs.shadow.withValues(alpha: AppColors.shadowLow),
+        color: cs.shadow.withValues(alpha: ColorValues.shadowLow),
         offset: Offset(0, sp(context, 4)),
         blurRadius: sp(context, 12),
       ),

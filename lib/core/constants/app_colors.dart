@@ -3,7 +3,7 @@
 ///
 /// Theme colors live in lib/core/theme/theme.dart (ColorScheme + AppColors).
 /// This file holds values that are NOT part of the Material 3 theme system.
-abstract final class AppColors {
+abstract final class ColorValues {
   // ─── Common Opacities (for withValues(alpha:)) ────────
   static const double opacityLow = 0.08;
   static const double opacityMedium = 0.12;

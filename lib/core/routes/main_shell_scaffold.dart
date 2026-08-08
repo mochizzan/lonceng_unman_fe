@@ -1,7 +1,7 @@
 // lib/core/routes/main_shell_scaffold.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lonceng_unman_fe/core/constants/constants.dart' hide AppColors;
+import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/widgets/barrel.dart';

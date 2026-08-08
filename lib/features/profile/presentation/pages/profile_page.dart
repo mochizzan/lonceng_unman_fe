@@ -331,7 +331,7 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
         Expanded(
           child: Container(
             height: 1,
-            color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
+            color: cs.outlineVariant.withValues(alpha: ColorValues.opacityHigh),
           ),
         ),
         Padding(
@@ -348,7 +348,7 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
         Expanded(
           child: Container(
             height: 1,
-            color: cs.outlineVariant.withValues(alpha: AppColors.opacityHigh),
+            color: cs.outlineVariant.withValues(alpha: ColorValues.opacityHigh),
           ),
         ),
       ],

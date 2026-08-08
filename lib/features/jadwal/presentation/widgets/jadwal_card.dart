@@ -61,7 +61,7 @@ class JadwalCard extends StatelessWidget {
                   fontSize: AppDimens.textSM,
                   fontWeight: FontWeight.bold,
                   color: cs.onPrimaryContainer.withValues(
-                    alpha: AppColors.opacityMax,
+                    alpha: ColorValues.opacityMax,
                   ),
                   letterSpacing: AppDimens.letterSpacingWide,
                 ),
@@ -106,7 +106,7 @@ class JadwalCard extends StatelessWidget {
                           fontSize: AppDimens.textMD,
                           color: isOngoing
                               ? cs.onPrimaryContainer.withValues(
-                                  alpha: AppColors.opacityFull,
+                                  alpha: ColorValues.opacityFull,
                                 )
                               : cs.onSurfaceVariant,
                         ),
@@ -152,7 +152,7 @@ class JadwalCard extends StatelessWidget {
                   size: AppDimens.iconSM,
                   color: isOngoing
                       ? cs.onPrimaryContainer.withValues(
-                          alpha: AppColors.opacityMax,
+                          alpha: ColorValues.opacityMax,
                         )
                       : cs.onSurfaceVariant,
                 ),
@@ -164,7 +164,7 @@ class JadwalCard extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     color: isOngoing
                         ? cs.onPrimaryContainer.withValues(
-                            alpha: AppColors.opacityFull,
+                            alpha: ColorValues.opacityFull,
                           )
                         : cs.onSurfaceVariant,
                   ),
@@ -175,7 +175,7 @@ class JadwalCard extends StatelessWidget {
                   size: AppDimens.iconSM,
                   color: isOngoing
                       ? cs.onPrimaryContainer.withValues(
-                          alpha: AppColors.opacityMax,
+                          alpha: ColorValues.opacityMax,
                         )
                       : cs.onSurfaceVariant,
                 ),

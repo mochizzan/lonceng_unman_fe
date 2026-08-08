@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_avatar.dart';
 
 class ProfileHeaderCard extends StatelessWidget {
   const ProfileHeaderCard({super.key, required this.data});
@@ -31,69 +32,8 @@ class ProfileHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // --- Avatar (relative) with camera button overlay ---
-          SizedBox(
-            width: sp(context, 112),
-            height: sp(context, 112),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: cs.onPrimary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: cs.surface,
-                        width: sp(context, 4),
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(sp(context, 999)),
-                      child: data.avatarUrl.isNotEmpty
-                          ? Image.network(
-                              data.avatarUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(
-                                    Icons.person,
-                                    size: sp(context, 48),
-                                    color: cs.onPrimaryContainer,
-                                  ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: sp(context, 48),
-                              color: cs.onPrimaryContainer,
-                            ),
-                    ),
-                  ),
-                ),
-                // Camera button — bottom right of avatar
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: sp(context, 40),
-                    height: sp(context, 40),
-                    decoration: BoxDecoration(
-                      color: cs.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: cs.primaryContainer,
-                        width: sp(context, 2),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.camera_alt,
-                      size: sp(context, 20),
-                      color: cs.onPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // --- Avatar (interaktif: ketuk ikon kamera untuk ganti foto) ---
+          ProfileAvatar(avatarUrl: data.avatarUrl),
           SizedBox(height: sp(context, 16)),
           // --- Name ---
           Text(

@@ -18,6 +18,7 @@ import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_state.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/academic_info_section.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_action_button.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_bio_section.dart';
@@ -302,8 +303,13 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: AppDimens.space16),
-                // Profile Header Card (avatar + name + study program badge)
-                ProfileHeaderCard(data: data),
+                // Profile Header Card (avatar + name + study program badge).
+                // AvatarCubit di-scope ke NPM: ganti akun => avatar berbeda.
+                BlocProvider<AvatarCubit>(
+                  key: ValueKey('avatar-${data.npm}'),
+                  create: (_) => AvatarCubit(npm: data.npm)..load(),
+                  child: ProfileHeaderCard(data: data),
+                ),
                 const SizedBox(height: AppDimens.space16),
                 // Info Akademik (NPM, Program Studi, Semester)
                 AcademicInfoSection(data: data),

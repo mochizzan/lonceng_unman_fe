@@ -48,6 +48,23 @@ abstract final class AppStrings {
   static const String profileSemester = 'Semester';
   static const String profileSettingsButton = 'Pengaturan';
 
+  // ─── Profile Avatar ───────────────────────────────────
+  static const String avatarChangeTooltip = 'Ubah Foto Profil';
+  static const String avatarCropTitle = 'Atur Foto Profil';
+  static const String avatarCropHint =
+      'Geser dan cubit untuk mengatur posisi foto di dalam lingkaran.';
+  static const String avatarCropSave = 'Simpan';
+  static const String avatarCropCancel = 'Batal';
+  static const String avatarCropDecodeError =
+      'Gambar tidak dapat dibaca. Coba pilih foto lain.';
+  static const String avatarCropRenderError =
+      'Gagal memproses foto. Silakan coba lagi.';
+  static const String avatarPickError = 'Gagal membuka galeri foto.';
+  static const String avatarSaveError = 'Gagal menyimpan foto profil.';
+  static const String avatarSaveSuccess = 'Foto profil berhasil disimpan.';
+  static const String avatarRemove = 'Hapus Foto';
+  static const String avatarPickFromGallery = 'Pilih dari Galeri';
+
   // ─── Settings ─────────────────────────────────────────
   static const String settingsTitle = 'Pengaturan';
   static const String settingsSectionAppearance = 'Tampilan';

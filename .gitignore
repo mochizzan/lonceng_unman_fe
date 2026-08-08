@@ -79,3 +79,4 @@ lib/firebase_options.dart
 repo_test_*.hive
 test_notifications_*.hive
 test_settings_*.hive
+graphify-out/

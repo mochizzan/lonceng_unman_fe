@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:hive_ce/hive.dart';
+import 'package:lonceng_unman_fe/core/utils/map_cast.dart';
 
 /// Manages 3 Hive boxes for academic data caching.
 ///
@@ -138,7 +139,7 @@ class AcademicCacheService {
     if (raw == null) return null;
     final data = raw as Map<dynamic, dynamic>;
     final krs = data['krs'];
-    return krs != null ? Map<String, dynamic>.from(krs as Map) : null;
+    return krs != null ? asStringMap(krs) : null;
   }
 
   bool hasKrsData({required String npm}) {
@@ -216,7 +217,7 @@ class AcademicCacheService {
     if (khsRaw == null) return null;
     final khs = khsRaw as Map<dynamic, dynamic>;
     final result = khs[_khsKey(tahunAjaran, semester)];
-    return result != null ? Map<String, dynamic>.from(result as Map) : null;
+    return result != null ? asStringMap(result) : null;
   }
 
   Future<bool> hasKhsDataSemester({

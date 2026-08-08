@@ -64,6 +64,16 @@ abstract final class AppStrings {
   static const String avatarSaveSuccess = 'Foto profil berhasil disimpan.';
   static const String avatarRemove = 'Hapus Foto';
   static const String avatarPickFromGallery = 'Pilih dari Galeri';
+  static const String avatarPermissionDenied =
+      'Izin akses galeri ditolak. Aktifkan lewat Pengaturan aplikasi.';
+  static const String avatarSheetTitle = 'Foto Profil';
+  static const String avatarSheetChange = 'Ganti Foto';
+  static const String avatarSheetRemove = 'Hapus Foto';
+  static const String avatarRemoveConfirmTitle = 'Hapus Foto Profil?';
+  static const String avatarRemoveConfirmBody =
+      'Foto profil akan dihapus dari perangkat ini.';
+  static const String avatarRemoveConfirmYes = 'Hapus';
+  static const String avatarRemoveConfirmNo = 'Batal';
 
   // ─── Settings ─────────────────────────────────────────
   static const String settingsTitle = 'Pengaturan';

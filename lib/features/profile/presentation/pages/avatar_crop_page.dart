@@ -9,8 +9,12 @@
 // Child InteractiveViewer sengaja dibuat seukuran hasil BoxFit.cover (lebih
 // besar dari viewport di satu sumbu) supaya geser sudah bisa sejak skala 1.
 //
-// Dipakai lewat Navigator.push dan mengembalikan Uint8List (PNG) atau null
-// bila user membatalkan.
+// Dipasang sebagai rute go_router top-level (RouteNames.avatarCrop) di luar
+// ShellRoute supaya bottom navbar tidak bisa dipakai meninggalkan halaman ini.
+// Menerima bytes lewat state.extra dan mengembalikan Uint8List (PNG) lewat
+// context.pop, atau null bila user membatalkan.
+
+import 'dart:math' as math;
 
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -40,8 +44,22 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
   /// Sisi viewport crop terakhir yang dipakai LayoutBuilder.
   double _viewportSide = 0;
 
-  /// Zoom maksimum relatif terhadap tampilan awal (BoxFit.cover).
-  static const double _maxScale = 5;
+  /// Zoom maksimum pada InteractiveViewer.
+  ///
+  /// Dihitung dari rasio antara sisi terpanjang gambar sumber (setelah
+  /// decode, yang sudah dibatasi [AvatarCropService.decodeMaxSide]) dan
+  /// [AvatarCropService.outputSize]. Batas atas 4.0 mencegah user zoom
+  /// melewati titik gambar menjadi buram.
+  double get _maxZoom {
+    final image = _image;
+    if (image == null) return _maxZoomCap;
+    final sourceSide = math.max(image.width, image.height);
+    final ratio = sourceSide / AvatarCropService.outputSize;
+    return math.min(ratio, _maxZoomCap);
+  }
+
+  /// Batas atas zoom agar piksel tidak melampaui resolusi sumber.
+  static const double _maxZoomCap = 4.0;
 
   @override
   void initState() {
@@ -208,8 +226,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
                       transformationController: _controller,
                       constrained: false,
                       minScale: 1,
-                      maxScale: _maxScale,
-                      boundaryMargin: EdgeInsets.zero,
+                      maxScale: math.max(_maxZoom, 1.0),
                       child: SizedBox(
                         width: display.width,
                         height: display.height,

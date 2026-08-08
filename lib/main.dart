@@ -36,6 +36,7 @@ import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart
 import 'package:lonceng_unman_fe/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/krs/data/repositories/krs_repository_impl.dart';
@@ -265,6 +266,17 @@ Future<void> main() async {
       await avatarCacheService.initialize();
       Services.register<AvatarCacheService>(avatarCacheService);
 
+      // ── Avatar Cubit (singleton global) ──
+      // Satu instance dipakai bersama oleh header Home dan halaman Profile
+      // agar foto yang tampil selalu identik. bootstrap() membaca NPM dari
+      // kredensial tersimpan tanpa memblokir startup.
+      final avatarCubit = AvatarCubit(
+        cache: avatarCacheService,
+        academicCache: academicCacheService,
+      );
+      Services.register<AvatarCubit>(avatarCubit);
+      unawaited(avatarCubit.bootstrap());
+
       // ── Theme Notifier (global, drives theme mode) ──
       final themeNotifier = ThemeNotifier();
       Services.register<ThemeNotifier>(themeNotifier);
@@ -455,12 +467,17 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
   late final ThemeNotifier _themeNotifier;
   late final GoRouter _router;
 
+  /// Instance singleton dari DI — siklus hidupnya dikelola DI, jadi TIDAK
+  /// ditutup oleh widget ini.
+  late final AvatarCubit _avatarCubit;
+
   @override
   void initState() {
     super.initState();
     _authNotifier =
         widget.authStatusNotifier ?? Services.get<AuthStatusNotifier>();
     _themeNotifier = widget.themeNotifier ?? Services.get<ThemeNotifier>();
+    _avatarCubit = Services.get<AvatarCubit>();
     _router = AppRouter.create(
       authStatusNotifier: _authNotifier,
       themeNotifier: _themeNotifier,
@@ -483,8 +500,15 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
+        ),
+        // AvatarCubit singleton milik DI — dipakai bersama header Home dan
+        // halaman Profile. Memakai .value agar tidak ditutup oleh widget ini.
+        BlocProvider<AvatarCubit>.value(value: _avatarCubit),
+      ],
       child: ListenableBuilder(
         listenable: _themeNotifier,
         builder: (context, child) {

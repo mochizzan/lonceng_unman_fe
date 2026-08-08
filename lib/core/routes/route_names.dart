@@ -12,7 +12,8 @@ class RouteNames {
   static const home = 'home';
   static const jadwal = 'jadwal';
   static const profile = 'profile';
-  static const settings = 'settings';
   static const khs = 'khs';
+  static const String settings = 'settings';
   static const String onboarding = 'onboarding';
+  static const String avatarCrop = 'avatar-crop';
 }

@@ -13,12 +13,13 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/data/services/avatar_picker_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_state.dart';
-import 'package:lonceng_unman_fe/features/profile/presentation/pages/avatar_crop_page.dart';
 
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({
@@ -58,18 +59,110 @@ class ProfileAvatar extends StatelessWidget {
     }
     if (!context.mounted) return;
 
-    final cropped = await Navigator.of(context).push<Uint8List>(
-      MaterialPageRoute(
-        builder: (_) => AvatarCropPage(imageBytes: source!),
-        fullscreenDialog: true,
-      ),
+    final cropped = await context.pushNamed<Uint8List?>(
+      RouteNames.avatarCrop,
+      extra: source,
     );
 
+    if (!context.mounted) return;
     if (cropped == null) {
       cubit.cancelProcessing();
       return;
     }
     await cubit.save(cropped);
+  }
+
+  /// Menangani ketukan pada avatar: tampilkan opsi ganti/hapus bila sudah
+  /// punya foto, atau langsung buka galeri bila belum.
+  Future<void> _onAvatarTap(BuildContext context, bool hasPhoto) async {
+    if (!hasPhoto) {
+      await _pickAndCrop(context);
+      return;
+    }
+    await _showPhotoSheet(context);
+  }
+
+  Future<void> _showPhotoSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final cs = Theme.of(sheetContext).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  sp(sheetContext, 16),
+                  0,
+                  sp(sheetContext, 16),
+                  sp(sheetContext, 12),
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    AppStrings.avatarSheetTitle,
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library, size: sp(sheetContext, 24)),
+                title: const Text(AppStrings.avatarSheetChange),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _pickAndCrop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline,
+                  size: sp(sheetContext, 24),
+                  color: cs.error,
+                ),
+                title: Text(
+                  AppStrings.avatarSheetRemove,
+                  style: TextStyle(color: cs.error),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _confirmRemove(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmRemove(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final cs = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          title: const Text(AppStrings.avatarRemoveConfirmTitle),
+          content: const Text(AppStrings.avatarRemoveConfirmBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(AppStrings.avatarRemoveConfirmNo),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: cs.error),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(AppStrings.avatarRemoveConfirmYes),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed == true) {
+      if (!context.mounted) return;
+      await context.read<AvatarCubit>().remove();
+    }
   }
 
   @override
@@ -87,6 +180,7 @@ class ProfileAvatar extends StatelessWidget {
       },
       builder: (context, state) {
         final busy = state is AvatarProcessing;
+        final hasPhoto = state.bytes != null && state.bytes!.isNotEmpty;
 
         return SizedBox(
           width: sp(context, size),
@@ -95,18 +189,28 @@ class ProfileAvatar extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cs.onPrimary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: cs.surface,
-                      width: sp(context, 4),
+                child: Material(
+                  color: cs.onPrimary.withValues(alpha: 0.12),
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: busy ? null : () => _onAvatarTap(context, hasPhoto),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: cs.surface,
+                          width: sp(context, 4),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppDimens.radiusFull,
+                        ),
+                        child: _buildImage(context, state.bytes, cs),
+                      ),
                     ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-                    child: _buildImage(context, state.bytes, cs),
                   ),
                 ),
               ),
@@ -124,7 +228,7 @@ class ProfileAvatar extends StatelessWidget {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: busy ? null : () => _pickAndCrop(context),
+                    onTap: busy ? null : () => _onAvatarTap(context, hasPhoto),
                     child: Tooltip(
                       message: AppStrings.avatarChangeTooltip,
                       child: SizedBox(

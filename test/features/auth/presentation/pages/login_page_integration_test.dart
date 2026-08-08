@@ -11,6 +11,7 @@ import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import '../../../../helpers/test_di.dart';
 
 class _FakeGetAuth implements GetAuth {
   @override
@@ -27,11 +28,15 @@ class _FakeGetAuth implements GetAuth {
 
 void main() {
   setUp(() {
+    // DI lengkap: guard onboarding di app_router membaca OnboardingRepository,
+    // dan LoginPage membangun AuthBloc + DataInitBloc dari Services. Tanpa ini
+    // /login dialihkan ke /onboarding sehingga LoginPage tidak pernah dirender.
+    registerTestDependencies();
     Services.register<GetAuth>(_FakeGetAuth());
   });
 
   tearDown(() {
-    Services.clear();
+    unregisterTestDependencies();
   });
 
   testWidgets('LoginPage renders on /login for unauthenticated user', (

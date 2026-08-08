@@ -4,7 +4,10 @@
 // Matches the HTML template's `<header>` section.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_state.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
@@ -107,17 +110,33 @@ class HomeHeader extends StatelessWidget {
                         width: AppDimens.borderWidthMedium,
                       ),
                     ),
-                    child: ClipOval(
-                      child: avatarUrl.isNotEmpty
-                          ? Image.network(
-                              avatarUrl,
-                              width: AppDimens.avatarMD,
-                              height: AppDimens.avatarMD,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.person),
-                            )
-                          : const Icon(Icons.person),
+                    child: BlocBuilder<AvatarCubit, AvatarState>(
+                      builder: (context, state) {
+                        final bytes = state.bytes;
+                        if (bytes != null && bytes.isNotEmpty) {
+                          // 1. Foto lokal hasil crop — prioritas tertinggi.
+                          return Image.memory(
+                            bytes,
+                            width: AppDimens.avatarMD,
+                            height: AppDimens.avatarMD,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                            errorBuilder: (_, _, _) => const Icon(Icons.person),
+                          );
+                        }
+                        if (avatarUrl.isNotEmpty) {
+                          // 2. Foto dari server bila lokal belum ada.
+                          return Image.network(
+                            avatarUrl,
+                            width: AppDimens.avatarMD,
+                            height: AppDimens.avatarMD,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(Icons.person),
+                          );
+                        }
+                        // 3. Fallback ikon person.
+                        return const Icon(Icons.person);
+                      },
                     ),
                   ),
                 ),

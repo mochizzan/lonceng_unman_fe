@@ -7,8 +7,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/features/profile/data/services/avatar_crop_service.dart';
 import 'package:lonceng_unman_fe/features/profile/data/services/avatar_picker_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
@@ -84,6 +86,16 @@ Future<void> _flush(WidgetTester tester, {int rounds = 4}) async {
   }
 }
 
+/// Guard redirect rute crop — definisi identik dengan top-level function
+/// `avatarCropRedirect` di app_router.dart. Mengembalikan `/profile` bila
+/// extra bukan Uint8List, null bila valid (izinkan navigasi).
+String? _avatarCropRedirect(Object? extra) =>
+    extra is Uint8List ? null : '/${RouteNames.profile}';
+
+/// Membungkus ProfileAvatar dengan MaterialApp.router + GoRouter supaya
+/// `context.pushNamed(RouteNames.avatarCrop, ...)` milik ProfileAvatar
+/// menemukan router dan benar-benar membuka AvatarCropPage. Rute `/profile`
+/// merender ProfileAvatar; rute `/profile/crop` merender AvatarCropPage.
 Future<AvatarCubit> _pumpAvatar(
   WidgetTester tester, {
   required AvatarCacheService cache,
@@ -91,19 +103,32 @@ Future<AvatarCubit> _pumpAvatar(
   String avatarUrl = '',
   String npm = _npm,
 }) async {
-  final cubit = AvatarCubit(npm: npm, cache: cache);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: BlocProvider<AvatarCubit>.value(
-          value: cubit..load(),
-          child: Center(
-            child: ProfileAvatar(avatarUrl: avatarUrl, picker: picker),
+  final cubit = AvatarCubit(cache: cache);
+  final router = GoRouter(
+    initialLocation: '/${RouteNames.profile}',
+    routes: [
+      GoRoute(
+        name: RouteNames.profile,
+        path: '/${RouteNames.profile}',
+        builder: (context, state) => Scaffold(
+          body: BlocProvider<AvatarCubit>.value(
+            value: cubit..bindNpm(npm),
+            child: Center(
+              child: ProfileAvatar(avatarUrl: avatarUrl, picker: picker),
+            ),
           ),
         ),
       ),
-    ),
+      GoRoute(
+        name: RouteNames.avatarCrop,
+        path: '/${RouteNames.profile}/crop',
+        redirect: (context, state) => _avatarCropRedirect(state.extra),
+        builder: (context, state) =>
+            AvatarCropPage(imageBytes: state.extra! as Uint8List),
+      ),
+    ],
   );
+  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
   await _flush(tester);
   return cubit;
 }

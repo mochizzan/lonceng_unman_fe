@@ -3,11 +3,16 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/load_auth_credentials.dart';
+import 'package:lonceng_unman_fe/features/auth/domain/usecases/save_auth_credentials.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 import 'package:lonceng_unman_fe/features/home/domain/repositories/home_repository.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
@@ -185,6 +190,29 @@ class _FakeAcademicCacheService extends AcademicCacheService {
   Future<void> clearAll() async => _creds.clear();
 }
 
+/// Fake in-memory untuk AvatarCacheService — tanpa Hive.
+class _FakeAvatarCacheService extends AvatarCacheService {
+  final Map<String, Uint8List> store = {};
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> saveAvatar({
+    required String npm,
+    required Uint8List bytes,
+  }) async => store[npm] = bytes;
+
+  @override
+  Future<Uint8List?> loadAvatar(String npm) async => store[npm];
+
+  @override
+  Future<void> deleteAvatar(String npm) async => store.remove(npm);
+
+  @override
+  bool hasAvatar(String npm) => store.containsKey(npm);
+}
+
 class _FakeDataInitRepo implements DataInitializationRepository {
   @override
   Stream<DataInitProgress> initialize({
@@ -250,12 +278,20 @@ class _FakeNotificationScheduler implements NotificationScheduler {
 /// Register all DI dependencies needed by pages.
 /// Call in setUp() or setUpAll() before any widget rendering.
 void registerTestDependencies() {
+  final fakeCache = _FakeAcademicCacheService();
+  final avatarCache = _FakeAvatarCacheService();
   Services.register<GetAuth>(GetAuth(_FakeAuthRepo()));
   Services.register<GetHome>(GetHome(_FakeHomeRepo()));
   Services.register<GetJadwal>(GetJadwal(_FakeJadwalRepo()));
   Services.register<GetProfile>(GetProfile(_FakeProfileRepo()));
   Services.register<OnboardingRepository>(_FakeOnboardingRepository());
-  Services.register<AcademicCacheService>(_FakeAcademicCacheService());
+  Services.register<AcademicCacheService>(fakeCache);
+  Services.register<SaveAuthCredentials>(SaveAuthCredentials(fakeCache));
+  Services.register<LoadAuthCredentials>(LoadAuthCredentials(fakeCache));
+  Services.register<AvatarCacheService>(avatarCache);
+  Services.register<AvatarCubit>(
+    AvatarCubit(cache: avatarCache, academicCache: fakeCache),
+  );
   Services.register<DataInitializationRepository>(_FakeDataInitRepo());
   Services.register<GetDataInitialization>(
     GetDataInitialization(_FakeDataInitRepo()),

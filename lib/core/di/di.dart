@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 /// Simple service locator for dependency injection.
@@ -81,6 +82,18 @@ class Services {
       debugPrint('[DI]   Step 2b: FCM token deleted OK');
     } catch (e) {
       debugPrint('[DI]   Step 2b: Delete FCM token FAILED: $e');
+    }
+
+    // 2c. Lepas keterikatan avatar dari akun yang baru saja logout.
+    // Hanya melepas NPM di cubit — box `avatar` SENGAJA tidak disentuh agar
+    // foto akun lama tetap tersimpan bila akun itu login kembali.
+    debugPrint('[DI]   Step 2c: Resetting avatar cubit...');
+    try {
+      final avatarCubit = get<AvatarCubit>();
+      avatarCubit.reset();
+      debugPrint('[DI]   Step 2c: Avatar reset OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 2c: Avatar reset FAILED: $e');
     }
 
     // 3. Set auth status to unauthenticated

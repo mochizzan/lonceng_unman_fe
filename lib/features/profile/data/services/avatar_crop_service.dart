@@ -25,6 +25,11 @@ abstract final class AvatarCropService {
   /// Sisi PNG hasil crop, dalam piksel.
   static const int outputSize = 256;
 
+  /// Sisi terpanjang maksimum saat decode. Gambar yang lebih besar akan
+  /// diperkecil menjaga aspect ratio untuk mencegah OOM; gambar yang sudah
+  /// di bawah batas tidak diperbesar.
+  static const int decodeMaxSide = 1024;
+
   /// Skala yang membuat [imageSize] menutupi kotak berukuran [viewportSide].
   static double coverScale({
     required Size imageSize,
@@ -139,13 +144,51 @@ abstract final class AvatarCropService {
   }
 
   /// Mendekode bytes gambar menjadi [ui.Image].
+  ///
+  /// Sisi terpanjang dibatasi [decodeMaxSide] piksel untuk mencegah OOM pada
+  /// gambar berukuran besar. Aspect ratio dipertahankan. Gambar yang sudah
+  /// lebih kecil dari batas tidak diperbesar.
   static Future<ui.Image> decode(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(bytes);
+    final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+    ui.ImageDescriptor? descriptor;
+    ui.Codec? codec;
     try {
+      descriptor = await ui.ImageDescriptor.encoded(buffer);
+      final origW = descriptor.width;
+      final origH = descriptor.height;
+      if (origW <= 0 || origH <= 0) {
+        throw const FormatException('dimensi gambar tidak valid');
+      }
+
+      final int targetW;
+      final int targetH;
+      if (origW <= decodeMaxSide && origH <= decodeMaxSide) {
+        // Sudah di bawah batas: pakai dimensi asli, jangan diperbesar.
+        targetW = origW;
+        targetH = origH;
+      } else {
+        // Sisi terpanjang diperkecil ke decodeMaxSide, sisi lain mengikuti
+        // aspect ratio.
+        final ratio = origW / origH;
+        if (ratio >= 1) {
+          targetW = decodeMaxSide;
+          targetH = (decodeMaxSide / ratio).round();
+        } else {
+          targetH = decodeMaxSide;
+          targetW = (decodeMaxSide * ratio).round();
+        }
+      }
+
+      codec = await descriptor.instantiateCodec(
+        targetWidth: targetW,
+        targetHeight: targetH,
+      );
       final frame = await codec.getNextFrame();
       return frame.image;
     } finally {
-      codec.dispose();
+      codec?.dispose();
+      descriptor?.dispose();
+      buffer.dispose();
     }
   }
 }

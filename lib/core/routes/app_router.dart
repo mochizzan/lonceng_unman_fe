@@ -8,7 +8,7 @@
 // cache data loads.
 
 import 'dart:async';
-
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -41,6 +41,7 @@ import 'package:lonceng_unman_fe/features/khs/presentation/pages/khs_detail_page
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubit.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/pages/avatar_crop_page.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
 ///
@@ -96,6 +97,12 @@ int? _indexForRoute(String? routeName) {
       return null;
   }
 }
+
+/// Redirect logic for the avatar crop route. Returns the profile path if
+/// [extra] is not bytes (route should only be reached with valid image bytes),
+/// or null to allow navigation. Pure function for testability.
+String? avatarCropRedirect(Object? extra) =>
+    extra is Uint8List ? null : '/${RouteNames.profile}';
 
 List<RouteBase> _buildRoutes(
   AuthStatusNotifier authStatusNotifier,
@@ -161,6 +168,14 @@ List<RouteBase> _buildRoutes(
           builder: (context, state) => SettingsPage(notifier: themeNotifier),
         ),
       ],
+    ),
+    // --- Avatar Crop (standalone; reached only via go_router pushNamed) ---
+    GoRoute(
+      name: RouteNames.avatarCrop,
+      path: '/${RouteNames.profile}/crop',
+      redirect: (context, state) => avatarCropRedirect(state.extra),
+      builder: (context, state) =>
+          AvatarCropPage(imageBytes: state.extra! as Uint8List),
     ),
 
     // --- Onboarding (first-time users) ---

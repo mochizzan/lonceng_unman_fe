@@ -45,22 +45,33 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<ProfileBloc, ProfileState>(
-        builder: (context, state) {
-          if (state is ProfileLoading || state is ProfileInitial) {
-            return _buildLoading(context);
-          }
-
-          if (state is ProfileError) {
-            return _buildError(context, state.message);
-          }
-
+      // Mengikat AvatarCubit global ke NPM yang sedang login. Memakai
+      // BlocListener (bukan build) supaya bindNpm hanya dipanggil saat data
+      // profil benar-benar berubah, bukan setiap rebuild.
+      body: BlocListener<ProfileBloc, ProfileState>(
+        listenWhen: (previous, current) => current is ProfileLoaded,
+        listener: (context, state) {
           if (state is ProfileLoaded) {
-            return _buildContent(context, state);
+            context.read<AvatarCubit>().bindNpm(state.data.npm);
           }
-
-          return _buildLoading(context);
         },
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            if (state is ProfileLoading || state is ProfileInitial) {
+              return _buildLoading(context);
+            }
+
+            if (state is ProfileError) {
+              return _buildError(context, state.message);
+            }
+
+            if (state is ProfileLoaded) {
+              return _buildContent(context, state);
+            }
+
+            return _buildLoading(context);
+          },
+        ),
       ),
     );
   }
@@ -304,12 +315,9 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
               delegate: SliverChildListDelegate([
                 const SizedBox(height: AppDimens.space16),
                 // Profile Header Card (avatar + name + study program badge).
-                // AvatarCubit di-scope ke NPM: ganti akun => avatar berbeda.
-                BlocProvider<AvatarCubit>(
-                  key: ValueKey('avatar-${data.npm}'),
-                  create: (_) => AvatarCubit(npm: data.npm)..load(),
-                  child: ProfileHeaderCard(data: data),
-                ),
+                // AvatarCubit dibaca dari provider root (singleton global) dan
+                // diikat ke NPM lewat BlocListener di build().
+                ProfileHeaderCard(data: data),
                 const SizedBox(height: AppDimens.space16),
                 // Info Akademik (NPM, Program Studi, Semester)
                 AcademicInfoSection(data: data),

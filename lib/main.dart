@@ -313,6 +313,7 @@ Future<void> main() async {
           ProfileRepositoryImpl(
             remoteDataSource: ProfileRemoteDataSourceImpl(
               academicCacheService: academicCacheService,
+              apiClient: apiClient,
             ),
           ),
         ),

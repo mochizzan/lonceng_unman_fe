@@ -26,4 +26,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
       );
     }
   }
+
+  @override
+  Future<void> refreshFromRemote() async {
+    try {
+      await remoteDataSource.refreshFromRemote();
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw ServerException(
+        'Gagal menyegarkan data profil: ${e.toString()}',
+        statusCode: 0,
+      );
+    }
+  }
 }

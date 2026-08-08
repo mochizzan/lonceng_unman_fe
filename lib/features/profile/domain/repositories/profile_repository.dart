@@ -9,4 +9,7 @@ import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity
 abstract class ProfileRepository {
   /// Fetches the aggregated profile data for the authenticated user.
   Future<ProfileEntity> getProfile();
+
+  /// Fetches KRS + KHS from remote API and updates local cache.
+  Future<void> refreshFromRemote();
 }

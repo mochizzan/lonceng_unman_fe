@@ -43,15 +43,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     Emitter emit,
   ) async {
     try {
+      // Fetch from remote API first, then re-read from (now fresh) cache.
+      // Do NOT emit ProfileLoading — keep current data visible during refresh.
+      await _getProfile.refreshFromRemote();
       final data = await _getProfile();
       emit(ProfileLoaded(data: data));
     } on AuthException catch (_) {
       // 401 handled by ApiClient global callback
-    } on NetworkException catch (e) {
-      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
-    } on ServerException catch (e) {
-      emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     } catch (e) {
+      // Keep previous loaded state on refresh failure — no error screen.
+      if (state is ProfileLoaded) return;
       emit(ProfileError(ErrorHandler.toHumanReadable(e)));
     }
   }

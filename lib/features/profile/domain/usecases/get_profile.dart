@@ -13,4 +13,7 @@ class GetProfile {
   const GetProfile(this.repository);
 
   Future<ProfileEntity> call() => repository.getProfile();
+
+  /// Fetches KRS + KHS from remote API and updates local cache.
+  Future<void> refreshFromRemote() => repository.refreshFromRemote();
 }

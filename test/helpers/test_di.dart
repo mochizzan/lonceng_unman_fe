@@ -74,6 +74,9 @@ class _FakeProfileRepo implements ProfileRepository {
     reminderEnabled: true,
     darkModeEnabled: false,
   );
+
+  @override
+  Future<void> refreshFromRemote() async {}
 }
 
 /// Register all DI dependencies needed by pages.

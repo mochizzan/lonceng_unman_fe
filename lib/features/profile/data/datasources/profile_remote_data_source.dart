@@ -1,9 +1,11 @@
 // profile - Abstract data source (interface)
 //
-// Defines the contract for fetching profile screen data from cache.
+// Defines the contract for fetching profile screen data from cache
+// and refreshing from remote API.
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
@@ -12,17 +14,23 @@ import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart
 abstract class ProfileRemoteDataSource {
   /// Fetches profile screen data for the authenticated user.
   Future<ProfileModel> getProfile();
+
+  /// Fetches KRS + KHS from remote API and updates local cache.
+  Future<void> refreshFromRemote();
 }
 
-/// Reads profile data from local cache only (no API calls).
+/// Reads profile data from local cache (built from KRS + KHS).
 ///
-/// All data is fetched during login via the expanded data-init pipeline.
-/// This class reads KRS + KHS from [AcademicCacheService] and builds the
-/// [ProfileModel] used by the Profile page.
+/// [refreshFromRemote] fetches fresh KRS + KHS from the API and saves
+/// them to cache so the next [getProfile] call returns updated data.
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   final AcademicCacheService academicCacheService;
+  final ApiClient apiClient;
 
-  const ProfileRemoteDataSourceImpl({required this.academicCacheService});
+  const ProfileRemoteDataSourceImpl({
+    required this.academicCacheService,
+    required this.apiClient,
+  });
 
   @override
   Future<ProfileModel> getProfile() async {
@@ -82,6 +90,39 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       reminderEnabled: true,
       darkModeEnabled: false,
       lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> refreshFromRemote() async {
+    final creds = await academicCacheService.loadCredentials();
+    final npm = creds?['npm'];
+    if (npm == null || npm.isEmpty) return;
+
+    // Fetch fresh KRS data from API and save to cache.
+    final krsResponse = await apiClient.post(
+      '/api/v1/lms/krs/data',
+      body: {'npm': npm},
+    );
+    await academicCacheService.saveKrsData(npm: npm, data: krsResponse);
+
+    // Parse KRS to get current semester info for KHS fetch.
+    final krsData = KrsModel.fromJson(krsResponse).krs;
+
+    // Fetch fresh KHS data from API and save to cache.
+    final khsResponse = await apiClient.post(
+      '/api/v1/lms/khs/data',
+      body: {
+        'npm': npm,
+        'tahun_ajaran': krsData.periode.tahunAjaran,
+        'semester': krsData.periode.semester,
+      },
+    );
+    await academicCacheService.saveKhsDataSemester(
+      npm: npm,
+      tahunAjaran: krsData.periode.tahunAjaran,
+      semester: krsData.periode.semester,
+      data: khsResponse,
     );
   }
 }

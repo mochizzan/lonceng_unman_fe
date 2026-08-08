@@ -80,9 +80,11 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
             );
             return toScheduleItem(mk, date, now, suffix: 'SKS');
           }).toList()..sort((a, b) {
-            final dayCmp = allDays
-                .indexOf(a.courseName)
-                .compareTo(allDays.indexOf(b.courseName));
+            final dayA = weekdayToDayName(a.startTime.weekday);
+            final dayB = weekdayToDayName(b.startTime.weekday);
+            final dayCmp = kDayOrder
+                .indexOf(dayA)
+                .compareTo(kDayOrder.indexOf(dayB));
             if (dayCmp != 0) return dayCmp;
             return a.startTime.compareTo(b.startTime);
           });

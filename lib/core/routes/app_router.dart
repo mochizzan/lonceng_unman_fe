@@ -50,10 +50,11 @@ String? authRedirect(
 
   final isLogin = matchedRoute == RouteNames.login;
   final isDataInit = matchedRoute == RouteNames.dataInit;
+  final isOnboarding = matchedRoute == RouteNames.onboarding;
 
-  // Unauthenticated: block everything except /login.
+  // Unauthenticated: block everything except /login and /onboarding.
   if (status == AuthStatus.unauthenticated) {
-    return isLogin ? null : '/${RouteNames.login}';
+    return (isLogin || isOnboarding) ? null : '/${RouteNames.login}';
   }
 
   // Authenticated: leave login and the legacy data-init gate.
@@ -157,7 +158,7 @@ List<RouteBase> _buildRoutes(
     // --- Onboarding (first-time users) ---
     GoRoute(
       name: RouteNames.onboarding,
-      path: RouteNames.onboarding,
+      path: '/${RouteNames.onboarding}',
       builder: (context, state) => const OnboardingPage(),
     ),
 
@@ -193,8 +194,8 @@ final class AppRouter {
         // First-time users must complete onboarding
         final onboardingRepo = Services.get<OnboardingRepository>();
         if (!onboardingRepo.isCompleted &&
-            state.matchedLocation != RouteNames.onboarding) {
-          return RouteNames.onboarding;
+            state.matchedLocation != '/${RouteNames.onboarding}') {
+          return '/${RouteNames.onboarding}';
         }
         return authRedirect(state.topRoute?.name, authStatusNotifier);
       },

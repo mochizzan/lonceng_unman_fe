@@ -4,7 +4,7 @@
 // Follows Clean Architecture: domain layer has no framework dependencies.
 
 import 'package:lonceng_unman_fe/core/domain/metadata_entity.dart';
-import 'package:lonceng_unman_fe/core/utils/app_utils.dart';
+import 'package:flutter/foundation.dart';
 
 class MahasiswaEntity {
   final String nama;

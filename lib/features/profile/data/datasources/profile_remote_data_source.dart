@@ -10,6 +10,7 @@ import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class ProfileRemoteDataSource {
   /// Fetches profile screen data for the authenticated user.
@@ -76,6 +77,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         .where((mk) => mk.hari == todayDayName)
         .length;
 
+    final prefs = await SharedPreferences.getInstance();
     return ProfileModel(
       userName: krsData.mahasiswa.nama,
       avatarUrl: '',
@@ -87,8 +89,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       sksTotal: 120, // Standard graduation requirement
       todayClassCount: todayClassCount,
       bio: null,
-      reminderEnabled: true,
-      darkModeEnabled: false,
+      reminderEnabled: prefs.getBool('reminder_enabled') ?? true,
+      darkModeEnabled: prefs.getBool('dark_mode_enabled') ?? false,
       lastUpdated: DateTime.now(),
     );
   }

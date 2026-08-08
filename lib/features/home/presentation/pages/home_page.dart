@@ -58,13 +58,15 @@ class _HomePageView extends StatefulWidget {
   State<_HomePageView> createState() => _HomePageViewState();
 }
 
-class _HomePageViewState extends State<_HomePageView> {
+class _HomePageViewState extends State<_HomePageView>
+    with WidgetsBindingObserver {
   var _fetchDispatched = false;
   Timer? _statusTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _statusTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) {
         context.read<HomeBloc>().add(const HomeRefreshRequested());
@@ -75,7 +77,20 @@ class _HomePageViewState extends State<_HomePageView> {
   @override
   void dispose() {
     _statusTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selamat datang kembali'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   String _getDateText() {
@@ -145,26 +160,37 @@ class _HomePageViewState extends State<_HomePageView> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        // Reset data init state first
-        context.read<DataInitBloc>().add(const DataInitReset());
+        try {
+          // Reset data init state first
+          context.read<DataInitBloc>().add(const DataInitReset());
 
-        // Show full-screen overlay
-        if (!context.mounted) return;
-        DataRefreshOverlay.show(context);
+          // Show full-screen overlay
+          if (!context.mounted) return;
+          DataRefreshOverlay.show(context);
 
-        // Load credentials and start pipeline
-        final cache = Services.get<AcademicCacheService>();
-        final creds = await cache.loadCredentials();
-        if (creds != null && context.mounted) {
-          context.read<DataInitBloc>().add(
-            DataInitStarted(npm: creds['npm']!, password: creds['password']!),
-          );
-        }
+          // Load credentials and start pipeline
+          final cache = Services.get<AcademicCacheService>();
+          final creds = await cache.loadCredentials();
+          if (creds != null && context.mounted) {
+            context.read<DataInitBloc>().add(
+              DataInitStarted(npm: creds['npm']!, password: creds['password']!),
+            );
+          }
 
-        // Wait a moment for pipeline to start, then refresh home
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (context.mounted) {
-          context.read<HomeBloc>().add(const HomeRefreshRequested());
+          // Wait a moment for pipeline to start, then refresh home
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (context.mounted) {
+            context.read<HomeBloc>().add(const HomeRefreshRequested());
+          }
+        } catch (e) {
+          if (mounted && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Gagal memperbarui data'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         }
       },
       child: CustomScrollView(

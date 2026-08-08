@@ -282,7 +282,6 @@ Future<void> main() async {
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
         getKhs: getKhs,
-        academicCacheService: academicCacheService,
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(

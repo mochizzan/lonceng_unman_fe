@@ -181,7 +181,19 @@ class NotificationService {
       final granted = await androidPlugin.requestNotificationsPermission();
       return granted ?? false;
     }
-    // iOS handles permission in initialization settings
+    final iosPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    if (iosPlugin != null) {
+      final result = await iosPlugin.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return result ?? false;
+    }
+    // Other platforms (web, Linux, etc.) – treat as granted.
     return true;
   }
 }

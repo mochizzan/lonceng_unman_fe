@@ -120,25 +120,27 @@ class NotificationService {
     AndroidScheduleMode androidScheduleMode =
         AndroidScheduleMode.exactAllowWhileIdle,
   }) async {
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      notificationDetails: _detailsFor(channel),
-      androidScheduleMode: androidScheduleMode,
-      matchDateTimeComponents: matchDateTimeComponents,
-    );
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledDate,
+        notificationDetails: _detailsFor(channel),
+        androidScheduleMode: androidScheduleMode,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
 
-    developer.log(
-      'Scheduled [#${channel.id}] #$id: $title at $scheduledDate',
-      name: 'NotificationService',
-    );
-  } on Exception catch (e) {
-    developer.log(
-      'WARNING: Failed to schedule notification — timezone data may be missing or invalid: $e',
-      name: 'NotificationService',
-    );
+      developer.log(
+        'Scheduled [#${channel.id}] #$id: $title at $scheduledDate',
+        name: 'NotificationService',
+      );
+    } on Exception catch (e) {
+      developer.log(
+        'WARNING: Failed to schedule notification — timezone data may be missing or invalid: $e',
+        name: 'NotificationService',
+      );
+    }
   }
 
   /// Cancel a single notification by ID.

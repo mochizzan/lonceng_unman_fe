@@ -67,6 +67,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
+  // Ensure bindings are initialized in the root zone (required before runZonedGuarded)
+  WidgetsFlutterBinding.ensureInitialized();
+
   // Global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
@@ -80,8 +83,6 @@ Future<void> main() async {
 
   runZonedGuarded(
     () async {
-      WidgetsFlutterBinding.ensureInitialized();
-
       // Initialize Firebase before using any Firebase services.
       bool firebaseReady = false;
       try {
@@ -380,7 +381,6 @@ Future<void> main() async {
         stackTrace: stackTrace,
       );
       // If runApp() hasn't been called yet, show error UI instead of blackscreen
-      WidgetsFlutterBinding.ensureInitialized();
       runApp(
         MaterialApp(
           home: Scaffold(

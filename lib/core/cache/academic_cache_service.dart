@@ -254,11 +254,16 @@ class AcademicCacheService {
     developer.log('KRS cache cleared', name: 'AcademicCache');
   }
 
-  /// Clear KHS cache only (single semester + semester list).
+  /// Clear KHS cache only (single semester + semester list + nested semester boxes).
   Future<void> clearKhsData() async {
     await _khs.clear();
     await _khsList.clear();
-    developer.log('KHS cache cleared', name: 'AcademicCache');
+    // Also clear nested khs_{npm} boxes managed by KhsCacheService
+    final credentials = await loadCredentials();
+    if (credentials != null && credentials['npm'] != null) {
+      await _khsCache.clearAll(npm: credentials['npm']!);
+    }
+    developer.log('KHS cache cleared (all boxes)', name: 'AcademicCache');
   }
 
   /// Clear academic data only (KRS + KHS). Keeps credentials.
@@ -268,12 +273,22 @@ class AcademicCacheService {
     developer.log('Academic data cleared (KRS + KHS)', name: 'AcademicCache');
   }
 
-  /// Clear all cached data (credentials + KRS + KHS).
+  /// Clear all cached data (credentials + KRS + KHS + nested KHS boxes).
   Future<void> clearAll() async {
+    // Get NPM before clearing credentials
+    final credentials = await loadCredentials();
+    final npm = credentials?['npm'];
+
     await _credentials.clear();
     await _krs.clear();
     await _khs.clear();
     await _khsList.clear();
+
+    // Clear nested KHS boxes (must happen before credentials are gone)
+    if (npm != null) {
+      await _khsCache.clearAll(npm: npm);
+    }
+
     developer.log('All academic cache cleared', name: 'AcademicCache');
   }
 }

@@ -42,6 +42,7 @@ class _JadwalPageView extends StatefulWidget {
 class _JadwalPageViewState extends State<_JadwalPageView> {
   String _selectedDay = '';
   List<String> _days = [];
+  bool _dayManuallySelected = false;
 
   @override
   void initState() {
@@ -59,7 +60,10 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
   }
 
   void _handleDaySelected(String day) {
-    setState(() => _selectedDay = day);
+    setState(() {
+      _dayManuallySelected = true;
+      _selectedDay = day;
+    });
   }
 
   @override
@@ -69,7 +73,9 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
         listener: (context, state) {
           if (state is JadwalLoaded) {
             setState(() {
-              _selectedDay = state.data.selectedDay;
+              if (!_dayManuallySelected) {
+                _selectedDay = state.data.selectedDay;
+              }
               _days = state.data.days;
             });
             context.read<NotificationCubit>().scheduleFromJadwal(state.data);

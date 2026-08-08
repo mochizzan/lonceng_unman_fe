@@ -9,10 +9,10 @@ class RouteNames {
   factory RouteNames() => throw TypeError();
 
   static const login = 'login';
-  static const dataInit = 'data-init';
   static const home = 'home';
   static const jadwal = 'jadwal';
   static const profile = 'profile';
   static const settings = 'settings';
+  static const khs = 'khs';
   static const String onboarding = 'onboarding';
 }

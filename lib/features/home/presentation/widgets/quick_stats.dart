@@ -9,9 +9,10 @@ import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart'
 import 'package:lonceng_unman_fe/shared/widgets/stat_card.dart';
 
 class QuickStats extends StatelessWidget {
-  const QuickStats({super.key, required this.data});
+  const QuickStats({super.key, required this.data, this.onKhsTap});
 
   final HomeEntity data;
+  final VoidCallback? onKhsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +33,7 @@ class QuickStats extends StatelessWidget {
                 labelColor: cs.onSurfaceVariant,
                 value: data.sksTaken.toString(),
                 valueColor: cs.onSurface,
-                footnote: ' / ${data.sksTotal} ${AppStrings.homeSksUnit}',
+                footnote: ' ${AppStrings.homeSksUnit}',
                 footnoteColor: cs.onSurfaceVariant,
               ),
             ),
@@ -106,7 +107,7 @@ class QuickStats extends StatelessWidget {
                   ),
                 ],
               ),
-              // IPK
+              // IPK section
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -119,12 +120,70 @@ class QuickStats extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
-                    data.gpa.toStringAsFixed(2),
-                    style: TextStyle(
-                      fontSize: AppDimens.textXL,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSecondaryContainer,
+                  const SizedBox(height: AppDimens.space4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // GANJIL IPK
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Ganjil',
+                            style: TextStyle(
+                              fontSize: AppDimens.textXS,
+                              color: cs.onSecondaryContainer.withValues(
+                                alpha: ColorValues.opacityMax,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            data.gpaGanjil.toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: AppDimens.textLG,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSecondaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: AppDimens.space12),
+                      // GENAP IPK
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Genap',
+                            style: TextStyle(
+                              fontSize: AppDimens.textXS,
+                              color: cs.onSecondaryContainer.withValues(
+                                alpha: ColorValues.opacityMax,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            data.gpaGenap.toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: AppDimens.textLG,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSecondaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimens.space4),
+                  // Lihat KHS button
+                  GestureDetector(
+                    onTap: onKhsTap,
+                    child: Text(
+                      'Lihat KHS >',
+                      style: TextStyle(
+                        fontSize: AppDimens.textXS,
+                        color: cs.onSecondaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],

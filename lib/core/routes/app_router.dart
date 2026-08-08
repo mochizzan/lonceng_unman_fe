@@ -19,7 +19,6 @@ import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/routes/app_error_page.dart';
 
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/pages/data_initialization_page.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
@@ -32,6 +31,7 @@ import 'package:lonceng_unman_fe/features/notification/domain/services/notificat
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/pages/khs_detail_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 
@@ -49,7 +49,6 @@ String? authRedirect(
   if (status == AuthStatus.unknown) return null;
 
   final isLogin = matchedRoute == RouteNames.login;
-  final isDataInit = matchedRoute == RouteNames.dataInit;
   final isOnboarding = matchedRoute == RouteNames.onboarding;
 
   // Unauthenticated: block everything except /login and /onboarding.
@@ -57,9 +56,8 @@ String? authRedirect(
     return (isLogin || isOnboarding) ? null : '/${RouteNames.login}';
   }
 
-  // Authenticated: leave login and the legacy data-init gate.
-  // Data-init runs in the background on the home shell.
-  if (isLogin || isDataInit) return '/${RouteNames.home}';
+  // Authenticated: redirect away from login to home.
+  if (isLogin) return '/${RouteNames.home}';
 
   return null; // authenticated + app route → allow
 }
@@ -103,13 +101,6 @@ List<RouteBase> _buildRoutes(
       path: '/${RouteNames.login}',
       builder: (context, state) =>
           LoginPage(authStatusNotifier: authStatusNotifier),
-    ),
-
-    // --- Legacy data-init (redirects to home; pipeline is background) ---
-    GoRoute(
-      name: RouteNames.dataInit,
-      path: '/${RouteNames.dataInit}',
-      builder: (context, state) => const DataInitializationPage(),
     ),
 
     // --- Main app (bottom navigation shell) ---
@@ -160,6 +151,17 @@ List<RouteBase> _buildRoutes(
       name: RouteNames.onboarding,
       path: '/${RouteNames.onboarding}',
       builder: (context, state) => const OnboardingPage(),
+    ),
+
+    // --- KHS Detail (standalone; accessible from Home IPK section) ---
+    GoRoute(
+      name: RouteNames.khs,
+      path: '/${RouteNames.khs}',
+      builder: (context, state) {
+        final tahunAjaran = state.uri.queryParameters['tahunAjaran'] ?? '';
+        final semester = state.uri.queryParameters['semester'] ?? '';
+        return KhsDetailPage(tahunAjaran: tahunAjaran, semester: semester);
+      },
     ),
 
     // --- Settings (standalone; accessible from Profile via pushNamed) ---

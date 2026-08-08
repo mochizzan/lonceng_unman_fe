@@ -1,7 +1,10 @@
 // home - Hero Countdown Card widget
 //
 // Displays the next class with a countdown timer.
-// Matches the HTML template's hero countdown section.
+// Supports two modes:
+//   - Upcoming class: countdown DOWN to startTime (HH:MM:SS)
+//   - Ongoing class:  count UP from startTime   (HH:MM:SS)
+// Shows an empty placeholder when nextClass is null.
 
 import 'dart:async';
 
@@ -10,18 +13,27 @@ import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
-/// Formats a [Duration] as HH:MM:SS.
+/// Formats a [Duration] as HH:MM:SS (pure hours, no day rollover).
+///
+/// Uses [Duration.inHours] which returns total elapsed hours, so a 3-day
+/// duration formats as `72:00:00` rather than `00:00:00`.
 String formatCountdown(Duration duration) {
   if (duration.isNegative) duration = Duration.zero;
-  final hours = duration.inHours.remainder(24).toString().padLeft(2, '0');
+  final hours = duration.inHours.toString().padLeft(2, '0');
   final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
   final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
   return '$hours:$minutes:$seconds';
 }
 
 /// Hero countdown card with a live-updating countdown timer.
-/// The timer ticks every second via [Timer.periodic], so the displayed
-/// time decrements in real-time without requiring a page refresh.
+///
+/// When [nextClass] is non-null, shows either:
+///   - **Upcoming mode** – timer counts down to the class start time, label
+///     reads "SELANJUTNYA".
+///   - **Ongoing mode** – timer counts up from the class start time, label
+///     reads "SEDANG BERLANGSUNG" with a green pulsing indicator.
+///
+/// When [nextClass] is null, renders an empty-state placeholder.
 class HeroCountdownCard extends StatefulWidget {
   const HeroCountdownCard({super.key, this.nextClass, this.onCtaTap});
 
@@ -36,15 +48,23 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
   Timer? _timer;
   Duration _countdown = Duration.zero;
 
-  bool get _hasActiveClass =>
-      widget.nextClass != null && widget.nextClass!.courseName.isNotEmpty;
+  // ── Mode detection ──────────────────────────────────────────────
+
+  /// Whether [nextClass] is currently in progress (startTime ≤ now < endTime).
+  bool get _isOngoing {
+    if (widget.nextClass == null) return false;
+    final now = DateTime.now();
+    return now.isAfter(widget.nextClass!.startTime) &&
+        now.isBefore(widget.nextClass!.endTime);
+  }
+
+  // ── Timer lifecycle ─────────────────────────────────────────────
 
   void _startTimer() {
-    _countdown = widget.nextClass!.timeRemaining(DateTime.now());
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _countdown = widget.nextClass!.timeRemaining(DateTime.now());
-      });
+    _computeCountdown();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(_computeCountdown);
     });
   }
 
@@ -53,42 +73,63 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
     _timer = null;
   }
 
+  /// Recalculates [_countdown] based on current mode.
+  void _computeCountdown() {
+    final now = DateTime.now();
+    if (widget.nextClass == null) {
+      _countdown = Duration.zero;
+      return;
+    }
+
+    final next = widget.nextClass!;
+    final ongoing = now.isAfter(next.startTime) && now.isBefore(next.endTime);
+
+    if (ongoing) {
+      _countdown = now.difference(next.startTime);
+    } else {
+      _countdown = next.startTime.difference(now);
+      if (_countdown.isNegative) _countdown = Duration.zero;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    if (_hasActiveClass) _startTimer();
+    if (widget.nextClass != null) _startTimer();
   }
 
   @override
   void didUpdateWidget(HeroCountdownCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final wasActive =
-        oldWidget.nextClass != null &&
-        oldWidget.nextClass!.courseName.isNotEmpty;
-    if (_hasActiveClass != wasActive) {
-      if (_hasActiveClass) {
-        _startTimer();
-      } else {
-        _stopTimer();
-      }
-    } else if (_hasActiveClass && oldWidget.nextClass != widget.nextClass) {
+    if (oldWidget.nextClass != widget.nextClass) {
       _stopTimer();
-      _startTimer();
+      if (widget.nextClass != null) _startTimer();
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _stopTimer();
     super.dispose();
   }
 
+  // ── Build ───────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    if (!_hasActiveClass) return _buildEmptyState(context);
+    if (widget.nextClass == null) return _buildEmptyState(context);
 
     final cs = Theme.of(context).colorScheme;
     final onPrimaryContainer = cs.onPrimaryContainer;
+    final next = widget.nextClass!;
+    final ongoing = _isOngoing;
+    final liveColor = ongoing ? Colors.green : onPrimaryContainer;
+    final timeRange =
+        '${_formatTime(next.startTime)} - ${_formatTime(next.endTime)}';
+    final statusLabel = ongoing
+        ? AppStrings.jadwalStatusOngoing
+        : 'SELANJUTNYA';
+    final countdownText = formatCountdown(_countdown);
 
     return Container(
       width: double.infinity,
@@ -101,21 +142,22 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top row: live indicator + SKS
+            // ── Top row: live indicator + SKS ──────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Live indicator
                 Row(
                   children: [
                     PulsingDot(
-                      color: onPrimaryContainer,
+                      color: liveColor,
                       size: AppDimens.dotMD,
                       duration: AppDurations.countdown,
                     ),
                     const SizedBox(width: AppDimens.space8),
                     Text(
-                      AppStrings.homeNextClassIn,
+                      ongoing
+                          ? AppStrings.jadwalStatusOngoing
+                          : AppStrings.homeNextClassIn,
                       style: TextStyle(
                         fontSize: AppDimens.textBase,
                         fontWeight: FontWeight.w600,
@@ -139,7 +181,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                     borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                   ),
                   child: Text(
-                    widget.nextClass!.sks,
+                    next.sks,
                     style: TextStyle(
                       fontSize: AppDimens.textSM,
                       fontWeight: FontWeight.bold,
@@ -152,9 +194,10 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
               ],
             ),
             const SizedBox(height: AppDimens.space20),
-            // Countdown time
+
+            // ── Countdown / elapsed time ───────────────────────
             Text(
-              formatCountdown(_countdown),
+              countdownText,
               style: TextStyle(
                 fontSize: AppDimens.textHero,
                 fontWeight: FontWeight.w800,
@@ -163,17 +206,32 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
               ),
             ),
             const SizedBox(height: AppDimens.space4),
-            // Course name
+
+            // ── Course name ────────────────────────────────────
             Text(
-              widget.nextClass!.courseName,
+              next.courseName,
               style: TextStyle(
                 fontSize: AppDimens.text3XL,
                 fontWeight: FontWeight.bold,
                 color: onPrimaryContainer,
               ),
             ),
+            const SizedBox(height: AppDimens.space4),
+
+            // ── Time range ─────────────────────────────────────
+            Text(
+              timeRange,
+              style: TextStyle(
+                fontSize: AppDimens.textBase,
+                fontWeight: FontWeight.w500,
+                color: onPrimaryContainer.withValues(
+                  alpha: ColorValues.opacityMax,
+                ),
+              ),
+            ),
             const SizedBox(height: AppDimens.space20),
-            // Divider
+
+            // ── Divider ────────────────────────────────────────
             Container(
               height: 1,
               color: onPrimaryContainer.withValues(
@@ -181,7 +239,8 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
               ),
             ),
             const SizedBox(height: AppDimens.space20),
-            // Lecturer + Location row
+
+            // ── Lecturer + Location row ────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -212,7 +271,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.nextClass!.lecturer ?? '-',
+                              next.lecturer ?? '-',
                               style: TextStyle(
                                 fontSize: AppDimens.textBase,
                                 fontWeight: FontWeight.bold,
@@ -253,7 +312,7 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                       const SizedBox(width: AppDimens.space6),
                       Flexible(
                         child: Text(
-                          widget.nextClass!.location ?? '-',
+                          next.location ?? '-',
                           style: TextStyle(
                             fontSize: AppDimens.textBase,
                             fontWeight: FontWeight.w500,
@@ -270,7 +329,20 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
               ],
             ),
             const SizedBox(height: AppDimens.space20),
-            // CTA button — Tonal Button per DESIGN.md
+
+            // ── Status label ───────────────────────────────────
+            Text(
+              statusLabel,
+              style: TextStyle(
+                fontSize: AppDimens.textSM,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: ongoing ? Colors.green : onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: AppDimens.space16),
+
+            // ── CTA button ─────────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -316,6 +388,8 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
     );
   }
 
+  // ── Empty state ───────────────────────────────────────────────
+
   Widget _buildEmptyState(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final onSurface = cs.onSurface;
@@ -357,5 +431,14 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
         ),
       ),
     );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+
+  /// Formats a [DateTime] as HH:MM (24-hour).
+  String _formatTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }

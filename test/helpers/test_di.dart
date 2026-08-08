@@ -51,11 +51,11 @@ class _FakeHomeRepo implements HomeRepository {
     ),
     scheduleItems: const [],
     sksTaken: 20,
-    sksTotal: 24,
     todayClassCount: 2,
     semester: 'Semester 5',
     studyProgram: 'Teknik Informatika',
-    gpa: 3.8,
+    gpaGanjil: 3.8,
+    gpaGenap: 3.9,
   );
 }
 

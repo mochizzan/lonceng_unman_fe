@@ -13,6 +13,7 @@ class MataKuliahKhsEntity {
   final int sks;
   final String nilai;
   final int mutu;
+  final String dosen;
 
   const MataKuliahKhsEntity({
     required this.kode,
@@ -20,6 +21,7 @@ class MataKuliahKhsEntity {
     required this.sks,
     required this.nilai,
     required this.mutu,
+    required this.dosen,
   });
 
   @override
@@ -31,10 +33,11 @@ class MataKuliahKhsEntity {
           nama == other.nama &&
           sks == other.sks &&
           nilai == other.nilai &&
-          mutu == other.mutu;
+          mutu == other.mutu &&
+          dosen == other.dosen;
 
   @override
-  int get hashCode => Object.hash(kode, nama, sks, nilai, mutu);
+  int get hashCode => Object.hash(kode, nama, sks, nilai, mutu, dosen);
 }
 
 class RekapitulasiEntity {

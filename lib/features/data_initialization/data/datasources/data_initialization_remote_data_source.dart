@@ -86,42 +86,40 @@ class DataInitializationRemoteDataSource {
       () => _getKhs.getSemesters(npm: npm, password: password),
     );
 
-    // Steps 5-7: Process the previous semester's KHS (if available)
-    if (semesters.length >= 2) {
-      final previous = semesters[semesters.length - 2];
-
+    // Steps 5-7: Process ALL available KHS semesters
+    for (final semesterEntry in semesters) {
       // Step 5: Download KHS PDF
       yield DataInitStatus.downloadingKhs;
       await _runStep(
-        'khs_download',
+        'khs_download_${semesterEntry.semester}',
         () => _getKhs.download(
           npm: npm,
           password: password,
-          tahunAjaran: previous.tahunAjaran,
-          semester: previous.semester,
+          tahunAjaran: semesterEntry.tahunAjaran,
+          semester: semesterEntry.semester,
         ),
       );
 
       // Step 6: Extract KHS
       yield DataInitStatus.extractingKhs;
       await _runStep(
-        'khs_extract',
+        'khs_extract_${semesterEntry.semester}',
         () => _getKhs.extract(
           npm: npm,
           password: password,
-          tahunAjaran: previous.tahunAjaran,
-          semester: previous.semester,
+          tahunAjaran: semesterEntry.tahunAjaran,
+          semester: semesterEntry.semester,
         ),
       );
 
       // Step 7: Fetch KHS data
       yield DataInitStatus.fetchingKhsData;
       await _runStep(
-        'khs_data',
+        'khs_data_${semesterEntry.semester}',
         () => _getKhs(
           npm: npm,
-          tahunAjaran: previous.tahunAjaran,
-          semester: previous.semester,
+          tahunAjaran: semesterEntry.tahunAjaran,
+          semester: semesterEntry.semester,
         ),
       );
     }

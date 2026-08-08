@@ -29,6 +29,8 @@ import 'package:lonceng_unman_fe/features/home/presentation/widgets/home_skeleto
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/quick_stats.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/today_schedule.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, this.getHome});
@@ -160,7 +162,7 @@ class _HomePageViewState extends State<_HomePageView> {
         }
 
         // Wait a moment for pipeline to start, then refresh home
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 500));
         if (context.mounted) {
           context.read<HomeBloc>().add(const HomeRefreshRequested());
         }
@@ -183,9 +185,21 @@ class _HomePageViewState extends State<_HomePageView> {
                 const SizedBox(height: AppDimens.space16),
                 HeroCountdownCard(nextClass: data.nextClass),
                 const SizedBox(height: AppDimens.space28),
-                QuickStats(data: data),
+                QuickStats(
+                  data: data,
+                  onKhsTap: () => context.goNamed(
+                    RouteNames.khs,
+                    queryParameters: {
+                      'tahunAjaran': '',
+                      'semester': data.semester,
+                    },
+                  ),
+                ),
                 const SizedBox(height: AppDimens.space28),
-                TodaySchedule(items: data.scheduleItems),
+                TodaySchedule(
+                  items: data.scheduleItems,
+                  onSeeAllTap: () => context.goNamed(RouteNames.jadwal),
+                ),
               ]),
             ),
           ),

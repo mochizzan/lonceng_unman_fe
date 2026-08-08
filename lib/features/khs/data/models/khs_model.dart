@@ -9,6 +9,7 @@ class MataKuliahKhsModel extends MataKuliahKhsEntity {
     required super.sks,
     required super.nilai,
     required super.mutu,
+    required super.dosen,
   });
 
   factory MataKuliahKhsModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +19,7 @@ class MataKuliahKhsModel extends MataKuliahKhsEntity {
       sks: json['sks'] as int? ?? 0,
       nilai: json['nilai'] as String? ?? '',
       mutu: json['mutu'] as int? ?? 0,
+      dosen: json['dosen'] as String? ?? '',
     );
   }
 }

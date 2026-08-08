@@ -38,11 +38,11 @@ class HomeModel extends HomeEntity {
     super.nextClass,
     required super.scheduleItems,
     required super.sksTaken,
-    required super.sksTotal,
     required super.todayClassCount,
     required super.semester,
     required super.studyProgram,
-    required super.gpa,
+    required super.gpaGanjil,
+    required super.gpaGenap,
   });
 
   factory HomeModel.fromJson(Map<String, dynamic> json) {
@@ -59,11 +59,11 @@ class HomeModel extends HomeEntity {
           .map((e) => ScheduleItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       sksTaken: json['sksTaken'] as int,
-      sksTotal: json['sksTotal'] as int,
       todayClassCount: json['todayClassCount'] as int,
       semester: json['semester'] as String,
       studyProgram: json['studyProgram'] as String,
-      gpa: (json['gpa'] as num).toDouble(),
+      gpaGanjil: (json['gpaGanjil'] as num?)?.toDouble() ?? 0.0,
+      gpaGenap: (json['gpaGenap'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

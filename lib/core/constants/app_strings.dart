@@ -171,4 +171,16 @@ abstract final class AppStrings {
   static const String onboardingThemeDescription =
       'Pilih tampilan yang nyaman untukmu.';
   static const String onboardingGetStarted = 'Mulai';
+
+  // ── KHS (Kartu Hasil Studi) ──────────────────────────────────────
+  static const String khsTitle = 'Kartu Hasil Studi';
+  static const String khsTabGanjil = 'Ganjil';
+  static const String khsTabGenap = 'Genap';
+  static const String khsNoData = 'Belum ada data KHS';
+  static const String khsDaftarMataKuliah = 'Daftar Mata Kuliah';
+  static const String khsBelumAdaDataMk = 'Belum ada data mata kuliah';
+  static const String khsMataKuliah = 'Mata Kuliah';
+  static const String khsRekapitulasi = 'Rekapitulasi';
+  static const String khsNpmTidakDitemukan = 'NPM tidak ditemukan';
+  static const String khsGagalMemuat = 'Gagal memuat data KHS';
 }

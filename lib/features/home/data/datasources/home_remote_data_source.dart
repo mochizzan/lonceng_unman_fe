@@ -6,6 +6,8 @@ import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
+import 'dart:developer' as developer;
+
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/entities/krs_entity.dart';
@@ -44,19 +46,32 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     }
     final krsData = KrsModel.fromJson(krsJson).krs;
 
-    // Read KHS data from cache (optional — may not be available yet)
-    double gpa = 0.0;
+    // Read KHS data from cache — load all available semesters for IPK
+    double gpaGanjil = 0.0;
+    double gpaGenap = 0.0;
     String? khsSemester;
     try {
-      final khsJson = await academicCacheService.loadKhsDataSemester(
+      // Try to load GANJIL KHS
+      final ganjilKhs = await academicCacheService.loadKhsDataSemester(
         npm: npm,
         tahunAjaran: krsData.periode.tahunAjaran,
-        semester: krsData.periode.semester,
+        semester: 'GANJIL',
       );
-      if (khsJson != null) {
-        final khsData = KhsModel.fromJson(khsJson).khs;
-        gpa = khsData.rekapitulasi.ipk;
-        khsSemester = khsData.periode.semester;
+      if (ganjilKhs != null) {
+        final khsData = KhsModel.fromJson(ganjilKhs).khs;
+        gpaGanjil = khsData.rekapitulasi.ipk;
+        khsSemester ??= khsData.periode.semester;
+      }
+      // Try to load GENAP KHS
+      final genapKhs = await academicCacheService.loadKhsDataSemester(
+        npm: npm,
+        tahunAjaran: krsData.periode.tahunAjaran,
+        semester: 'GENAP',
+      );
+      if (genapKhs != null) {
+        final khsData = KhsModel.fromJson(genapKhs).khs;
+        gpaGenap = khsData.rekapitulasi.ipk;
+        khsSemester ??= khsData.periode.semester;
       }
     } catch (_) {
       // KHS may not be available yet if data-init hasn't completed.
@@ -67,12 +82,20 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     final todayDayName = weekdayToDayName(now.weekday);
 
     // Build today's schedule from KRS mata_kuliah
+    developer.log(
+      'Today: $todayDayName, MataKuliah count: ${krsData.mataKuliah.length}',
+      name: 'HomeDataSource',
+    );
     final todaySchedule =
         krsData.mataKuliah
             .where((mk) => mk.hari == todayDayName)
             .map((mk) => toScheduleItem(mk, today, now))
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    developer.log(
+      'Today schedule count: ${todaySchedule.length}',
+      name: 'HomeDataSource',
+    );
 
     // Find next upcoming/ongoing class
     final nextClass = _findNextClass(krsData.mataKuliah, today, now);
@@ -83,11 +106,11 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       nextClass: nextClass,
       scheduleItems: todaySchedule,
       sksTaken: krsData.totalSks,
-      sksTotal: 24, // Standard max SKS per semester
       todayClassCount: todaySchedule.length,
       semester: khsSemester ?? krsData.periode.semester,
       studyProgram: krsData.mahasiswa.programStudi,
-      gpa: gpa,
+      gpaGanjil: gpaGanjil,
+      gpaGenap: gpaGenap,
     );
   }
 
@@ -100,8 +123,9 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     DateTime today,
     DateTime now,
   ) {
-    // Check today first
     final todayDayName = weekdayToDayName(now.weekday);
+
+    // Build all schedule items for today
     final todayItems =
         mataKuliah
             .where((mk) => mk.hari == todayDayName)
@@ -109,9 +133,9 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
+    // Check for ongoing class first
     for (final item in todayItems) {
-      if (item.status == ScheduleStatus.upcoming ||
-          item.status == ScheduleStatus.ongoing) {
+      if (item.status == ScheduleStatus.ongoing) {
         return NextClassModel(
           courseName: item.courseName,
           startTime: item.startTime,
@@ -123,9 +147,23 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       }
     }
 
-    // No more classes today — find the next day with classes
+    // Check for upcoming class today
+    for (final item in todayItems) {
+      if (item.status == ScheduleStatus.upcoming) {
+        return NextClassModel(
+          courseName: item.courseName,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          sks: item.sks ?? '',
+          lecturer: item.lecturer,
+          location: item.room,
+        );
+      }
+    }
+
+    // No more classes today — find next day with classes (up to 14 days)
     const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-    for (int offset = 1; offset <= 7; offset++) {
+    for (int offset = 1; offset <= 14; offset++) {
       final futureDate = today.add(Duration(days: offset));
       final futureDayName = weekdayToDayName(futureDate.weekday);
       if (!dayNames.contains(futureDayName)) continue;
@@ -150,7 +188,6 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       }
     }
 
-    // No upcoming or ongoing classes found in the entire schedule.
     return null;
   }
 }

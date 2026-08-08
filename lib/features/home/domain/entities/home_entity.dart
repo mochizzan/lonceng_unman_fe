@@ -51,11 +51,11 @@ class HomeEntity {
     this.nextClass,
     required this.scheduleItems,
     required this.sksTaken,
-    required this.sksTotal,
     required this.todayClassCount,
     required this.semester,
     required this.studyProgram,
-    required this.gpa,
+    required this.gpaGanjil,
+    required this.gpaGenap,
   });
 
   final String userName;
@@ -63,11 +63,11 @@ class HomeEntity {
   final NextClassEntity? nextClass;
   final List<ScheduleItemEntity> scheduleItems;
   final int sksTaken;
-  final int sksTotal;
   final int todayClassCount;
   final String semester;
   final String studyProgram;
-  final double gpa;
+  final double gpaGanjil;
+  final double gpaGenap;
 
   @override
   bool operator ==(Object other) =>
@@ -79,11 +79,11 @@ class HomeEntity {
           nextClass == other.nextClass &&
           scheduleItems == other.scheduleItems &&
           sksTaken == other.sksTaken &&
-          sksTotal == other.sksTotal &&
           todayClassCount == other.todayClassCount &&
           semester == other.semester &&
           studyProgram == other.studyProgram &&
-          gpa == other.gpa;
+          gpaGanjil == other.gpaGanjil &&
+          gpaGenap == other.gpaGenap;
 
   @override
   int get hashCode => Object.hash(
@@ -92,10 +92,10 @@ class HomeEntity {
     nextClass,
     scheduleItems,
     sksTaken,
-    sksTotal,
     todayClassCount,
     semester,
     studyProgram,
-    gpa,
+    gpaGanjil,
+    gpaGenap,
   );
 }

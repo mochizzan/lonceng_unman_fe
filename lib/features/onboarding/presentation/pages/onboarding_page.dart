@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
-import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/welcome_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/features_benefits_page.dart';
@@ -17,7 +14,7 @@ import 'package:lonceng_unman_fe/features/onboarding/presentation/widgets/theme_
 /// Main onboarding page — fullscreen carousel with PageView.
 ///
 /// Flow: Welcome → Features → Permission → Theme Mode → Done.
-/// After completion, checks cached credentials and navigates accordingly.
+/// After completion, always navigates to the login page.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -29,7 +26,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   late final PageController _pageController;
   late final ThemeNotifier _themeNotifier;
   late final OnboardingRepository _onboardingRepository;
-  late final AuthBloc _authBloc;
   int _currentPage = 0;
   static const _totalPages = 4;
 
@@ -39,15 +35,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _pageController = PageController();
     _themeNotifier = Services.get<ThemeNotifier>();
     _onboardingRepository = Services.get<OnboardingRepository>();
-    _authBloc = AuthBloc(
-      Services.get<GetAuth>(),
-      academicCacheService: Services.get<AcademicCacheService>(),
-    );
   }
 
   @override
   void dispose() {
-    _authBloc.close();
     _pageController.dispose();
     super.dispose();
   }
@@ -62,18 +53,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     if (!mounted) return;
 
-    // 2. Check for cached credentials
-    final hasCached = await _authBloc.checkCachedCredentials();
-
-    if (!mounted) return;
-
-    if (hasCached) {
-      // 3a. Credentials exist → auto-login → navigate to home
-      context.go('/${RouteNames.home}');
-    } else {
-      // 3b. No credentials → navigate to login
-      context.go('/${RouteNames.login}');
-    }
+    // 2. Always navigate to login page
+    // Even if credentials are cached, user must go through login flow
+    // for proper auth validation and data-init pipeline
+    context.go('/${RouteNames.login}');
   }
 
   @override

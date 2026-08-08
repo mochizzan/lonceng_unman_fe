@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/utils/credential_body.dart';
@@ -44,15 +46,7 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String npm,
     required String password,
   }) async {
-    // Check cache first
-    final cachedList = await academicCacheService.loadKhsList(npm: npm);
-    if (cachedList != null) {
-      return cachedList
-          .map((e) => KhsSemesterModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-
-    // Cache miss — hit endpoint
+    // Always fetch fresh semesters from API (cache cleared elsewhere or not used for stale data)
     final response = await apiClient.post(
       '/api/v1/lms/khs/semesters',
       body: lmsCredentialBody(npm: npm, password: password),
@@ -75,6 +69,21 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String tahunAjaran,
     required String semester,
   }) async {
+    // Check if KHS data already exists in cache
+    final cached = await academicCacheService.loadKhsDataSemester(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+    );
+    if (cached != null) {
+      developer.log(
+        'KHS already cached, skipping download: $semester',
+        name: 'KhsDS',
+      );
+      return;
+    }
+
+    // Otherwise, download from API
     await apiClient.post(
       '/api/v1/lms/khs',
       body: lmsCredentialBody(
@@ -93,6 +102,21 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String tahunAjaran,
     required String semester,
   }) async {
+    // Check if KHS data already exists in cache
+    final cached = await academicCacheService.loadKhsDataSemester(
+      npm: npm,
+      tahunAjaran: tahunAjaran,
+      semester: semester,
+    );
+    if (cached != null) {
+      developer.log(
+        'KHS already cached, skipping extract: $semester',
+        name: 'KhsDS',
+      );
+      return;
+    }
+
+    // Otherwise, extract from API
     await apiClient.post(
       '/api/v1/lms/khs/extract',
       body: lmsCredentialBody(

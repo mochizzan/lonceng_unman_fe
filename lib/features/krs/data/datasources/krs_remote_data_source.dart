@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/utils/credential_body.dart';
@@ -23,6 +25,14 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
     required String npm,
     required String password,
   }) async {
+    // Check if KRS data already exists in cache
+    final cached = await academicCacheService.loadKrsData(npm: npm);
+    if (cached != null) {
+      developer.log('KRS already cached, skipping download', name: 'KrsDS');
+      return;
+    }
+
+    // Otherwise, download from API
     await apiClient.post(
       '/api/v1/lms/krs',
       body: lmsCredentialBody(npm: npm, password: password),
@@ -34,11 +44,14 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
     required String npm,
     required String password,
   }) async {
-    // Trigger extraction on the server side only.
-    // The actual KRS data is fetched later via getKrsData() which calls
-    // /api/v1/lms/krs/data and saves the real data to cache.
-    // NOTE: Do NOT save the extract response here — it only contains
-    // a success message, not the actual KRS data.
+    // Check if KRS data already exists in cache
+    final cached = await academicCacheService.loadKrsData(npm: npm);
+    if (cached != null) {
+      developer.log('KRS already cached, skipping extract', name: 'KrsDS');
+      return;
+    }
+
+    // Otherwise, extract from API
     await apiClient.post(
       '/api/v1/lms/krs/extract',
       body: lmsCredentialBody(npm: npm, password: password),

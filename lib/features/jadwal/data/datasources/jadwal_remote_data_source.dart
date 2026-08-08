@@ -109,8 +109,9 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
 
 // ── Shared helpers ──────────────────────────────────────────────────────
 
-/// Returns the date for the given Indonesian [dayName] in the current week.
-/// If [dayName] is today, returns [today].
+/// Returns the next occurrence of the given Indonesian [dayName] from [today].
+/// For weekly schedules: if today is Wednesday and target is Monday,
+/// returns next Monday (not last Monday).
 DateTime _dateForDay(String dayName, DateTime today) {
   const dayToWeekday = {
     'Senin': 1,
@@ -122,6 +123,8 @@ DateTime _dateForDay(String dayName, DateTime today) {
     'Minggu': 7,
   };
   final targetWeekday = dayToWeekday[dayName] ?? 1;
-  final daysUntil = (targetWeekday - today.weekday) % 7;
-  return today.add(Duration(days: daysUntil));
+  int diff = targetWeekday - today.weekday;
+  if (diff < 0) diff += 7;
+  if (diff == 0) return today;
+  return today.add(Duration(days: diff));
 }

@@ -1,294 +1,196 @@
-import 'dart:convert';
-import 'dart:developer' as developer;
 import 'package:hive_ce/hive.dart';
-import 'package:lonceng_unman_fe/core/cache/khs_cache_service.dart';
 
-/// Manages 4 separate Hive boxes for academic data caching.
+/// Manages 3 Hive boxes for academic data caching.
 ///
 /// Box structure:
-/// - `credentials_box`: NPM + password (plaintext JSON)
-/// - `krs_box`: KRS response data
-/// - `khs_box`: KHS response data (single semester)
-/// - `khs_list_box`: KHS list (all semesters)
+/// - `credentials`: NPM + password per user
+/// - `academic`: KRS, KHS list, and per-semester KHS data per user
 ///
-/// Each box stores data as JSON strings for simplicity.
-/// Data is keyed by NPM to support multiple users.
+/// Each user is keyed by NPM. Academic data is stored as nested Maps
+/// inside a single box entry per NPM.
 class AcademicCacheService {
-  static const _credentialsBox = 'credentials_box';
-  static const _krsBox = 'krs_box';
-  static const _khsBox = 'khs_box';
-  static const _khsListBox = 'khs_list_box';
+  // Box names
+  static const _credentialsBox = 'credentials';
+  static const _academicBox = 'academic';
 
-  late Box<String> _credentials;
-  late Box<String> _krs;
-  late Box<String> _khs;
-  late Box<String> _khsList;
-
-  final KhsCacheService _khsCache = KhsCacheService();
+  // Box instances
+  late Box<Map<String, dynamic>> _credentials;
+  late Box<Map<String, dynamic>> _academic;
 
   bool _initialized = false;
 
-  /// Initialize all Hive boxes. Call once at app startup.
   Future<void> initialize() async {
     if (_initialized) return;
-
     try {
-      _credentials = await Hive.openBox<String>(_credentialsBox);
-      _krs = await Hive.openBox<String>(_krsBox);
-      _khs = await Hive.openBox<String>(_khsBox);
-      _khsList = await Hive.openBox<String>(_khsListBox);
+      _credentials = await Hive.openBox<Map<String, dynamic>>(_credentialsBox);
+      _academic = await Hive.openBox<Map<String, dynamic>>(_academicBox);
       _initialized = true;
-      developer.log('AcademicCacheService initialized', name: 'AcademicCache');
     } catch (e) {
-      developer.log(
-        'AcademicCacheService init failed: $e',
-        name: 'AcademicCache',
-      );
-      // Try corruption recovery
-      try {
-        await Hive.deleteBoxFromDisk(_credentialsBox);
-        await Hive.deleteBoxFromDisk(_krsBox);
-        await Hive.deleteBoxFromDisk(_khsBox);
-        await Hive.deleteBoxFromDisk(_khsListBox);
-
-        _credentials = await Hive.openBox<String>(_credentialsBox);
-        _krs = await Hive.openBox<String>(_krsBox);
-        _khs = await Hive.openBox<String>(_khsBox);
-        _khsList = await Hive.openBox<String>(_khsListBox);
-        _initialized = true;
-        developer.log(
-          'AcademicCacheService recovered from corruption',
-          name: 'AcademicCache',
-        );
-      } catch (e2) {
-        developer.log(
-          'AcademicCacheService recovery failed: $e2',
-          name: 'AcademicCache',
-        );
-        rethrow;
-      }
+      // Corruption recovery
+      await Hive.deleteBoxFromDisk(_credentialsBox);
+      await Hive.deleteBoxFromDisk(_academicBox);
+      _credentials = await Hive.openBox<Map<String, dynamic>>(_credentialsBox);
+      _academic = await Hive.openBox<Map<String, dynamic>>(_academicBox);
+      _initialized = true;
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CREDENTIALS (NPM + Password)
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
+  // CREDENTIALS
+  // ═══════════════════════════════════════════════════════════════
 
-  static const _npmKey = 'npm';
-  static const _passwordKey = 'password';
-
-  /// Save credentials (NPM + password).
   Future<void> saveCredentials({
     required String npm,
     required String password,
   }) async {
-    await _credentials.put(_npmKey, npm);
-    await _credentials.put(_passwordKey, password);
+    await _credentials.put(npm, {'npm': npm, 'password': password});
   }
 
-  /// Load credentials. Returns null if not found.
   Future<Map<String, String>?> loadCredentials() async {
-    final npm = _credentials.get(_npmKey);
-    final password = _credentials.get(_passwordKey);
-    if (npm == null || password == null) return null;
-    return {'npm': npm, 'password': password};
+    // Get all credentials (first user for now)
+    if (_credentials.isEmpty) return null;
+    final data = _credentials.values.first;
+    return {
+      'npm': data['npm'] as String,
+      'password': data['password'] as String,
+    };
   }
 
-  /// Clear credentials.
+  Future<Map<String, String>?> loadCredentialsByNpm(String npm) async {
+    final data = _credentials.get(npm);
+    if (data == null) return null;
+    return {
+      'npm': data['npm'] as String,
+      'password': data['password'] as String,
+    };
+  }
+
+  bool hasCredentials() => _credentials.isNotEmpty;
+
   Future<void> clearCredentials() async {
     await _credentials.clear();
   }
 
-  /// Check if credentials exist.
-  bool hasCredentials() {
-    return _credentials.get(_npmKey) != null &&
-        _credentials.get(_passwordKey) != null;
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // ACADEMIC DATA (KRS + KHS)
+  // ═══════════════════════════════════════════════════════════════
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // KRS DATA
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// Save KRS response data.
+  // KRS
   Future<void> saveKrsData({
     required String npm,
     required Map<String, dynamic> data,
   }) async {
-    await _krs.put(npm, jsonEncode(data));
+    final existing = _academic.get(npm) ?? {};
+    existing['krs'] = data;
+    await _academic.put(npm, existing);
   }
 
-  /// Load KRS data. Returns null if not cached.
   Future<Map<String, dynamic>?> loadKrsData({required String npm}) async {
-    final raw = _krs.get(npm);
-    if (raw == null) return null;
-    try {
-      return jsonDecode(raw) as Map<String, dynamic>;
-    } catch (e) {
-      developer.log('Failed to decode KRS cache: $e', name: 'AcademicCache');
-      return null;
-    }
+    final data = _academic.get(npm);
+    return data?['krs'] as Map<String, dynamic>?;
   }
 
-  /// Check if KRS data exists for given NPM.
   bool hasKrsData({required String npm}) {
-    return _krs.get(npm) != null;
+    final data = _academic.get(npm);
+    return data != null && data['krs'] != null;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // KHS DATA (single semester — DEPRECATED, use semester-aware methods)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// Save KHS response data.
-  @Deprecated('Use saveKhsDataSemester with tahunAjaran+semester')
-  Future<void> saveKhsData({
+  // KHS LIST
+  Future<void> saveKhsList({
     required String npm,
-    required Map<String, dynamic> data,
+    required List<dynamic> data,
   }) async {
-    await _khs.put(npm, jsonEncode(data));
+    final existing = _academic.get(npm) ?? {};
+    existing['khsList'] = data;
+    await _academic.put(npm, existing);
   }
 
-  /// Load KHS data. Returns null if not cached.
-  @Deprecated('Use loadKhsDataSemester with tahunAjaran+semester')
-  Future<Map<String, dynamic>?> loadKhsData({required String npm}) async {
-    final raw = _khs.get(npm);
-    if (raw == null) return null;
-    try {
-      return jsonDecode(raw) as Map<String, dynamic>;
-    } catch (e) {
-      developer.log('Failed to decode KHS cache: $e', name: 'AcademicCache');
-      return null;
-    }
+  Future<List<dynamic>?> loadKhsList({required String npm}) async {
+    final data = _academic.get(npm);
+    return data?['khsList'] as List<dynamic>?;
   }
 
-  /// Check if KHS data exists for given NPM.
-  @Deprecated('Use hasKhsDataSemester with tahunAjaran+semester')
-  bool hasKhsData({required String npm}) {
-    return _khs.get(npm) != null;
+  bool hasKhsList({required String npm}) {
+    final data = _academic.get(npm);
+    return data != null && data['khsList'] != null;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // KHS DATA (semester-aware, via nested per-NPM boxes)
-  // ═══════════════════════════════════════════════════════════════════════
+  // KHS DATA (per semester)
+  String _khsKey(String tahunAjaran, String semester) =>
+      '${tahunAjaran}_$semester';
 
-  /// Save KHS data keyed by NPM + tahunAjaran + semester.
   Future<void> saveKhsDataSemester({
     required String npm,
     required String tahunAjaran,
     required String semester,
     required Map<String, dynamic> data,
   }) async {
-    await _khsCache.save(
-      npm: npm,
-      tahunAjaran: tahunAjaran,
-      semester: semester,
-      data: data,
-    );
+    final existing = _academic.get(npm) ?? {};
+    final khs = Map<String, dynamic>.from(existing['khs'] ?? {});
+    khs[_khsKey(tahunAjaran, semester)] = data;
+    existing['khs'] = khs;
+    await _academic.put(npm, existing);
   }
 
-  /// Load KHS data keyed by NPM + tahunAjaran + semester.
-  /// Returns null if not cached.
   Future<Map<String, dynamic>?> loadKhsDataSemester({
     required String npm,
     required String tahunAjaran,
     required String semester,
   }) async {
-    return _khsCache.load(
-      npm: npm,
-      tahunAjaran: tahunAjaran,
-      semester: semester,
-    );
+    final data = _academic.get(npm);
+    final khs = data?['khs'] as Map<String, dynamic>?;
+    return khs?[_khsKey(tahunAjaran, semester)] as Map<String, dynamic>?;
   }
 
-  /// Check if KHS data exists for given NPM + tahunAjaran + semester.
   Future<bool> hasKhsDataSemester({
     required String npm,
     required String tahunAjaran,
     required String semester,
   }) async {
-    return _khsCache.has(
-      npm: npm,
-      tahunAjaran: tahunAjaran,
-      semester: semester,
-    );
+    final data = _academic.get(npm);
+    final khs = data?['khs'] as Map<String, dynamic>?;
+    return khs?.containsKey(_khsKey(tahunAjaran, semester)) ?? false;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // KHS LIST (all semesters)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// Save KHS list data.
-  Future<void> saveKhsList({
-    required String npm,
-    required List<dynamic> data,
-  }) async {
-    await _khsList.put(npm, jsonEncode(data));
+  // CHECK DATA EXISTS
+  bool hasAcademicData({required String npm}) {
+    final data = _academic.get(npm);
+    return data != null && data.isNotEmpty;
   }
 
-  /// Load KHS list. Returns null if not cached.
-  Future<List<dynamic>?> loadKhsList({required String npm}) async {
-    final raw = _khsList.get(npm);
-    if (raw == null) return null;
-    try {
-      return jsonDecode(raw) as List<dynamic>;
-    } catch (e) {
-      developer.log(
-        'Failed to decode KHS list cache: $e',
-        name: 'AcademicCache',
-      );
-      return null;
-    }
-  }
-
-  /// Check if KHS list exists for given NPM.
-  bool hasKhsList({required String npm}) {
-    return _khsList.get(npm) != null;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // CLEAR
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
 
-  /// Clear KRS cache only.
   Future<void> clearKrsData() async {
-    await _krs.clear();
-    developer.log('KRS cache cleared', name: 'AcademicCache');
+    // Clear KRS for all users
+    for (final key in _academic.keys) {
+      final data = _academic.get(key);
+      if (data != null) {
+        data.remove('krs');
+        await _academic.put(key as String, data);
+      }
+    }
   }
 
-  /// Clear KHS cache only (single semester + semester list + nested semester boxes).
   Future<void> clearKhsData() async {
-    await _khs.clear();
-    await _khsList.clear();
-    // Also clear nested khs_{npm} boxes managed by KhsCacheService
-    final credentials = await loadCredentials();
-    if (credentials != null && credentials['npm'] != null) {
-      await _khsCache.clearAll(npm: credentials['npm']!);
+    // Clear KHS for all users
+    for (final key in _academic.keys) {
+      final data = _academic.get(key);
+      if (data != null) {
+        data.remove('khs');
+        data.remove('khsList');
+        await _academic.put(key as String, data);
+      }
     }
-    developer.log('KHS cache cleared (all boxes)', name: 'AcademicCache');
   }
 
-  /// Clear academic data only (KRS + KHS). Keeps credentials.
   Future<void> clearAcademicData() async {
-    await clearKrsData();
-    await clearKhsData();
-    developer.log('Academic data cleared (KRS + KHS)', name: 'AcademicCache');
+    await _academic.clear();
   }
 
-  /// Clear all cached data (credentials + KRS + KHS + nested KHS boxes).
   Future<void> clearAll() async {
-    // Get NPM before clearing credentials
-    final credentials = await loadCredentials();
-    final npm = credentials?['npm'];
-
     await _credentials.clear();
-    await _krs.clear();
-    await _khs.clear();
-    await _khsList.clear();
-
-    // Clear nested KHS boxes (must happen before credentials are gone)
-    if (npm != null) {
-      await _khsCache.clearAll(npm: npm);
-    }
-
-    developer.log('All academic cache cleared', name: 'AcademicCache');
+    await _academic.clear();
   }
 }

@@ -40,8 +40,6 @@ class DataInitializationRemoteDataSource {
   }) async* {
     // ── KRS ──
 
-    yield DataInitStatus.clearingCache;
-
     // Step 1: Download KRS PDF
     yield DataInitStatus.downloadingKrs;
     await _runStep(

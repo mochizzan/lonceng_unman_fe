@@ -84,6 +84,10 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state is AuthAuthenticated) {
             setState(() => _loginSuccess = true);
+            // Reset DataInitBloc state before triggering pipeline.
+            // This handles re-login after logout (state may be DataInitSuccess
+            // from previous session, which would block DataInitStarted).
+            context.read<DataInitBloc>().add(const DataInitReset());
             // Trigger data-init pipeline on the login page.
             context.read<DataInitBloc>().add(
               DataInitStarted(

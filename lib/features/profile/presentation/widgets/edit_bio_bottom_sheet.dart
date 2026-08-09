@@ -222,12 +222,15 @@ Future<void> showEditBioBottomSheet(
   BuildContext context, {
   required String? currentBio,
 }) {
+  // Capture the bloc from the calling context BEFORE showModalBottomSheet
+  // creates a new route/overlay that doesn't have the provider.
+  final profileBloc = context.read<ProfileBloc>();
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => BlocProvider.value(
-      value: context.read<ProfileBloc>(),
+    builder: (_) => BlocProvider.value(
+      value: profileBloc,
       child: EditBioBottomSheet(currentBio: currentBio),
     ),
   );

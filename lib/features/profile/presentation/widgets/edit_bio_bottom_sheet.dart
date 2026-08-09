@@ -6,7 +6,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
+import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 
@@ -35,6 +37,8 @@ class _EditBioBottomSheetState extends State<EditBioBottomSheet> {
     _controller = TextEditingController(text: widget.currentBio ?? '');
     _initialBio = widget.currentBio ?? '';
     _controller.addListener(_onTextChanged);
+    // Hide navbar when bottom sheet opens
+    Services.get<NavbarVisibilityNotifier>().hide();
   }
 
   void _onTextChanged() {
@@ -46,6 +50,8 @@ class _EditBioBottomSheetState extends State<EditBioBottomSheet> {
 
   @override
   void dispose() {
+    // Show navbar when bottom sheet closes
+    Services.get<NavbarVisibilityNotifier>().show();
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();

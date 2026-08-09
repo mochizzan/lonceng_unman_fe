@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/widgets/barrel.dart';
@@ -99,18 +100,28 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
         child: widget.child,
       ),
       bottomNavigationBar: showNav
-          ? AnimatedBuilder(
-              animation: _scrollHide.animation,
+          ? ListenableBuilder(
+              listenable: Services.get<NavbarVisibilityNotifier>(),
               builder: (_, child) {
-                return Transform.translate(
-                  offset: Offset(0, _scrollHide.value * _navBarHeight),
-                  child: Opacity(
-                    opacity: 1.0 - _scrollHide.value,
-                    child: IgnorePointer(
-                      ignoring: _scrollHide.isIgnored,
-                      child: child,
-                    ),
-                  ),
+                final navbarNotifier = Services.get<NavbarVisibilityNotifier>();
+                // Hide navbar when a modal (bottom sheet) is open
+                if (navbarNotifier.value) return const SizedBox.shrink();
+
+                return AnimatedBuilder(
+                  animation: _scrollHide.animation,
+                  builder: (_, child) {
+                    return Transform.translate(
+                      offset: Offset(0, _scrollHide.value * _navBarHeight),
+                      child: Opacity(
+                        opacity: 1.0 - _scrollHide.value,
+                        child: IgnorePointer(
+                          ignoring: _scrollHide.isIgnored,
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: child,
                 );
               },
               child: KeyedSubtree(

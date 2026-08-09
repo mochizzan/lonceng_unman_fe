@@ -16,6 +16,7 @@ import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
+import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
@@ -290,6 +291,9 @@ Future<void> main() async {
       // ── Auth Status Notifier (global, drives router redirect) ──
       final authStatusNotifier = AuthStatusNotifier();
       Services.register<AuthStatusNotifier>(authStatusNotifier);
+
+      // ── Navbar Visibility Notifier (global, controls navbar during modals) ──
+      Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
 
       // ── API Client (with 401→logout wiring) ──
       final apiClient = ApiClient(

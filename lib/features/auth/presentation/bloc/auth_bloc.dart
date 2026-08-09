@@ -144,13 +144,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthProfileRejected event,
     Emitter emit,
   ) async {
+    // Save NPM before clearing for cache cleanup
+    final npmToClear = _npm;
     _npm = '';
     _password = '';
     // Clear the cached profile data for this NPM on rejection.
-    try {
-      await _profileCacheService.clearProfile(npm: _npm);
-    } catch (_) {
-      // Non-fatal: cache might not exist yet.
+    if (npmToClear.isNotEmpty) {
+      try {
+        await _profileCacheService.clearProfile(npm: npmToClear);
+      } catch (_) {
+        // Non-fatal: cache might not exist yet.
+      }
     }
     emit(const AuthInitial());
   }

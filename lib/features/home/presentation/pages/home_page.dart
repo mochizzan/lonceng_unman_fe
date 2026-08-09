@@ -12,7 +12,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_refresh_overlay.dart';
@@ -148,6 +150,24 @@ class _HomePageViewState extends State<_HomePageView>
     return RefreshIndicator(
       onRefresh: () async {
         try {
+          // Load credentials from cache for data-init pipeline
+          final academicCache = Services.get<AcademicCacheService>();
+          final credentials = await academicCache.loadCredentials();
+          if (credentials == null || !context.mounted) {
+            if (mounted && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Kredensial tidak ditemukan'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            return;
+          }
+
+          final npm = credentials['npm'] ?? '';
+          final password = credentials['password'] ?? '';
+
           // Reset data init state first
           context.read<DataInitBloc>().add(const DataInitReset());
 
@@ -155,8 +175,10 @@ class _HomePageViewState extends State<_HomePageView>
           if (!context.mounted) return;
           DataRefreshOverlay.show(context);
 
-          // Trigger full refresh via BLoC (reads credentials internally)
-          context.read<HomeBloc>().add(const HomeFullRefreshRequested());
+          // Trigger data-init pipeline with credentials
+          context.read<DataInitBloc>().add(
+            DataInitStarted(npm: npm, password: password),
+          );
         } catch (e) {
           if (mounted && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

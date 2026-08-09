@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
+import 'package:lonceng_unman_fe/core/constants/app_durations.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 
 /// Base API client for HTTP communication.
@@ -15,7 +16,7 @@ import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 class ApiClient {
   ApiClient({
     required this.baseUrl,
-    this.timeout = const Duration(seconds: 30),
+    this.timeout = AppDurations.apiRequest,
     http.Client? client,
     this.onAuthError,
   }) : _client = client ?? http.Client();

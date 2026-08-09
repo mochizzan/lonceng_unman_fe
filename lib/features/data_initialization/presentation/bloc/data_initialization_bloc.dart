@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/constants/app_durations.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
@@ -9,7 +10,7 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 
 /// Max wall-clock time for the full post-login pipeline.
-const Duration kDataInitTimeout = Duration(seconds: 90);
+const Duration kDataInitTimeout = AppDurations.dataInitPipeline;
 
 class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
   final GetDataInitialization _getDataInit;

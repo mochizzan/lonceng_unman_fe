@@ -9,6 +9,9 @@ import 'package:lonceng_unman_fe/features/auth/domain/usecases/save_auth_credent
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 
 class FakeGetAuth implements GetAuth {
   final AuthEntity result;
@@ -38,6 +41,58 @@ class FakeLoadAuthCredentials implements LoadAuthCredentials {
   Future<Map<String, String>?> call() async => null;
 }
 
+/// No-op student profile cache service for tests.
+class FakeStudentProfileCacheService implements StudentProfileCacheService {
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> saveProfile({
+    required String npm,
+    required Map<String, dynamic> profileData,
+  }) async {}
+
+  @override
+  Future<Map<String, dynamic>?> loadProfile({required String npm}) async =>
+      null;
+
+  @override
+  bool hasProfile({required String npm}) => false;
+
+  @override
+  Future<void> clearProfile({required String npm}) async {}
+
+  @override
+  Future<void> clearAll() async {}
+}
+
+/// Fake remote data source that returns a minimal test model.
+class FakeStudentProfileRemoteDataSource
+    implements StudentProfileRemoteDataSource {
+  @override
+  Future<void> scrapeProfile({
+    required String npm,
+    required String password,
+  }) async {}
+
+  @override
+  Future<StudentProfileModel> getProfile({
+    required String npm,
+    required String password,
+  }) async {
+    return const StudentProfileModel(
+      nim: '21081010001',
+      nisn: '',
+      nik: '',
+      namaMahasiswa: 'Test User',
+      programStudi: 'SI',
+      semester: 'GANJIL',
+      fakultas: 'Teknik',
+      angkatan: '2022',
+    );
+  }
+}
+
 void main() {
   final authEntity = AuthEntity(npm: '21081010001', password: 'testpass');
 
@@ -45,18 +100,36 @@ void main() {
     getAuth,
     saveCredentials: FakeSaveAuthCredentials(),
     loadCredentials: FakeLoadAuthCredentials(),
+    profileDataSource: FakeStudentProfileRemoteDataSource(),
+    profileCacheService: FakeStudentProfileCacheService(),
   );
 
   group('AuthBloc', () {
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthAuthenticated] on valid submit',
+      'emits [AuthLoading, AuthProfileReview] on valid submit',
       build: () => _bloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('21081010001'));
         bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
-      expect: () => [AuthLoading(), AuthAuthenticated(authEntity)],
+      expect: () => [
+        AuthLoading(),
+        AuthProfileReview(
+          const StudentProfileModel(
+            nim: '21081010001',
+            nisn: '',
+            nik: '',
+            namaMahasiswa: 'Test User',
+            programStudi: 'SI',
+            semester: 'GANJIL',
+            fakultas: 'Teknik',
+            angkatan: '2022',
+          ),
+          '21081010001',
+          'testpass',
+        ),
+      ],
     );
 
     blocTest<AuthBloc, AuthState>(
@@ -80,14 +153,30 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits AuthError when NPM is 10 digits (valid edge)',
+      'emits [AuthLoading, AuthProfileReview] when NPM is 10 digits (valid edge)',
       build: () => _bloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('1234567890'));
         bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
       },
-      expect: () => [AuthLoading(), AuthAuthenticated(authEntity)],
+      expect: () => [
+        AuthLoading(),
+        AuthProfileReview(
+          const StudentProfileModel(
+            nim: '21081010001',
+            nisn: '',
+            nik: '',
+            namaMahasiswa: 'Test User',
+            programStudi: 'SI',
+            semester: 'GANJIL',
+            fakultas: 'Teknik',
+            angkatan: '2022',
+          ),
+          '1234567890',
+          'testpass',
+        ),
+      ],
     );
 
     blocTest<AuthBloc, AuthState>(

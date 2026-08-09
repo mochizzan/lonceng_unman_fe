@@ -1,4 +1,5 @@
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
+import 'package:lonceng_unman_fe/features/student_profile/domain/entities/student_profile_entity.dart';
 
 abstract class AuthState {
   const AuthState();
@@ -55,4 +56,26 @@ class AuthError extends AuthState {
 
   @override
   int get hashCode => message.hashCode;
+}
+
+/// Displayed when a student profile has been scraped and requires user
+/// confirmation before the account is fully authenticated.
+class AuthProfileReview extends AuthState {
+  final StudentProfileEntity profile;
+  final String npm;
+  final String password;
+
+  const AuthProfileReview(this.profile, this.npm, this.password);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AuthProfileReview &&
+          runtimeType == other.runtimeType &&
+          profile == other.profile &&
+          npm == other.npm &&
+          password == other.password;
+
+  @override
+  int get hashCode => Object.hash(profile, npm, password);
 }

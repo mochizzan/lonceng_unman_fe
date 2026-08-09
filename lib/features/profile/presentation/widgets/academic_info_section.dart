@@ -23,9 +23,16 @@ import 'package:lonceng_unman_fe/features/profile/domain/entities/profile_entity
 /// a secondary label ([ColorScheme.onSurfaceVariant]) sits above a bold value
 /// ([ColorScheme.onSurface]). Rows are separated by a [ColorScheme.outlineVariant]
 class AcademicInfoSection extends StatelessWidget {
-  const AcademicInfoSection({super.key, required this.data});
+  const AcademicInfoSection({
+    super.key,
+    required this.data,
+    this.onSelengkapnyaPressed,
+  });
 
   final ProfileEntity data;
+
+  /// Optional callback when "Selengkapnya" button is pressed.
+  final VoidCallback? onSelengkapnyaPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +81,23 @@ class AcademicInfoSection extends StatelessWidget {
             iconOffset: iconPlusGap,
             showDivider: false,
           ),
+          // Selengkapnya button inside container
+          if (onSelengkapnyaPressed != null) ...[
+            SizedBox(height: sp(context, 16)),
+            Center(
+              child: GestureDetector(
+                onTap: onSelengkapnyaPressed,
+                child: Text(
+                  'Selengkapnya →',
+                  style: TextStyle(
+                    fontSize: AppDimens.textSM,
+                    fontWeight: FontWeight.w600,
+                    color: cs.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

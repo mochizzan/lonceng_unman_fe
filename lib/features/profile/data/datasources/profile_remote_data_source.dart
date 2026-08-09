@@ -3,14 +3,18 @@
 // Defines the contract for fetching profile screen data from cache
 // and refreshing from remote API.
 
+import 'dart:developer' as developer;
+
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/profile/data/models/profile_model.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class ProfileRemoteDataSource {
@@ -29,11 +33,13 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   final AcademicCacheService academicCacheService;
   final BioCacheService bioCacheService;
   final ApiClient apiClient;
+  final StudentProfileCacheService studentProfileCacheService;
 
   const ProfileRemoteDataSourceImpl({
     required this.academicCacheService,
     required this.bioCacheService,
     required this.apiClient,
+    required this.studentProfileCacheService,
   });
 
   @override
@@ -88,13 +94,41 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       // Bio may not exist yet or box may be corrupted
     }
 
+    // Try to load profile data from StudentProfileCacheService
+    String userName = krsData.mahasiswa.nama;
+    String npmValue = krsData.mahasiswa.npm;
+    String studyProgram = krsData.mahasiswa.programStudi;
+    String semester = krsData.periode.semester;
+    try {
+      final profileJson = await studentProfileCacheService.loadProfile(
+        npm: npm,
+      );
+      if (profileJson != null) {
+        final profile = StudentProfileModel.fromJson(profileJson);
+        userName = profile.namaMahasiswa.isNotEmpty
+            ? profile.namaMahasiswa
+            : userName;
+        npmValue = profile.nim.isNotEmpty ? profile.nim : npmValue;
+        studyProgram = profile.programStudi.isNotEmpty
+            ? profile.programStudi
+            : studyProgram;
+        semester = profile.semester.isNotEmpty ? profile.semester : semester;
+        developer.log(
+          'Profile loaded from StudentProfileCacheService',
+          name: 'ProfileDS',
+        );
+      }
+    } catch (_) {
+      // Student profile cache may not be available yet.
+    }
+
     final prefs = await SharedPreferences.getInstance();
     return ProfileModel(
-      userName: krsData.mahasiswa.nama,
+      userName: userName,
       avatarUrl: '',
-      npm: krsData.mahasiswa.npm,
-      studyProgram: krsData.mahasiswa.programStudi,
-      semester: krsData.periode.semester,
+      npm: npmValue,
+      studyProgram: studyProgram,
+      semester: semester,
       gpa: gpa,
       sksTaken: cumulativeSks,
       sksTotal: 120, // Standard graduation requirement

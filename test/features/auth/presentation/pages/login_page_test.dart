@@ -17,6 +17,9 @@ import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/da
 import 'package:lonceng_unman_fe/features/data_initialization/domain/repositories/data_initialization_repository.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 
 /// Fake [AuthRepository] — completes login only when the test releases it
 /// via [completer], so we can assert the loading state.
@@ -42,10 +45,71 @@ class _FakeLoadCredentials implements LoadAuthCredentials {
   Future<Map<String, String>?> call() async => null;
 }
 
+/// Fake in-memory untuk StudentProfileCacheService — tanpa Hive.
+class _FakeStudentProfileCacheService extends StudentProfileCacheService {
+  final Map<String, Map<String, dynamic>> _cache = {};
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> saveProfile({
+    required String npm,
+    required Map<String, dynamic> profileData,
+  }) async {
+    _cache[npm] = profileData;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> loadProfile({required String npm}) async {
+    return _cache[npm];
+  }
+
+  @override
+  bool hasProfile({required String npm}) => _cache.containsKey(npm);
+
+  @override
+  Future<void> clearProfile({required String npm}) async {
+    _cache.remove(npm);
+  }
+
+  @override
+  Future<void> clearAll() async => _cache.clear();
+}
+
+/// Fake StudentProfileRemoteDataSource — return model kosong.
+class _FakeStudentProfileRemoteDataSource
+    implements StudentProfileRemoteDataSource {
+  @override
+  Future<void> scrapeProfile({
+    required String npm,
+    required String password,
+  }) async {}
+
+  @override
+  Future<StudentProfileModel> getProfile({
+    required String npm,
+    required String password,
+  }) async {
+    return const StudentProfileModel(
+      nim: '',
+      nisn: '',
+      nik: '',
+      namaMahasiswa: 'Test User',
+      programStudi: 'SI',
+      semester: 'GANJIL',
+      fakultas: 'Teknik',
+      angkatan: '2022',
+    );
+  }
+}
+
 AuthBloc _makeBloc(GetAuth getAuth) => AuthBloc(
   getAuth,
   saveCredentials: _FakeSaveCredentials(),
   loadCredentials: _FakeLoadCredentials(),
+  profileDataSource: _FakeStudentProfileRemoteDataSource(),
+  profileCacheService: _FakeStudentProfileCacheService(),
 );
 
 /// Repositori data-init palsu yang tidak pernah memancarkan progres.

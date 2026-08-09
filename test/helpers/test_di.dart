@@ -31,6 +31,10 @@ import 'package:lonceng_unman_fe/features/notification/domain/repositories/notif
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
+import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 
 /// Shared ThemeNotifier for tests.
 final testThemeNotifier = ThemeNotifier();
@@ -275,6 +279,67 @@ class _FakeNotificationScheduler implements NotificationScheduler {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
+/// Fake in-memory untuk StudentProfileCacheService — tanpa Hive.
+class _FakeStudentProfileCacheService extends StudentProfileCacheService {
+  final Map<String, Map<String, dynamic>> _cache = {};
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> saveProfile({
+    required String npm,
+    required Map<String, dynamic> profileData,
+  }) async {
+    _cache[npm] = profileData;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> loadProfile({required String npm}) async {
+    return _cache[npm];
+  }
+
+  @override
+  bool hasProfile({required String npm}) => _cache.containsKey(npm);
+
+  @override
+  Future<void> clearProfile({required String npm}) async {
+    _cache.remove(npm);
+  }
+
+  @override
+  Future<void> clearAll() async => _cache.clear();
+}
+
+/// Fake untuk StudentProfileRemoteDataSource — return model kosong.
+class _FakeStudentProfileRemoteDataSource
+    implements StudentProfileRemoteDataSource {
+  @override
+  Future<void> scrapeProfile({
+    required String npm,
+    required String password,
+  }) async {
+    // No-op for tests
+  }
+
+  @override
+  Future<StudentProfileModel> getProfile({
+    required String npm,
+    required String password,
+  }) async {
+    return const StudentProfileModel(
+      nim: '',
+      nisn: '',
+      nik: '',
+      namaMahasiswa: 'Test User',
+      programStudi: 'SI',
+      semester: 'GANJIL',
+      fakultas: 'Teknik',
+      angkatan: '2022',
+    );
+  }
+}
+
 /// Register all DI dependencies needed by pages.
 /// Call in setUp() or setUpAll() before any widget rendering.
 void registerTestDependencies() {
@@ -299,6 +364,13 @@ void registerTestDependencies() {
   Services.register<NotificationRepository>(_FakeNotificationRepo());
   Services.register<NotificationService>(_FakeNotificationService());
   Services.register<NotificationScheduler>(_FakeNotificationScheduler());
+  Services.register<StudentProfileCacheService>(
+    _FakeStudentProfileCacheService(),
+  );
+  Services.register<StudentProfileRemoteDataSource>(
+    _FakeStudentProfileRemoteDataSource(),
+  );
+  Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
 }
 
 /// Unregister all DI dependencies.

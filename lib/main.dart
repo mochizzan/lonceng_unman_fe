@@ -49,6 +49,8 @@ import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/d
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
@@ -317,6 +319,18 @@ Future<void> main() async {
       Services.register<LoadAuthCredentials>(
         LoadAuthCredentials(academicCacheService),
       );
+
+      // ── Student Profile (profile scrape + confirmation flow) ──
+      final studentProfileCacheService = StudentProfileCacheService();
+      await studentProfileCacheService.initialize();
+      Services.register<StudentProfileCacheService>(studentProfileCacheService);
+      Services.register<StudentProfileRemoteDataSource>(
+        StudentProfileRemoteDataSourceImpl(
+          apiClient: apiClient,
+          cacheService: studentProfileCacheService,
+        ),
+      );
+
       // ── KRS ──
       final krsDataSource = KrsRemoteDataSourceImpl(
         apiClient: apiClient,
@@ -335,10 +349,11 @@ Future<void> main() async {
       final getKhs = GetKhs(KhsRepositoryImpl(remoteDataSource: khsDataSource));
       Services.register<GetKhs>(getKhs);
 
-      // ── Data Initialization (KRS + KHS pipeline) ──
+      // ── Data Initialization (Profile + KRS + KHS pipeline) ──
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
         getKhs: getKhs,
+        profileDataSource: Services.get<StudentProfileRemoteDataSource>(),
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(
@@ -349,30 +364,32 @@ Future<void> main() async {
         ),
       );
 
-      // ── Home (real KRS/KHS data) ──
+      // ── Home (real KRS/KHS data + StudentProfile) ──
       Services.register<GetHome>(
         GetHome(
           HomeRepositoryImpl(
             remoteDataSource: HomeRemoteDataSourceImpl(
               academicCacheService: academicCacheService,
+              studentProfileCacheService: studentProfileCacheService,
             ),
           ),
         ),
       );
 
-      // ── Jadwal (real KRS data) ──
+      // ── Jadwal (real KRS data + StudentProfile) ──
       Services.register<GetJadwal>(
         GetJadwal(
           JadwalRepositoryImpl(
             remoteDataSource: JadwalRemoteDataSourceImpl(
               krsDataSource: krsDataSource,
               academicCacheService: academicCacheService,
+              studentProfileCacheService: studentProfileCacheService,
             ),
           ),
         ),
       );
 
-      // ── Profile (real KRS/KHS data) ──
+      // ── Profile (real KRS/KHS data + StudentProfile) ──
       Services.register<GetProfile>(
         GetProfile(
           ProfileRepositoryImpl(
@@ -380,6 +397,7 @@ Future<void> main() async {
               academicCacheService: academicCacheService,
               bioCacheService: bioCacheService,
               apiClient: apiClient,
+              studentProfileCacheService: studentProfileCacheService,
             ),
           ),
         ),

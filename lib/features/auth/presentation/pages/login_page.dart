@@ -17,6 +17,7 @@ import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bell_logo.dart';
+import 'package:lonceng_unman_fe/features/auth/presentation/widgets/review_screen.dart';
 import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
@@ -87,15 +88,26 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
       child: Scaffold(
-        body: Stack(
-          children: [
-            AuthBackground(
-              child: SafeArea(
-                child: Center(
-                  child: BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, authState) {
-                      final showProgress = authState is AuthAuthenticated;
-                      return showProgress
+        body: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            // Overlay: profile review screen for account confirmation
+            if (authState is AuthProfileReview) {
+              return ReviewScreen(
+                data: authState.profile,
+                onConfirm: () =>
+                    context.read<AuthBloc>().add(const AuthProfileConfirmed()),
+                onReject: () =>
+                    context.read<AuthBloc>().add(const AuthProfileRejected()),
+              );
+            }
+
+            // Login form or progress UI
+            return Stack(
+              children: [
+                AuthBackground(
+                  child: SafeArea(
+                    child: Center(
+                      child: authState is AuthAuthenticated
                           ? _buildProgressUI(context)
                           : SingleChildScrollView(
                               padding: EdgeInsets.fromLTRB(
@@ -125,13 +137,13 @@ class _LoginPageState extends State<LoginPage> {
                                   _buildFooter(cs),
                                 ],
                               ),
-                            );
-                    },
+                            ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

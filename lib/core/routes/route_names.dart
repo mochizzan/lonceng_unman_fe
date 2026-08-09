@@ -16,4 +16,5 @@ class RouteNames {
   static const String settings = 'settings';
   static const String onboarding = 'onboarding';
   static const String avatarCrop = 'avatar-crop';
+  static const String profilLengkap = 'profile-lengkap';
 }

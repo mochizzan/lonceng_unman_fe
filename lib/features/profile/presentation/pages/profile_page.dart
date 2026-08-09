@@ -13,7 +13,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
@@ -338,8 +340,13 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
                 // diikat ke NPM lewat BlocListener di build().
                 ProfileHeaderCard(data: data),
                 const SizedBox(height: AppDimens.space16),
-                // Info Akademik (NPM, Program Studi, Semester)
-                AcademicInfoSection(data: data),
+                // Info Akademik (NPM, Program Studi, Semester) + Selengkapnya
+                AcademicInfoSection(
+                  data: data,
+                  onSelengkapnyaPressed: () {
+                    context.pushNamed(RouteNames.profilLengkap);
+                  },
+                ),
                 const SizedBox(height: AppDimens.space16),
                 // Tab Section header
                 _buildTabSection(cs),

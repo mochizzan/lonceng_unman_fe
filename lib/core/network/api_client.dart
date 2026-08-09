@@ -50,6 +50,34 @@ class ApiClient {
     );
   }
 
+  /// Scrape student profile from LMS.
+  ///
+  /// Sends [npm] and [password] to the server which scrapes
+  /// the profile data from the LMS and returns it.
+  Future<Map<String, dynamic>> scrapeStudentProfile({
+    required String npm,
+    required String password,
+  }) {
+    return post(
+      '/api/v1/lms/student-profile',
+      body: {'npm': npm, 'password': password},
+    );
+  }
+
+  /// Get student profile data from the server.
+  ///
+  /// Returns cached or previously-scraped profile data for the
+  /// given [npm] and [password].
+  Future<Map<String, dynamic>> getStudentProfile({
+    required String npm,
+    required String password,
+  }) {
+    return post(
+      '/api/v1/lms/student-profile/data',
+      body: {'npm': npm, 'password': password},
+    );
+  }
+
   /// Shared request executor with consistent error handling.
   Future<Map<String, dynamic>> _executeRequest(
     Future<http.Response> Function() request,

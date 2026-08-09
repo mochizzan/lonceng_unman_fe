@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
+import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 
 void main() {
+  setUpAll(() {
+    Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
+  });
+
+  tearDownAll(() {
+    Services.clear();
+  });
+
   testWidgets('MainShellScaffold renders child and FloatingNavBar', (
     WidgetTester tester,
   ) async {

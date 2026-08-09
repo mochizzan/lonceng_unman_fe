@@ -1,7 +1,10 @@
 // home - Abstract data source (interface)
 //
 // Defines the contract for fetching home screen data from cache.
+import 'dart:developer' as developer;
+
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
@@ -10,6 +13,7 @@ import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/entities/krs_entity.dart';
+import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 
 abstract class HomeRemoteDataSource {
   /// Fetches home screen data for the authenticated user.
@@ -23,8 +27,12 @@ abstract class HomeRemoteDataSource {
 /// [HomeModel] used by the Home page.
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   final AcademicCacheService academicCacheService;
+  final StudentProfileCacheService studentProfileCacheService;
 
-  const HomeRemoteDataSourceImpl({required this.academicCacheService});
+  const HomeRemoteDataSourceImpl({
+    required this.academicCacheService,
+    required this.studentProfileCacheService,
+  });
 
   @override
   Future<HomeModel> getHomeData() async {
@@ -91,16 +99,42 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     // Find next upcoming/ongoing class
     final nextClass = _findNextClass(krsData.mataKuliah, today, now);
 
+    // Try to load profile data from StudentProfileCacheService
+    String userName = krsData.mahasiswa.nama;
+    String studyProgram = krsData.mahasiswa.programStudi;
+    String semester = khsSemester ?? krsData.periode.semester;
+    try {
+      final profileJson = await studentProfileCacheService.loadProfile(
+        npm: npm,
+      );
+      if (profileJson != null) {
+        final profile = StudentProfileModel.fromJson(profileJson);
+        userName = profile.namaMahasiswa.isNotEmpty
+            ? profile.namaMahasiswa
+            : userName;
+        studyProgram = profile.programStudi.isNotEmpty
+            ? profile.programStudi
+            : studyProgram;
+        semester = profile.semester.isNotEmpty ? profile.semester : semester;
+        developer.log(
+          'Profile loaded from StudentProfileCacheService',
+          name: 'HomeDS',
+        );
+      }
+    } catch (_) {
+      // Student profile cache may not be available yet.
+    }
+
     return HomeModel(
-      userName: krsData.mahasiswa.nama,
+      userName: userName,
       avatarUrl: '',
       nextClass: nextClass,
       scheduleItems: todaySchedule,
       sksTaken: krsData.totalSks,
       todayClassCount: todaySchedule.length,
-      semester: khsSemester ?? krsData.periode.semester,
+      semester: semester,
       tahunAjaran: krsData.periode.tahunAjaran,
-      studyProgram: krsData.mahasiswa.programStudi,
+      studyProgram: studyProgram,
       gpaGanjil: gpaGanjil,
       gpaGenap: gpaGenap,
     );

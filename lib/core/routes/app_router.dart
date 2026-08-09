@@ -43,6 +43,7 @@ import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubi
 import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/avatar_crop_page.dart';
+import 'package:lonceng_unman_fe/features/student_profile/presentation/pages/profil_lengkap_page.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
 ///
@@ -202,6 +203,13 @@ List<RouteBase> _buildRoutes(
           child: KhsDetailPage(tahunAjaran: tahunAjaran, semester: semester),
         );
       },
+    ),
+
+    // --- Profil Lengkap (standalone; accessible from Profile page) ---
+    GoRoute(
+      name: RouteNames.profilLengkap,
+      path: '/${RouteNames.profilLengkap}',
+      builder: (context, state) => const ProfilLengkapPage(),
     ),
   ];
 }

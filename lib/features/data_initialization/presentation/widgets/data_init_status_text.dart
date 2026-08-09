@@ -12,6 +12,10 @@ String dataInitStatusText(DataInitStatus status, {String? detail}) {
       return 'Memverifikasi akun...';
     case DataInitStatus.clearingCache:
       return 'Membersihkan cache...';
+    case DataInitStatus.scrapingProfile:
+      return 'Mengambil data profil...';
+    case DataInitStatus.gettingProfile:
+      return 'Memproses data profil...';
     case DataInitStatus.downloadingKrs:
       return 'Mengunduh KRS...';
     case DataInitStatus.extractingKrs:

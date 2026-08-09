@@ -3,6 +3,7 @@
 // Defines the contract for fetching weekly schedule data from a remote source.
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/core/data/models/schedule_item_model.dart';
@@ -18,10 +19,12 @@ abstract class JadwalRemoteDataSource {
 class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   final KrsRemoteDataSource krsDataSource;
   final AcademicCacheService academicCacheService;
+  final StudentProfileCacheService studentProfileCacheService;
 
   const JadwalRemoteDataSourceImpl({
     required this.krsDataSource,
     required this.academicCacheService,
+    required this.studentProfileCacheService,
   });
 
   @override

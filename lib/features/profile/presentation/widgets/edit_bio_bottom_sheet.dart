@@ -55,8 +55,11 @@ class _EditBioBottomSheetState extends State<EditBioBottomSheet> {
 
   @override
   void dispose() {
-    // Show navbar when bottom sheet closes
-    Services.get<NavbarVisibilityNotifier>().show();
+    // Show navbar when bottom sheet closes — defer to post-frame to avoid
+    // setState when widget tree is locked during finalizeTree.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Services.get<NavbarVisibilityNotifier>().show();
+    });
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();

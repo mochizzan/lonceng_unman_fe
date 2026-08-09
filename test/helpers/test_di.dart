@@ -222,6 +222,7 @@ class _FakeDataInitRepo implements DataInitializationRepository {
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
+    bool forceRefresh = true,
   }) async* {}
 }
 
@@ -318,6 +319,7 @@ class _FakeStudentProfileRemoteDataSource
   Future<void> scrapeProfile({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {
     // No-op for tests
   }
@@ -326,6 +328,7 @@ class _FakeStudentProfileRemoteDataSource
   Future<StudentProfileModel> getProfile({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {
     return const StudentProfileModel(
       nim: '',
@@ -334,8 +337,8 @@ class _FakeStudentProfileRemoteDataSource
       namaMahasiswa: 'Test User',
       programStudi: 'SI',
       semester: 'GANJIL',
-      fakultas: 'Teknik',
-      angkatan: '2022',
+      kelas: 'Teknik',
+      statusKonversi: '2022',
     );
   }
 }

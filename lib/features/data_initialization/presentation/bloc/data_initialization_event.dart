@@ -6,8 +6,13 @@ abstract class DataInitEvent {
 class DataInitStarted extends DataInitEvent {
   final String npm;
   final String password;
+  final bool forceRefresh;
 
-  const DataInitStarted({required this.npm, required this.password});
+  const DataInitStarted({
+    required this.npm,
+    required this.password,
+    this.forceRefresh = true,
+  });
 
   @override
   bool operator ==(Object other) =>
@@ -15,10 +20,11 @@ class DataInitStarted extends DataInitEvent {
       other is DataInitStarted &&
           runtimeType == other.runtimeType &&
           npm == other.npm &&
-          password == other.password;
+          password == other.password &&
+          forceRefresh == other.forceRefresh;
 
   @override
-  int get hashCode => Object.hash(npm, password);
+  int get hashCode => Object.hash(npm, password, forceRefresh);
 }
 
 class DataInitReset extends DataInitEvent {

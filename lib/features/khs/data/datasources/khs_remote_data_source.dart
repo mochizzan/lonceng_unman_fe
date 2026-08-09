@@ -16,6 +16,7 @@ abstract class KhsRemoteDataSource {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   });
 
   Future<void> extractKhs({
@@ -23,12 +24,14 @@ abstract class KhsRemoteDataSource {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   });
 
   Future<KhsModel> getKhsData({
     required String npm,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   });
 }
 
@@ -68,19 +71,22 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) async {
-    // Check if KHS data already exists in cache
-    final cached = await academicCacheService.loadKhsDataSemester(
-      npm: npm,
-      tahunAjaran: tahunAjaran,
-      semester: semester,
-    );
-    if (cached != null) {
-      developer.log(
-        'KHS already cached, skipping download: $semester',
-        name: 'KhsDS',
+    // Check if KHS data already exists in cache (skip if forceRefresh)
+    if (!forceRefresh) {
+      final cached = await academicCacheService.loadKhsDataSemester(
+        npm: npm,
+        tahunAjaran: tahunAjaran,
+        semester: semester,
       );
-      return;
+      if (cached != null) {
+        developer.log(
+          'KHS already cached, skipping download: $semester',
+          name: 'KhsDS',
+        );
+        return;
+      }
     }
 
     // Otherwise, download from API
@@ -101,19 +107,22 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) async {
-    // Check if KHS data already exists in cache
-    final cached = await academicCacheService.loadKhsDataSemester(
-      npm: npm,
-      tahunAjaran: tahunAjaran,
-      semester: semester,
-    );
-    if (cached != null) {
-      developer.log(
-        'KHS already cached, skipping extract: $semester',
-        name: 'KhsDS',
+    // Check if KHS data already exists in cache (skip if forceRefresh)
+    if (!forceRefresh) {
+      final cached = await academicCacheService.loadKhsDataSemester(
+        npm: npm,
+        tahunAjaran: tahunAjaran,
+        semester: semester,
       );
-      return;
+      if (cached != null) {
+        developer.log(
+          'KHS already cached, skipping extract: $semester',
+          name: 'KhsDS',
+        );
+        return;
+      }
     }
 
     // Otherwise, extract from API
@@ -133,15 +142,18 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
     required String npm,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) async {
-    // Check cache first
-    final cachedData = await academicCacheService.loadKhsDataSemester(
-      npm: npm,
-      tahunAjaran: tahunAjaran,
-      semester: semester,
-    );
-    if (cachedData != null) {
-      return KhsModel.fromJson(cachedData);
+    // Check cache first (skip if forceRefresh)
+    if (!forceRefresh) {
+      final cachedData = await academicCacheService.loadKhsDataSemester(
+        npm: npm,
+        tahunAjaran: tahunAjaran,
+        semester: semester,
+      );
+      if (cachedData != null) {
+        return KhsModel.fromJson(cachedData);
+      }
     }
 
     // Cache miss — hit endpoint

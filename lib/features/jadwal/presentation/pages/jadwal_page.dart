@@ -8,7 +8,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
@@ -88,6 +92,18 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
 
     return RefreshIndicator(
       onRefresh: () async {
+        final academicCache = Services.get<AcademicCacheService>();
+        final credentials = await academicCache.loadCredentials();
+        if (credentials == null || !context.mounted) return;
+
+        final npm = credentials['npm'] ?? '';
+        final password = credentials['password'] ?? '';
+
+        context.read<DataInitBloc>().add(const DataInitReset());
+        context.read<DataInitBloc>().add(
+          DataInitStarted(npm: npm, password: password, forceRefresh: true),
+        );
+
         context.read<JadwalBloc>().add(const JadwalRefreshRequested());
       },
       child: SingleChildScrollView(

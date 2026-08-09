@@ -49,6 +49,8 @@ import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/d
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/core/overlay/cubit/refresh_overlay_cubit.dart';
+import 'package:lonceng_unman_fe/core/overlay/widgets/global_refresh_overlay.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
@@ -537,19 +539,22 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
         // AvatarCubit singleton milik DI — dipakai bersama header Home dan
         // halaman Profile. Memakai .value agar tidak ditutup oleh widget ini.
         BlocProvider<AvatarCubit>.value(value: _avatarCubit),
+        BlocProvider<RefreshOverlayCubit>(create: (_) => RefreshOverlayCubit()),
       ],
-      child: ListenableBuilder(
-        listenable: _themeNotifier,
-        builder: (context, child) {
-          return MaterialApp.router(
-            title: 'Lonceng UnMan',
-            theme: lightTheme,
-            darkTheme: darkTheme,
-            themeMode: _themeNotifier.themeMode,
-            routerConfig: _router,
-            debugShowCheckedModeBanner: false,
-          );
-        },
+      child: GlobalRefreshOverlay(
+        child: ListenableBuilder(
+          listenable: _themeNotifier,
+          builder: (context, child) {
+            return MaterialApp.router(
+              title: 'Lonceng UnMan',
+              theme: lightTheme,
+              darkTheme: darkTheme,
+              themeMode: _themeNotifier.themeMode,
+              routerConfig: _router,
+              debugShowCheckedModeBanner: false,
+            );
+          },
+        ),
       ),
     );
   }

@@ -24,73 +24,67 @@ class StudentProfileEntity {
     required this.namaMahasiswa,
     required this.programStudi,
     required this.semester,
-    required this.fakultas,
-    required this.angkatan,
+    required this.kelas,
+    required this.statusKonversi,
     // ── contact_data (optional) ──
+    this.noWa,
     this.email,
-    this.noHp,
-    this.alamatLengkap,
-    this.kota,
-    this.provinsi,
-    this.kodePos,
-    this.kecamatan,
-    this.kelurahan,
-    this.negara,
-    this.noHpOrangtua,
-    this.namaKontakDarurat,
+    this.tempatLahir,
+    this.tanggalLahir,
+    this.agama,
+    this.kelamin,
+    this.suku,
+    this.statusMenikah,
+    this.idKebutuhanKhususMahasiswa,
+    this.statusTinggal,
+    this.transportasi,
     // ── education_data (optional) ──
-    this.status,
-    this.tahunAjaran,
+    this.namaAsalSekolah,
+    this.tahunLulus,
     // ── address_data (optional) ──
-    this.alamatRumah,
-    this.rt,
-    this.rw,
-    this.kelurahanRumah,
-    this.kecamatanRumah,
-    this.kotaRumah,
-    this.provinsiRumah,
-    this.kodePosRumah,
-    this.alamatSementara,
-    this.alamatSementaraRt,
-    this.alamatSementaraRw,
-    this.alamatSementaraKelurahan,
-    this.alamatSementaraKecamatan,
-    this.alamatSementaraKota,
-    this.alamatSementaraProvinsi,
-    this.alamatSementaraKodePos,
+    this.propinsi,
+    this.kabupaten,
+    this.kecamatan,
+    this.idWilayah,
+    this.desa,
+    this.alamatDusun,
+    this.alamatRw,
+    this.alamatRt,
+    this.alamatJalan,
+    this.kodePos,
     // ── employment_data (optional) ──
-    this.pekerjaan,
-    this.perusahaan,
-    this.penghasilan,
+    this.statusBekerja,
+    this.namaKantor,
+    this.alamatKantor,
     // ── father_data (optional) ──
     this.namaAyah,
-    this.tempatLahirAyah,
     this.tanggalLahirAyah,
-    this.pekerjaanAyah,
-    this.penghasilanAyah,
-    this.alamatAyah,
+    this.nikAyah,
     this.noHpAyah,
-    this.emailAyah,
+    this.idJenjangPendidikanAyah,
+    this.idPekerjaanAyah,
+    this.idPenghasilanAyah,
+    this.idKebutuhanKhususAyah,
     // ── mother_data (optional) ──
     this.namaIbu,
-    this.tempatLahirIbu,
     this.tanggalLahirIbu,
-    this.pekerjaanIbu,
-    this.penghasilanIbu,
-    this.alamatIbu,
+    this.nikIbu,
     this.noHpIbu,
-    this.emailIbu,
+    this.idJenjangPendidikanIbu,
+    this.idPekerjaanIbu,
+    this.idPenghasilanIbu,
+    this.idKebutuhanKhususIbu,
     // ── guardian_data (optional) ──
     this.namaWali,
-    this.hubunganWali,
-    this.pekerjaanWali,
-    this.alamatWali,
-    this.noHpWali,
+    this.tanggalLahirWali,
+    this.idJenjangPendidikanWali,
+    this.idPekerjaanWali,
+    this.idPenghasilanWali,
     // ── other_data (optional) ──
-    this.golonganDarah,
-    this.riwayatPenyakit,
-    this.riwayatAlergi,
-    this.riwayatOperasi,
+    this.penerimaKps,
+    this.noKps,
+    this.npwp,
+    this.remark,
   });
 
   // ═══════════════════════════════════════════════════════════════
@@ -102,97 +96,91 @@ class StudentProfileEntity {
   final String namaMahasiswa;
   final String programStudi;
   final String semester;
-  final String fakultas;
-  final String angkatan;
+  final String kelas;
+  final String statusKonversi;
 
   // ═══════════════════════════════════════════════════════════════
   // contact_data (optional)
   // ═══════════════════════════════════════════════════════════════
+  final String? noWa;
   final String? email;
-  final String? noHp;
-  final String? alamatLengkap;
-  final String? kota;
-  final String? provinsi;
-  final String? kodePos;
-  final String? kecamatan;
-  final String? kelurahan;
-  final String? negara;
-  final String? noHpOrangtua;
-  final String? namaKontakDarurat;
+  final String? tempatLahir;
+  final String? tanggalLahir;
+  final String? agama;
+  final String? kelamin;
+  final String? suku;
+  final String? statusMenikah;
+  final String? idKebutuhanKhususMahasiswa;
+  final String? statusTinggal;
+  final String? transportasi;
 
   // ═══════════════════════════════════════════════════════════════
   // education_data (optional)
   // ═══════════════════════════════════════════════════════════════
-  final String? status;
-  final String? tahunAjaran;
+  final String? namaAsalSekolah;
+  final String? tahunLulus;
 
   // ═══════════════════════════════════════════════════════════════
   // address_data (optional)
   // ═══════════════════════════════════════════════════════════════
-  final String? alamatRumah;
-  final String? rt;
-  final String? rw;
-  final String? kelurahanRumah;
-  final String? kecamatanRumah;
-  final String? kotaRumah;
-  final String? provinsiRumah;
-  final String? kodePosRumah;
-  final String? alamatSementara;
-  final String? alamatSementaraRt;
-  final String? alamatSementaraRw;
-  final String? alamatSementaraKelurahan;
-  final String? alamatSementaraKecamatan;
-  final String? alamatSementaraKota;
-  final String? alamatSementaraProvinsi;
-  final String? alamatSementaraKodePos;
+  final String? propinsi;
+  final String? kabupaten;
+  final String? kecamatan;
+  final String? idWilayah;
+  final String? desa;
+  final String? alamatDusun;
+  final String? alamatRw;
+  final String? alamatRt;
+  final String? alamatJalan;
+  final String? kodePos;
 
   // ═══════════════════════════════════════════════════════════════
   // employment_data (optional)
   // ═══════════════════════════════════════════════════════════════
-  final String? pekerjaan;
-  final String? perusahaan;
-  final String? penghasilan;
+  final String? statusBekerja;
+  final String? namaKantor;
+  final String? alamatKantor;
 
   // ═══════════════════════════════════════════════════════════════
   // father_data (optional)
   // ═══════════════════════════════════════════════════════════════
   final String? namaAyah;
-  final String? tempatLahirAyah;
   final String? tanggalLahirAyah;
-  final String? pekerjaanAyah;
-  final String? penghasilanAyah;
-  final String? alamatAyah;
+  final String? nikAyah;
   final String? noHpAyah;
-  final String? emailAyah;
+  final String? idJenjangPendidikanAyah;
+  final String? idPekerjaanAyah;
+  final String? idPenghasilanAyah;
+  final String? idKebutuhanKhususAyah;
 
   // ═══════════════════════════════════════════════════════════════
   // mother_data (optional)
   // ═══════════════════════════════════════════════════════════════
   final String? namaIbu;
-  final String? tempatLahirIbu;
   final String? tanggalLahirIbu;
-  final String? pekerjaanIbu;
-  final String? penghasilanIbu;
-  final String? alamatIbu;
+  final String? nikIbu;
   final String? noHpIbu;
-  final String? emailIbu;
+  final String? idJenjangPendidikanIbu;
+  final String? idPekerjaanIbu;
+  final String? idPenghasilanIbu;
+  final String? idKebutuhanKhususIbu;
 
   // ═══════════════════════════════════════════════════════════════
   // guardian_data (optional)
   // ═══════════════════════════════════════════════════════════════
   final String? namaWali;
-  final String? hubunganWali;
-  final String? pekerjaanWali;
-  final String? alamatWali;
-  final String? noHpWali;
+  final String? tanggalLahirWali;
+  final String? idJenjangPendidikanWali;
+  final String? idPekerjaanWali;
+  final String? idPenghasilanWali;
 
   // ═══════════════════════════════════════════════════════════════
   // other_data (optional)
   // ═══════════════════════════════════════════════════════════════
-  final String? golonganDarah;
-  final String? riwayatPenyakit;
-  final String? riwayatAlergi;
-  final String? riwayatOperasi;
+  final String? penerimaKps;
+  final String? noKps;
+  final String? npwp;
+  final String? remark;
 
   /// Mengembalikan entity ini sendiri.
   /// Subclass (misal [StudentProfileModel]) override untuk mengembalikan
@@ -211,73 +199,67 @@ class StudentProfileEntity {
           namaMahasiswa == other.namaMahasiswa &&
           programStudi == other.programStudi &&
           semester == other.semester &&
-          fakultas == other.fakultas &&
-          angkatan == other.angkatan &&
+          kelas == other.kelas &&
+          statusKonversi == other.statusKonversi &&
           // ── contact_data ──
+          noWa == other.noWa &&
           email == other.email &&
-          noHp == other.noHp &&
-          alamatLengkap == other.alamatLengkap &&
-          kota == other.kota &&
-          provinsi == other.provinsi &&
-          kodePos == other.kodePos &&
-          kecamatan == other.kecamatan &&
-          kelurahan == other.kelurahan &&
-          negara == other.negara &&
-          noHpOrangtua == other.noHpOrangtua &&
-          namaKontakDarurat == other.namaKontakDarurat &&
+          tempatLahir == other.tempatLahir &&
+          tanggalLahir == other.tanggalLahir &&
+          agama == other.agama &&
+          kelamin == other.kelamin &&
+          suku == other.suku &&
+          statusMenikah == other.statusMenikah &&
+          idKebutuhanKhususMahasiswa == other.idKebutuhanKhususMahasiswa &&
+          statusTinggal == other.statusTinggal &&
+          transportasi == other.transportasi &&
           // ── education_data ──
-          status == other.status &&
-          tahunAjaran == other.tahunAjaran &&
+          namaAsalSekolah == other.namaAsalSekolah &&
+          tahunLulus == other.tahunLulus &&
           // ── address_data ──
-          alamatRumah == other.alamatRumah &&
-          rt == other.rt &&
-          rw == other.rw &&
-          kelurahanRumah == other.kelurahanRumah &&
-          kecamatanRumah == other.kecamatanRumah &&
-          kotaRumah == other.kotaRumah &&
-          provinsiRumah == other.provinsiRumah &&
-          kodePosRumah == other.kodePosRumah &&
-          alamatSementara == other.alamatSementara &&
-          alamatSementaraRt == other.alamatSementaraRt &&
-          alamatSementaraRw == other.alamatSementaraRw &&
-          alamatSementaraKelurahan == other.alamatSementaraKelurahan &&
-          alamatSementaraKecamatan == other.alamatSementaraKecamatan &&
-          alamatSementaraKota == other.alamatSementaraKota &&
-          alamatSementaraProvinsi == other.alamatSementaraProvinsi &&
-          alamatSementaraKodePos == other.alamatSementaraKodePos &&
+          propinsi == other.propinsi &&
+          kabupaten == other.kabupaten &&
+          kecamatan == other.kecamatan &&
+          idWilayah == other.idWilayah &&
+          desa == other.desa &&
+          alamatDusun == other.alamatDusun &&
+          alamatRw == other.alamatRw &&
+          alamatRt == other.alamatRt &&
+          alamatJalan == other.alamatJalan &&
+          kodePos == other.kodePos &&
           // ── employment_data ──
-          pekerjaan == other.pekerjaan &&
-          perusahaan == other.perusahaan &&
-          penghasilan == other.penghasilan &&
+          statusBekerja == other.statusBekerja &&
+          namaKantor == other.namaKantor &&
+          alamatKantor == other.alamatKantor &&
           // ── father_data ──
           namaAyah == other.namaAyah &&
-          tempatLahirAyah == other.tempatLahirAyah &&
           tanggalLahirAyah == other.tanggalLahirAyah &&
-          pekerjaanAyah == other.pekerjaanAyah &&
-          penghasilanAyah == other.penghasilanAyah &&
-          alamatAyah == other.alamatAyah &&
+          nikAyah == other.nikAyah &&
           noHpAyah == other.noHpAyah &&
-          emailAyah == other.emailAyah &&
+          idJenjangPendidikanAyah == other.idJenjangPendidikanAyah &&
+          idPekerjaanAyah == other.idPekerjaanAyah &&
+          idPenghasilanAyah == other.idPenghasilanAyah &&
+          idKebutuhanKhususAyah == other.idKebutuhanKhususAyah &&
           // ── mother_data ──
           namaIbu == other.namaIbu &&
-          tempatLahirIbu == other.tempatLahirIbu &&
           tanggalLahirIbu == other.tanggalLahirIbu &&
-          pekerjaanIbu == other.pekerjaanIbu &&
-          penghasilanIbu == other.penghasilanIbu &&
-          alamatIbu == other.alamatIbu &&
+          nikIbu == other.nikIbu &&
           noHpIbu == other.noHpIbu &&
-          emailIbu == other.emailIbu &&
+          idJenjangPendidikanIbu == other.idJenjangPendidikanIbu &&
+          idPekerjaanIbu == other.idPekerjaanIbu &&
+          idPenghasilanIbu == other.idPenghasilanIbu &&
+          idKebutuhanKhususIbu == other.idKebutuhanKhususIbu &&
           // ── guardian_data ──
           namaWali == other.namaWali &&
-          hubunganWali == other.hubunganWali &&
-          pekerjaanWali == other.pekerjaanWali &&
-          alamatWali == other.alamatWali &&
-          noHpWali == other.noHpWali &&
+          tanggalLahirWali == other.tanggalLahirWali &&
+          idJenjangPendidikanWali == other.idJenjangPendidikanWali &&
+          idPekerjaanWali == other.idPekerjaanWali &&
+          idPenghasilanWali == other.idPenghasilanWali &&
           // ── other_data ──
-          golonganDarah == other.golonganDarah &&
-          riwayatPenyakit == other.riwayatPenyakit &&
-          riwayatAlergi == other.riwayatAlergi &&
-          riwayatOperasi == other.riwayatOperasi;
+          penerimaKps == other.penerimaKps &&
+          noKps == other.noKps &&
+          npwp == other.npwp &&
+          remark == other.remark;
 
   @override
   int get hashCode {
@@ -290,72 +272,64 @@ class StudentProfileEntity {
       namaMahasiswa,
       programStudi,
       semester,
-      fakultas,
-      angkatan,
+      kelas,
+      statusKonversi,
+      noWa,
       email,
-      noHp,
-      alamatLengkap,
-      kota,
-      provinsi,
-      kodePos,
-      kecamatan,
-      kelurahan,
-      negara,
-      noHpOrangtua,
-      namaKontakDarurat,
-      status,
+      tempatLahir,
+      tanggalLahir,
+      agama,
+      kelamin,
+      suku,
+      statusMenikah,
+      idKebutuhanKhususMahasiswa,
+      statusTinggal,
+      transportasi,
+      namaAsalSekolah,
     );
     final part2 = Object.hash(
-      tahunAjaran,
-      alamatRumah,
-      rt,
-      rw,
-      kelurahanRumah,
-      kecamatanRumah,
-      kotaRumah,
-      provinsiRumah,
-      kodePosRumah,
-      alamatSementara,
-      alamatSementaraRt,
-      alamatSementaraRw,
-      alamatSementaraKelurahan,
-      alamatSementaraKecamatan,
-      alamatSementaraKota,
-      alamatSementaraProvinsi,
-      alamatSementaraKodePos,
-      pekerjaan,
-      perusahaan,
-      penghasilan,
+      tahunLulus,
+      propinsi,
+      kabupaten,
+      kecamatan,
+      idWilayah,
+      desa,
+      alamatDusun,
+      alamatRw,
+      alamatRt,
+      alamatJalan,
+      kodePos,
+      statusBekerja,
+      namaKantor,
+      alamatKantor,
+      namaAyah,
+      tanggalLahirAyah,
+      nikAyah,
+      noHpAyah,
+      idJenjangPendidikanAyah,
+      idPekerjaanAyah,
     );
     final part3 = Object.hash(
-      namaAyah,
-      tempatLahirAyah,
-      tanggalLahirAyah,
-      pekerjaanAyah,
-      penghasilanAyah,
-      alamatAyah,
-      noHpAyah,
-      emailAyah,
+      idPenghasilanAyah,
+      idKebutuhanKhususAyah,
       namaIbu,
-      tempatLahirIbu,
       tanggalLahirIbu,
-      pekerjaanIbu,
-      penghasilanIbu,
-      alamatIbu,
+      nikIbu,
       noHpIbu,
-      emailIbu,
+      idJenjangPendidikanIbu,
+      idPekerjaanIbu,
+      idPenghasilanIbu,
+      idKebutuhanKhususIbu,
       namaWali,
-      hubunganWali,
-      pekerjaanWali,
-      alamatWali,
+      tanggalLahirWali,
+      idJenjangPendidikanWali,
+      idPekerjaanWali,
+      idPenghasilanWali,
+      penerimaKps,
+      noKps,
+      npwp,
+      remark,
     );
-    final part4 = Object.hash(
-      noHpWali,
-      golonganDarah,
-      riwayatPenyakit,
-      riwayatAlergi,
-      riwayatOperasi,
-    );
-    return Object.hash(part1, part2, part3, part4);
+    return Object.hash(part1, part2, part3);
   }
 }

@@ -14,7 +14,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
@@ -310,6 +314,18 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
 
     return RefreshIndicator(
       onRefresh: () async {
+        final academicCache = Services.get<AcademicCacheService>();
+        final credentials = await academicCache.loadCredentials();
+        if (credentials == null || !context.mounted) return;
+
+        final npm = credentials['npm'] ?? '';
+        final password = credentials['password'] ?? '';
+
+        context.read<DataInitBloc>().add(const DataInitReset());
+        context.read<DataInitBloc>().add(
+          DataInitStarted(npm: npm, password: password, forceRefresh: true),
+        );
+
         context.read<ProfileBloc>().add(const ProfileRefreshRequested());
       },
       child: CustomScrollView(

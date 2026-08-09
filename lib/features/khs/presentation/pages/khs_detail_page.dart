@@ -8,7 +8,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubit.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_state.dart';
@@ -162,7 +166,19 @@ class _KhsDetailPageState extends State<KhsDetailPage>
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<KhsDetailCubit>().loadAll();
+        final academicCache = Services.get<AcademicCacheService>();
+        final credentials = await academicCache.loadCredentials();
+        if (credentials == null || !mounted) return;
+
+        final npm = credentials['npm'] ?? '';
+        final password = credentials['password'] ?? '';
+
+        context.read<DataInitBloc>().add(const DataInitReset());
+        context.read<DataInitBloc>().add(
+          DataInitStarted(npm: npm, password: password, forceRefresh: true),
+        );
+
+        // KhsDetailCubit.loadAll() will be called after pipeline finishes
       },
       child: _buildContent(cs, data),
     );

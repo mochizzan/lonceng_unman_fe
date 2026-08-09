@@ -76,6 +76,7 @@ class _LoginPageState extends State<LoginPage> {
             DataInitStarted(
               npm: _npmController.text,
               password: _passwordController.text,
+              forceRefresh: true,
             ),
           );
         } else if (state is AuthError) {

@@ -73,12 +73,14 @@ class FakeStudentProfileRemoteDataSource
   Future<void> scrapeProfile({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {}
 
   @override
   Future<StudentProfileModel> getProfile({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {
     return const StudentProfileModel(
       nim: '21081010001',
@@ -87,8 +89,8 @@ class FakeStudentProfileRemoteDataSource
       namaMahasiswa: 'Test User',
       programStudi: 'SI',
       semester: 'GANJIL',
-      fakultas: 'Teknik',
-      angkatan: '2022',
+      kelas: 'Teknik',
+      statusKonversi: '2022',
     );
   }
 }
@@ -123,8 +125,8 @@ void main() {
             namaMahasiswa: 'Test User',
             programStudi: 'SI',
             semester: 'GANJIL',
-            fakultas: 'Teknik',
-            angkatan: '2022',
+            kelas: 'Teknik',
+            statusKonversi: '2022',
           ),
           '21081010001',
           'testpass',
@@ -170,8 +172,8 @@ void main() {
             namaMahasiswa: 'Test User',
             programStudi: 'SI',
             semester: 'GANJIL',
-            fakultas: 'Teknik',
-            angkatan: '2022',
+            kelas: 'Teknik',
+            statusKonversi: '2022',
           ),
           '1234567890',
           'testpass',

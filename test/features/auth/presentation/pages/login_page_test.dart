@@ -84,12 +84,14 @@ class _FakeStudentProfileRemoteDataSource
   Future<void> scrapeProfile({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {}
 
   @override
   Future<StudentProfileModel> getProfile({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {
     return const StudentProfileModel(
       nim: '',
@@ -98,8 +100,8 @@ class _FakeStudentProfileRemoteDataSource
       namaMahasiswa: 'Test User',
       programStudi: 'SI',
       semester: 'GANJIL',
-      fakultas: 'Teknik',
-      angkatan: '2022',
+      kelas: 'Teknik',
+      statusKonversi: '2022',
     );
   }
 }
@@ -121,6 +123,7 @@ class _FakeDataInitRepository implements DataInitializationRepository {
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
+    bool forceRefresh = true,
   }) => const Stream<DataInitProgress>.empty();
 }
 

@@ -6,9 +6,17 @@ import 'package:lonceng_unman_fe/core/utils/credential_body.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 
 abstract class KrsRemoteDataSource {
-  Future<void> downloadKrs({required String npm, required String password});
-  Future<void> extractKrs({required String npm, required String password});
-  Future<KrsModel> getKrsData({required String npm});
+  Future<void> downloadKrs({
+    required String npm,
+    required String password,
+    bool forceRefresh = false,
+  });
+  Future<void> extractKrs({
+    required String npm,
+    required String password,
+    bool forceRefresh = false,
+  });
+  Future<KrsModel> getKrsData({required String npm, bool forceRefresh = false});
 }
 
 /// Real HTTP implementation via ApiClient with AcademicCacheService caching.
@@ -24,12 +32,15 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
   Future<void> downloadKrs({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {
-    // Check if KRS data already exists in cache
-    final cached = await academicCacheService.loadKrsData(npm: npm);
-    if (cached != null) {
-      developer.log('KRS already cached, skipping download', name: 'KrsDS');
-      return;
+    // Check if KRS data already exists in cache (skip if forceRefresh)
+    if (!forceRefresh) {
+      final cached = await academicCacheService.loadKrsData(npm: npm);
+      if (cached != null) {
+        developer.log('KRS already cached, skipping download', name: 'KrsDS');
+        return;
+      }
     }
 
     // Otherwise, download from API
@@ -43,12 +54,15 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
   Future<void> extractKrs({
     required String npm,
     required String password,
+    bool forceRefresh = false,
   }) async {
-    // Check if KRS data already exists in cache
-    final cached = await academicCacheService.loadKrsData(npm: npm);
-    if (cached != null) {
-      developer.log('KRS already cached, skipping extract', name: 'KrsDS');
-      return;
+    // Check if KRS data already exists in cache (skip if forceRefresh)
+    if (!forceRefresh) {
+      final cached = await academicCacheService.loadKrsData(npm: npm);
+      if (cached != null) {
+        developer.log('KRS already cached, skipping extract', name: 'KrsDS');
+        return;
+      }
     }
 
     // Otherwise, extract from API
@@ -59,11 +73,16 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
   }
 
   @override
-  Future<KrsModel> getKrsData({required String npm}) async {
-    // Check cache first.
-    final cachedData = await academicCacheService.loadKrsData(npm: npm);
-    if (cachedData != null) {
-      return KrsModel.fromJson(cachedData);
+  Future<KrsModel> getKrsData({
+    required String npm,
+    bool forceRefresh = false,
+  }) async {
+    // Check cache first (skip if forceRefresh)
+    if (!forceRefresh) {
+      final cachedData = await academicCacheService.loadKrsData(npm: npm);
+      if (cachedData != null) {
+        return KrsModel.fromJson(cachedData);
+      }
     }
 
     // Cache miss — fetch from endpoint.

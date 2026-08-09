@@ -12,7 +12,6 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
-import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
@@ -112,7 +111,6 @@ class _LoginPageState extends State<LoginPage> {
                           ? DataInitProgressView(
                               onComplete: () {
                                 if (!mounted) return;
-                                context.read<AvatarCubit>().reload();
                                 widget.authStatusNotifier.setStatus(
                                   AuthStatus.authenticated,
                                 );

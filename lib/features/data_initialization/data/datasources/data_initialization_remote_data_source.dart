@@ -8,6 +8,7 @@ import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/services/photo_service.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 
@@ -39,6 +40,7 @@ class DataInitializationRemoteDataSource {
   final StudentProfileRemoteDataSource _profileDataSource;
   final PhotoService _photoService;
   final AvatarCacheService _avatarCache;
+  final AvatarCubit _avatarCubit;
 
   DataInitializationRemoteDataSource({
     required GetKrs getKrs,
@@ -46,11 +48,13 @@ class DataInitializationRemoteDataSource {
     required StudentProfileRemoteDataSource profileDataSource,
     PhotoService? photoService,
     AvatarCacheService? avatarCache,
+    AvatarCubit? avatarCubit,
   }) : _getKrs = getKrs,
        _getKhs = getKhs,
        _profileDataSource = profileDataSource,
        _photoService = photoService ?? Services.get<PhotoService>(),
-       _avatarCache = avatarCache ?? Services.get<AvatarCacheService>();
+       _avatarCache = avatarCache ?? Services.get<AvatarCacheService>(),
+       _avatarCubit = avatarCubit ?? Services.get<AvatarCubit>();
 
   Stream<DataInitProgress> initialize({
     required String npm,
@@ -110,6 +114,9 @@ class DataInitializationRemoteDataSource {
       );
       if (photoBytes != null && photoBytes.isNotEmpty) {
         await _avatarCache.saveAvatar(npm: npm, bytes: photoBytes);
+        // Notify AvatarCubit so the HomeHeader shows the photo immediately
+        // without waiting for the user to visit Profile first.
+        unawaited(_avatarCubit.reload());
         developer.log(
           'Photo saved to cache: ${photoBytes.length} bytes',
           name: 'DataInitDS',

@@ -15,7 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
+import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 import 'package:lonceng_unman_fe/features/profile/data/services/avatar_picker_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
@@ -83,58 +85,68 @@ class ProfileAvatar extends StatelessWidget {
   }
 
   Future<void> _showPhotoSheet(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final cs = Theme.of(sheetContext).colorScheme;
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  sp(sheetContext, 16),
-                  0,
-                  sp(sheetContext, 16),
-                  sp(sheetContext, 12),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    AppStrings.avatarSheetTitle,
-                    style: Theme.of(sheetContext).textTheme.titleMedium,
+    // Sembunyikan navbar saat bottom sheet dibuka.
+    Services.get<NavbarVisibilityNotifier>().hide();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (sheetContext) {
+          final cs = Theme.of(sheetContext).colorScheme;
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    sp(sheetContext, 16),
+                    0,
+                    sp(sheetContext, 16),
+                    sp(sheetContext, 12),
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      AppStrings.avatarSheetTitle,
+                      style: Theme.of(sheetContext).textTheme.titleMedium,
+                    ),
                   ),
                 ),
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library, size: sp(sheetContext, 24)),
-                title: const Text(AppStrings.avatarSheetChange),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _pickAndCrop(context);
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline,
-                  size: sp(sheetContext, 24),
-                  color: cs.error,
+                ListTile(
+                  leading: Icon(
+                    Icons.photo_library,
+                    size: sp(sheetContext, 24),
+                  ),
+                  title: const Text(AppStrings.avatarSheetChange),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _pickAndCrop(context);
+                  },
                 ),
-                title: Text(
-                  AppStrings.avatarSheetRemove,
-                  style: TextStyle(color: cs.error),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    size: sp(sheetContext, 24),
+                    color: cs.error,
+                  ),
+                  title: Text(
+                    AppStrings.avatarSheetRemove,
+                    style: TextStyle(color: cs.error),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _confirmRemove(context);
+                  },
                 ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _confirmRemove(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+              ],
+            ),
+          );
+        },
+      );
+    } finally {
+      // Tampilkan kembali navbar setelah bottom sheet ditutup.
+      Services.get<NavbarVisibilityNotifier>().show();
+    }
   }
 
   Future<void> _confirmRemove(BuildContext context) async {

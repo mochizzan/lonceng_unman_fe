@@ -110,33 +110,38 @@ class HomeHeader extends StatelessWidget {
                         width: AppDimens.borderWidthMedium,
                       ),
                     ),
-                    child: BlocBuilder<AvatarCubit, AvatarState>(
-                      builder: (context, state) {
-                        final bytes = state.bytes;
-                        if (bytes != null && bytes.isNotEmpty) {
-                          // 1. Foto lokal hasil crop — prioritas tertinggi.
-                          return Image.memory(
-                            bytes,
-                            width: AppDimens.avatarMD,
-                            height: AppDimens.avatarMD,
-                            fit: BoxFit.cover,
-                            gaplessPlayback: true,
-                            errorBuilder: (_, _, _) => const Icon(Icons.person),
-                          );
-                        }
-                        if (avatarUrl.isNotEmpty) {
-                          // 2. Foto dari server bila lokal belum ada.
-                          return Image.network(
-                            avatarUrl,
-                            width: AppDimens.avatarMD,
-                            height: AppDimens.avatarMD,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(Icons.person),
-                          );
-                        }
-                        // 3. Fallback ikon person.
-                        return const Icon(Icons.person);
-                      },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+                      child: BlocBuilder<AvatarCubit, AvatarState>(
+                        builder: (context, state) {
+                          final bytes = state.bytes;
+                          if (bytes != null && bytes.isNotEmpty) {
+                            // 1. Foto lokal hasil crop — prioritas tertinggi.
+                            return Image.memory(
+                              bytes,
+                              width: AppDimens.avatarMD,
+                              height: AppDimens.avatarMD,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(Icons.person),
+                            );
+                          }
+                          if (avatarUrl.isNotEmpty) {
+                            // 2. Foto dari server bila lokal belum ada.
+                            return Image.network(
+                              avatarUrl,
+                              width: AppDimens.avatarMD,
+                              height: AppDimens.avatarMD,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(Icons.person),
+                            );
+                          }
+                          // 3. Fallback ikon person.
+                          return const Icon(Icons.person);
+                        },
+                      ),
                     ),
                   ),
                 ),

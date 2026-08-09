@@ -33,10 +33,13 @@ class MainShellScaffold extends StatefulWidget {
 }
 
 class _MainShellScaffoldState extends State<MainShellScaffold>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final ScrollHideController _scrollHide;
+  late final AnimationController _modalAnimController;
   final _navBarKey = GlobalKey();
   double _navBarHeight = 0;
+  bool _modalVisible = true; // navbar terlihat = true
+  bool _isAnimatingModal = false;
 
   @override
   void initState() {
@@ -45,6 +48,13 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
       vsync: this,
       config: widget.scrollHideConfig ?? ScrollHideConfig.defaults,
     );
+    _modalAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 1.0, // 1.0 = navbar terlihat (tidak ter-slide)
+    );
+    // Listen perubahan visibilitas navbar saat modal (bottom sheet) buka/tutup.
+    Services.get<NavbarVisibilityNotifier>().addListener(_onModalVisibility);
     // Measure the rendered navbar height after the first frame so the
     // slide distance matches the actual widget, not a magic number.
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureNavBar());
@@ -61,6 +71,8 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
 
   @override
   void dispose() {
+    Services.get<NavbarVisibilityNotifier>().removeListener(_onModalVisibility);
+    _modalAnimController.dispose();
     _scrollHide.dispose();
     super.dispose();
   }
@@ -74,6 +86,37 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
       // outside its RenderBox. Add it so the slide clears the viewport.
       setState(() => _navBarHeight = box.size.height + 32);
     }
+  }
+
+  /// Handle perubahan visibilitas navbar dari modal (bottom sheet).
+  /// Navbar slide-down saat modal buka, slide-up saat modal tutup.
+  void _onModalVisibility() {
+    final hidden = Services.get<NavbarVisibilityNotifier>().value;
+    if (!mounted) return;
+
+    if (hidden && _modalVisible) {
+      // Modal dibuka → slide navbar ke bawah.
+      _modalVisible = false;
+      _modalAnimController.reverse();
+    } else if (!hidden && !_modalVisible) {
+      // Modal ditutup → slide navbar ke atas.
+      _modalVisible = true;
+      _isAnimatingModal = true;
+      _scrollHide.show(); // Reset scroll ke visible.
+      _modalAnimController.forward().then((_) {
+        if (mounted) {
+          // Setelah animasi selesai, izinkan scroll-hide berfungsi normal.
+          _isAnimatingModal = false;
+        }
+      });
+    }
+  }
+
+  /// Wrapper untuk scroll hide — menghormati animasi modal.
+  bool _handleScroll(ScrollNotification notification) {
+    // Selama animasi modal berlangsung, jangan proses scroll.
+    if (_isAnimatingModal) return false;
+    return _scrollHide.handleScroll(notification);
   }
 
   void _onTap(BuildContext context, int index) {
@@ -96,32 +139,37 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
       backgroundColor: Colors.transparent,
       extendBody: true,
       body: NotificationListener<ScrollNotification>(
-        onNotification: _scrollHide.handleScroll,
+        onNotification: _handleScroll,
         child: widget.child,
       ),
       bottomNavigationBar: showNav
-          ? ListenableBuilder(
-              listenable: Services.get<NavbarVisibilityNotifier>(),
+          ? AnimatedBuilder(
+              animation: _modalAnimController,
               builder: (_, child) {
-                final navbarNotifier = Services.get<NavbarVisibilityNotifier>();
-                // Hide navbar when a modal (bottom sheet) is open
-                if (navbarNotifier.value) return const SizedBox.shrink();
+                // Slide offset gabungan: scroll-hide + modal-hide.
+                final scrollOffset = _scrollHide.value * _navBarHeight;
+                final modalOffset =
+                    (1.0 - _modalAnimController.value) * _navBarHeight;
+                final totalOffset = scrollOffset + modalOffset;
 
-                return AnimatedBuilder(
-                  animation: _scrollHide.animation,
-                  builder: (_, child) {
-                    return Transform.translate(
-                      offset: Offset(0, _scrollHide.value * _navBarHeight),
-                      child: Opacity(
-                        opacity: 1.0 - _scrollHide.value,
-                        child: IgnorePointer(
-                          ignoring: _scrollHide.isIgnored,
-                          child: child,
-                        ),
-                      ),
-                    );
-                  },
-                  child: child,
+                // Opacity gabungan.
+                final scrollOpacity = 1.0 - _scrollHide.value;
+                final modalOpacity = _modalAnimController.value;
+                final totalOpacity = scrollOpacity < modalOpacity
+                    ? scrollOpacity
+                    : modalOpacity;
+
+                return Transform.translate(
+                  offset: Offset(0, totalOffset),
+                  child: Opacity(
+                    opacity: totalOpacity,
+                    child: IgnorePointer(
+                      ignoring:
+                          _scrollHide.isIgnored ||
+                          _modalAnimController.value < 0.5,
+                      child: child,
+                    ),
+                  ),
                 );
               },
               child: KeyedSubtree(

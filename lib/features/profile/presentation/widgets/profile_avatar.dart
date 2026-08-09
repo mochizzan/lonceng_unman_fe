@@ -94,6 +94,7 @@ class ProfileAvatar extends StatelessWidget {
         builder: (sheetContext) {
           final cs = Theme.of(sheetContext).colorScheme;
           return SafeArea(
+            bottom: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

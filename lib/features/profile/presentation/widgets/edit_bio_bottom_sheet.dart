@@ -37,8 +37,13 @@ class _EditBioBottomSheetState extends State<EditBioBottomSheet> {
     _controller = TextEditingController(text: widget.currentBio ?? '');
     _initialBio = widget.currentBio ?? '';
     _controller.addListener(_onTextChanged);
-    // Hide navbar when bottom sheet opens
-    Services.get<NavbarVisibilityNotifier>().hide();
+    // Hide navbar when bottom sheet opens — defer to post-frame to avoid
+    // setState during build (ListenableBuilder in MainShellScaffold).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Services.get<NavbarVisibilityNotifier>().hide();
+      }
+    });
   }
 
   void _onTextChanged() {

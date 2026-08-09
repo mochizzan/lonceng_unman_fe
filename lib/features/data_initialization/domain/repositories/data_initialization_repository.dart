@@ -7,5 +7,6 @@ abstract class DataInitializationRepository {
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
+    bool forceRefresh = true,
   });
 }

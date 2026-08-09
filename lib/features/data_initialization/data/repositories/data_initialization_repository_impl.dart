@@ -11,7 +11,12 @@ class DataInitializationRepositoryImpl implements DataInitializationRepository {
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
+    bool forceRefresh = true,
   }) {
-    return remoteDataSource.initialize(npm: npm, password: password);
+    return remoteDataSource.initialize(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
   }
 }

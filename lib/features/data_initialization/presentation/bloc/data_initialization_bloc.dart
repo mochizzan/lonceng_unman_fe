@@ -30,14 +30,17 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
   ) async {
     // Guard against concurrent / duplicate starts (login + shell bootstrap).
     if (_isRunning) return;
-    if (state is DataInitSuccess) return;
 
     _isRunning = true;
-    emit(const DataInitInProgress(DataInitStatus.downloadingKrs));
+    emit(const DataInitInProgress(DataInitStatus.scrapingProfile));
 
     try {
-      final stream = _getDataInit(npm: event.npm, password: event.password)
-          .timeout(
+      final stream =
+          _getDataInit(
+            npm: event.npm,
+            password: event.password,
+            forceRefresh: event.forceRefresh,
+          ).timeout(
             kDataInitTimeout,
             onTimeout: (sink) {
               sink.addError(

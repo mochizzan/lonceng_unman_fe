@@ -9,7 +9,12 @@ class GetDataInitialization {
   Stream<DataInitProgress> call({
     required String npm,
     required String password,
+    bool forceRefresh = true,
   }) {
-    return repository.initialize(npm: npm, password: password);
+    return repository.initialize(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
   }
 }

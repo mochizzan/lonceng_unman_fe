@@ -100,22 +100,6 @@ class AvatarCubit extends Cubit<AvatarState> {
     }
   }
 
-  /// Reload avatar dari Hive cache untuk NPM yang sedang terikat.
-  ///
-  /// Berguna setelah DataInit pipeline selesai menyimpan foto baru ke
-  /// cache, sehingga UI langsung menampilkan foto tanpa harus pindah
-  /// halaman dulu. Tidak pernah melempar.
-  Future<void> reload() async {
-    if (_npm.isEmpty) return;
-    try {
-      final bytes = await _cache.loadAvatar(_npm);
-      if (_npm.isEmpty) return; // NPM bisa berubah selama await
-      _safeEmit(AvatarReady(bytes));
-    } catch (_) {
-      // Kegagalan reload tidak mengubah state yang sudah ada.
-    }
-  }
-
   /// Mengikat NPM dari kredensial tersimpan saat cold start, sebelum halaman
   /// Profile sempat terbuka, agar header Home langsung menampilkan foto.
   ///

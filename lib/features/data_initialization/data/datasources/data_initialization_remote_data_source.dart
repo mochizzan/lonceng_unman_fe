@@ -114,9 +114,10 @@ class DataInitializationRemoteDataSource {
       );
       if (photoBytes != null && photoBytes.isNotEmpty) {
         await _avatarCache.saveAvatar(npm: npm, bytes: photoBytes);
-        // Notify AvatarCubit so the HomeHeader shows the photo immediately
-        // without waiting for the user to visit Profile first.
-        unawaited(_avatarCubit.reload());
+        // Bind NPM to AvatarCubit so HomeHeader shows the photo immediately
+        // on fresh login. On subsequent logins, bindNpm is a no-op if NPM
+        // already matches. This also loads the avatar from Hive cache.
+        unawaited(_avatarCubit.bindNpm(npm));
         developer.log(
           'Photo saved to cache: ${photoBytes.length} bytes',
           name: 'DataInitDS',

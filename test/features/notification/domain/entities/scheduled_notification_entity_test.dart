@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
-import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 
 void main() {
@@ -123,100 +121,6 @@ void main() {
         isActive: true,
       );
       expect(entity.lecturer, isNull);
-    });
-
-    group('fromJadwalEntity', () {
-      test('converts JadwalEntity schedule items to notification entities', () {
-        final jadwal = JadwalEntity(
-          selectedDay: 'Senin',
-          days: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
-          scheduleItems: [
-            ScheduleItemEntity(
-              courseName: 'Algoritma',
-              startTime: DateTime(2026, 8, 10, 8, 0),
-              endTime: DateTime(2026, 8, 10, 9, 40),
-              room: 'R.301',
-              sks: '3',
-              status: ScheduleStatus.upcoming,
-              lecturer: 'Dr. Budi',
-            ),
-            ScheduleItemEntity(
-              courseName: 'Basis Data',
-              startTime: DateTime(2026, 8, 10, 10, 0),
-              endTime: DateTime(2026, 8, 10, 11, 40),
-              room: 'R.205',
-              sks: '3',
-              status: ScheduleStatus.upcoming,
-            ),
-          ],
-        );
-
-        final notifications = ScheduledNotificationEntity.fromJadwalEntity(
-          jadwal,
-        );
-
-        expect(notifications, hasLength(2));
-
-        final first = notifications[0];
-        expect(first.courseName, 'Algoritma');
-        expect(first.dayOfWeek, 'Senin');
-        expect(first.classTime, DateTime(2026, 8, 10, 8, 0));
-        expect(first.room, 'R.301');
-        expect(first.lecturer, 'Dr. Budi');
-        expect(first.reminderOffset, 5);
-        expect(first.isActive, isTrue);
-        expect(
-          first.id,
-          ScheduledNotificationEntity.computeId('Algoritma', 'Senin', 8),
-        );
-
-        final second = notifications[1];
-        expect(second.courseName, 'Basis Data');
-        expect(second.lecturer, isNull);
-        expect(second.room, 'R.205');
-      });
-
-      test('respects custom default parameters', () {
-        final jadwal = JadwalEntity(
-          selectedDay: 'Selasa',
-          days: ['Selasa'],
-          scheduleItems: [
-            ScheduleItemEntity(
-              courseName: 'Algoritma',
-              startTime: DateTime(2026, 8, 11, 14, 0),
-              endTime: DateTime(2026, 8, 11, 15, 40),
-              room: 'R.301',
-              sks: '3',
-              status: ScheduleStatus.upcoming,
-            ),
-          ],
-        );
-
-        final notifications = ScheduledNotificationEntity.fromJadwalEntity(
-          jadwal,
-          defaultReminderOffset: 15,
-          defaultIsActive: false,
-        );
-
-        expect(notifications, hasLength(1));
-        expect(notifications[0].reminderOffset, 15);
-        expect(notifications[0].isActive, isFalse);
-        expect(notifications[0].dayOfWeek, 'Selasa');
-      });
-
-      test('returns empty list for empty scheduleItems', () {
-        final jadwal = JadwalEntity(
-          selectedDay: 'Senin',
-          days: ['Senin'],
-          scheduleItems: [],
-        );
-
-        final notifications = ScheduledNotificationEntity.fromJadwalEntity(
-          jadwal,
-        );
-
-        expect(notifications, isEmpty);
-      });
     });
   });
 }

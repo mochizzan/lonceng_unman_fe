@@ -30,26 +30,6 @@ enum NotificationChannel {
     importance: Importance.high,
     enableVibration: true,
     enableLights: true,
-  ),
-
-  /// Perubahan jadwal dari server.
-  scheduleUpdates(
-    id: 'lonceng_unman_schedule_updates',
-    name: 'Perubahan Jadwal',
-    description: 'Notifikasi saat jadwal kuliah berubah',
-    importance: Importance.high,
-    enableVibration: true,
-    enableLights: true,
-  ),
-
-  /// Pengumuman umum / announcement.
-  general(
-    id: 'lonceng_unman_general',
-    name: 'Pengumuman',
-    description: 'Pengumuman dan informasi umum',
-    importance: Importance.defaultImportance,
-    enableVibration: false,
-    enableLights: false,
   );
 
   const NotificationChannel({

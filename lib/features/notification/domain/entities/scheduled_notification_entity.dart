@@ -1,6 +1,3 @@
-import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
-import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
-
 /// A single scheduled local notification for a class reminder.
 ///
 /// Represents one alarm: "remind me 5 minutes before Algoritma on Senin at 08:00".
@@ -43,36 +40,6 @@ class ScheduledNotificationEntity {
 
   /// Whether this notification is enabled by the user.
   final bool isActive;
-
-  /// Creates a list of [ScheduledNotificationEntity] from a [JadwalEntity].
-  ///
-  /// Each [ScheduleItemEntity] in [jadwal] becomes one notification entity.
-  /// The [dayOfWeek] is taken from [jadwal.selectedDay].
-  /// Defaults: [reminderOffset] = 5 minutes, [isActive] = true.
-  static List<ScheduledNotificationEntity> fromJadwalEntity(
-    JadwalEntity jadwal, {
-    int defaultReminderOffset = NotificationConfig.defaultReminderMinutes,
-    bool defaultIsActive = true,
-  }) {
-    return jadwal.scheduleItems
-        .map(
-          (item) => ScheduledNotificationEntity(
-            id: computeId(
-              item.courseName,
-              jadwal.selectedDay,
-              item.startTime.hour,
-            ),
-            courseName: item.courseName,
-            dayOfWeek: jadwal.selectedDay,
-            classTime: item.startTime,
-            reminderOffset: defaultReminderOffset,
-            room: item.room,
-            lecturer: item.lecturer,
-            isActive: defaultIsActive,
-          ),
-        )
-        .toList();
-  }
 
   /// Compute deterministic notification ID from course, day, and hour.
   ///

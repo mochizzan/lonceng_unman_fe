@@ -15,6 +15,7 @@ import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
@@ -261,6 +262,11 @@ Future<void> main() async {
       await academicCacheService.initialize();
       Services.register<AcademicCacheService>(academicCacheService);
 
+      // ── Bio Cache Service (box `bioBox`, per-NPM, cleared on logout) ──
+      final bioCacheService = BioCacheService();
+      await bioCacheService.initialize();
+      Services.register<BioCacheService>(bioCacheService);
+
       // ── Avatar Cache Service (box `avatar`, per-NPM, tahan logout) ──
       final avatarCacheService = AvatarCacheService();
       await avatarCacheService.initialize();
@@ -368,6 +374,7 @@ Future<void> main() async {
           ProfileRepositoryImpl(
             remoteDataSource: ProfileRemoteDataSourceImpl(
               academicCacheService: academicCacheService,
+              bioCacheService: bioCacheService,
               apiClient: apiClient,
             ),
           ),

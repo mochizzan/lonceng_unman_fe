@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -62,6 +63,16 @@ class Services {
       debugPrint('[DI]   Step 1: Cache cleared OK');
     } catch (e) {
       debugPrint('[DI]   Step 1: Cache clear FAILED: $e');
+    }
+
+    // 1b. Clear bio cache
+    debugPrint('[DI]   Step 1b: Clearing bio cache...');
+    try {
+      final bioCache = get<BioCacheService>();
+      await bioCache.clearAll();
+      debugPrint('[DI]   Step 1b: Bio cache cleared OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 1b: Bio cache clear FAILED: $e');
     }
 
     // 2. Cancel all scheduled notifications

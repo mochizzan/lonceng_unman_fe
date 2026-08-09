@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/routes/main_shell_scaffold.dart';
@@ -155,9 +156,10 @@ List<RouteBase> _buildRoutes(
           name: RouteNames.profile,
           path: '/${RouteNames.profile}',
           builder: (context, state) => BlocProvider(
-            create: (_) =>
-                ProfileBloc(Services.get<GetProfile>())
-                  ..add(const ProfileFetchRequested()),
+            create: (_) => ProfileBloc(
+              Services.get<GetProfile>(),
+              Services.get<BioCacheService>(),
+            )..add(const ProfileFetchRequested()),
             child: const ProfilePage(),
           ),
         ),

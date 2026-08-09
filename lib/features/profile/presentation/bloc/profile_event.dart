@@ -32,3 +32,33 @@ class ProfileRefreshRequested extends ProfileEvent {
   @override
   int get hashCode => runtimeType.hashCode;
 }
+
+/// Update bio for the authenticated user.
+class ProfileBioUpdated extends ProfileEvent {
+  const ProfileBioUpdated({required this.bio});
+
+  final String bio;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProfileBioUpdated &&
+          runtimeType == other.runtimeType &&
+          bio == other.bio;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, bio);
+}
+
+/// Delete bio for the authenticated user.
+class ProfileBioDeleted extends ProfileEvent {
+  const ProfileBioDeleted();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProfileBioDeleted && runtimeType == other.runtimeType;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}

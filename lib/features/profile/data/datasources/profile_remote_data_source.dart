@@ -4,6 +4,7 @@
 // and refreshing from remote API.
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
@@ -26,10 +27,12 @@ abstract class ProfileRemoteDataSource {
 /// them to cache so the next [getProfile] call returns updated data.
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   final AcademicCacheService academicCacheService;
+  final BioCacheService bioCacheService;
   final ApiClient apiClient;
 
   const ProfileRemoteDataSourceImpl({
     required this.academicCacheService,
+    required this.bioCacheService,
     required this.apiClient,
   });
 
@@ -77,6 +80,14 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         .where((mk) => mk.hari == todayDayName)
         .length;
 
+    // Read bio from BioCacheService
+    String? bio;
+    try {
+      bio = await bioCacheService.loadBio(npm: npm);
+    } catch (_) {
+      // Bio may not exist yet or box may be corrupted
+    }
+
     final prefs = await SharedPreferences.getInstance();
     return ProfileModel(
       userName: krsData.mahasiswa.nama,
@@ -88,7 +99,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       sksTaken: cumulativeSks,
       sksTotal: 120, // Standard graduation requirement
       todayClassCount: todayClassCount,
-      bio: null,
+      bio: bio,
       reminderEnabled: prefs.getBool('reminder_enabled') ?? true,
       darkModeEnabled: prefs.getBool('dark_mode_enabled') ?? false,
       lastUpdated: DateTime.now(),

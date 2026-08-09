@@ -21,6 +21,7 @@ import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_stat
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/academic_info_section.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_action_button.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/widgets/edit_bio_bottom_sheet.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_bio_section.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/widgets/profile_header_card.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
@@ -48,13 +49,31 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
       // Mengikat AvatarCubit global ke NPM yang sedang login. Memakai
       // BlocListener (bukan build) supaya bindNpm hanya dipanggil saat data
       // profil benar-benar berubah, bukan setiap rebuild.
-      body: BlocListener<ProfileBloc, ProfileState>(
-        listenWhen: (previous, current) => current is ProfileLoaded,
-        listener: (context, state) {
-          if (state is ProfileLoaded) {
-            context.read<AvatarCubit>().bindNpm(state.data.npm);
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<ProfileBloc, ProfileState>(
+            listenWhen: (previous, current) => current is ProfileLoaded,
+            listener: (context, state) {
+              if (state is ProfileLoaded) {
+                context.read<AvatarCubit>().bindNpm(state.data.npm);
+              }
+            },
+          ),
+          BlocListener<ProfileBloc, ProfileState>(
+            listenWhen: (previous, current) =>
+                current is ProfileError && previous is ProfileLoaded,
+            listener: (context, state) {
+              if (state is ProfileError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         child: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, state) {
             if (state is ProfileLoading || state is ProfileInitial) {
@@ -300,7 +319,7 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
               IconButton(
                 icon: Icon(Icons.edit_outlined, color: cs.onSurface),
                 onPressed: () {
-                  // TODO: Navigate to edit profile page
+                  showEditBioBottomSheet(context, currentBio: data.bio);
                 },
                 tooltip: AppStrings.profileEditTooltip,
               ),

@@ -21,12 +21,14 @@ class GetKhs {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) {
     return repository.downloadKhs(
       npm: npm,
       password: password,
       tahunAjaran: tahunAjaran,
       semester: semester,
+      forceRefresh: forceRefresh,
     );
   }
 
@@ -36,12 +38,14 @@ class GetKhs {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) {
     return repository.extractKhs(
       npm: npm,
       password: password,
       tahunAjaran: tahunAjaran,
       semester: semester,
+      forceRefresh: forceRefresh,
     );
   }
 
@@ -50,11 +54,13 @@ class GetKhs {
     required String npm,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) {
     return repository.getKhsData(
       npm: npm,
       tahunAjaran: tahunAjaran,
       semester: semester,
+      forceRefresh: forceRefresh,
     );
   }
 }

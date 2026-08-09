@@ -8,17 +8,33 @@ class GetKrs {
   const GetKrs(this.repository);
 
   /// Download KRS PDF from LMS.
-  Future<void> download({required String npm, required String password}) {
-    return repository.downloadKrs(npm: npm, password: password);
+  Future<void> download({
+    required String npm,
+    required String password,
+    bool forceRefresh = false,
+  }) {
+    return repository.downloadKrs(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
   }
 
   /// Extract KRS data from downloaded PDF.
-  Future<void> extract({required String npm, required String password}) {
-    return repository.extractKrs(npm: npm, password: password);
+  Future<void> extract({
+    required String npm,
+    required String password,
+    bool forceRefresh = false,
+  }) {
+    return repository.extractKrs(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
   }
 
   /// Get KRS data.
-  Future<KrsEntity> call({required String npm}) {
-    return repository.getKrsData(npm: npm);
+  Future<KrsEntity> call({required String npm, bool forceRefresh = false}) {
+    return repository.getKrsData(npm: npm, forceRefresh: forceRefresh);
   }
 }

@@ -21,12 +21,14 @@ class KhsRepositoryImpl implements KhsRepository {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) {
     return remoteDataSource.downloadKhs(
       npm: npm,
       password: password,
       tahunAjaran: tahunAjaran,
       semester: semester,
+      forceRefresh: forceRefresh,
     );
   }
 
@@ -36,12 +38,14 @@ class KhsRepositoryImpl implements KhsRepository {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) {
     return remoteDataSource.extractKhs(
       npm: npm,
       password: password,
       tahunAjaran: tahunAjaran,
       semester: semester,
+      forceRefresh: forceRefresh,
     );
   }
 
@@ -50,11 +54,13 @@ class KhsRepositoryImpl implements KhsRepository {
     required String npm,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   }) {
     return remoteDataSource.getKhsData(
       npm: npm,
       tahunAjaran: tahunAjaran,
       semester: semester,
+      forceRefresh: forceRefresh,
     );
   }
 }

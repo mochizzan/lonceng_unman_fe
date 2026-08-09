@@ -33,6 +33,19 @@ class NotificationScheduler {
   /// 3. Registers alarm via flutter_local_notifications
   /// 4. Persists to Hive via repository
   Future<void> scheduleForDay(JadwalEntity jadwal) async {
+    // TODO: Implement per-day notification scheduling.
+    // Currently skipped when selectedDay is 'Semua' (all-days view)
+    // because DayNameMapper only handles specific day names (Senin-Minggu).
+    // When 'Semua' is selected, we should iterate each scheduleItem's actual
+    // dayOfWeek and schedule notifications per real day.
+    if (jadwal.selectedDay == 'Semua') {
+      developer.log(
+        'Skipping notification scheduling — selectedDay is Semua (all-days view)',
+        name: 'NotificationScheduler',
+      );
+      return;
+    }
+
     final reminderOffset = _repository.getReminderInterval();
     final entities = <ScheduledNotificationEntity>[];
 
@@ -112,6 +125,10 @@ class NotificationScheduler {
       }
     }
   }
+
+  // TODO: When selectedDay is 'Semua', each ScheduleItemEntity should carry
+  // its own dayOfWeek so _scheduleAlarm can compute the correct next occurrence.
+  // Currently all items share jadwal.selectedDay which breaks for 'Semua'.
 
   /// Compute the trigger DateTime and schedule the alarm.
   Future<void> _scheduleAlarm(ScheduledNotificationEntity entity) async {

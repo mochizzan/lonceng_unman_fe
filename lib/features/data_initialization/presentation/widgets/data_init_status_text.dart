@@ -16,6 +16,8 @@ String dataInitStatusText(DataInitStatus status, {String? detail}) {
       return 'Mengambil data profil...';
     case DataInitStatus.gettingProfile:
       return 'Memproses data profil...';
+    case DataInitStatus.fetchingPhoto:
+      return 'Mengambil foto profil...';
     case DataInitStatus.downloadingKrs:
       return 'Mengunduh KRS...';
     case DataInitStatus.extractingKrs:

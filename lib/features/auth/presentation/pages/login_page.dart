@@ -11,8 +11,8 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_status_text.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
@@ -109,7 +109,23 @@ class _LoginPageState extends State<LoginPage> {
                   child: SafeArea(
                     child: Center(
                       child: authState is AuthAuthenticated
-                          ? _buildProgressUI(context)
+                          ? DataInitProgressView(
+                              onComplete: () {
+                                if (!mounted) return;
+                                context.read<AvatarCubit>().reload();
+                                widget.authStatusNotifier.setStatus(
+                                  AuthStatus.authenticated,
+                                );
+                              },
+                              onRetry: () {
+                                context.read<DataInitBloc>().add(
+                                  const DataInitReset(),
+                                );
+                                context.read<AuthBloc>().add(
+                                  const AuthLogoutRequested(),
+                                );
+                              },
+                            )
                           : SingleChildScrollView(
                               padding: EdgeInsets.fromLTRB(
                                 sp(context, AppDimens.space24),
@@ -192,78 +208,6 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       textAlign: TextAlign.center,
-    );
-  }
-
-  /// Progress UI shown after successful login while data-init runs.
-  Widget _buildProgressUI(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return BlocBuilder<DataInitBloc, DataInitBlocState>(
-      builder: (context, state) {
-        final statusText = state is DataInitInProgress
-            ? dataInitStatusText(state.status, detail: state.detail)
-            : 'Menyiapkan data...';
-
-        final isCompleted = state is DataInitSuccess;
-
-        if (isCompleted && mounted) {
-          // Navigate to home after the current frame so the widget tree
-          // can settle before GoRouter replaces the route.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            // Mark authenticated so the router guard allows /home.
-            widget.authStatusNotifier.setStatus(AuthStatus.authenticated);
-          });
-        }
-
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo
-            const BellLogo(),
-            SizedBox(height: sp(context, AppDimens.space32)),
-
-            // Status text
-            Text(
-              isCompleted ? 'Data akademik siap' : statusText,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: cs.onSurface,
-                fontSize: responsiveFontSize(context, AppDimens.textMD),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: sp(context, AppDimens.space24)),
-
-            // Progress indicator
-            if (!isCompleted) CircularProgressIndicator(color: cs.primary),
-
-            // Error message with retry button
-            if (state is DataInitFailure)
-              Column(
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: cs.error),
-                  SizedBox(height: sp(context, AppDimens.space16)),
-                  Text(
-                    state.message,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
-                  ),
-                  SizedBox(height: sp(context, AppDimens.space24)),
-                  FilledButton(
-                    onPressed: () {
-                      context.read<DataInitBloc>().add(const DataInitReset());
-                      context.read<AuthBloc>().add(const AuthLogoutRequested());
-                    },
-                    child: const Text('Coba lagi'),
-                  ),
-                ],
-              ),
-          ],
-        );
-      },
     );
   }
 }

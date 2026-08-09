@@ -39,6 +39,7 @@ import 'package:lonceng_unman_fe/features/profile/data/datasources/profile_remot
 import 'package:lonceng_unman_fe/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/profile/domain/usecases/get_profile.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
+import 'package:lonceng_unman_fe/features/profile/data/services/photo_service.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 import 'package:lonceng_unman_fe/features/krs/data/datasources/krs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/krs/data/repositories/krs_repository_impl.dart';
@@ -49,8 +50,6 @@ import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/d
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
-import 'package:lonceng_unman_fe/core/overlay/cubit/refresh_overlay_cubit.dart';
-import 'package:lonceng_unman_fe/core/overlay/widgets/global_refresh_overlay.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
@@ -81,11 +80,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
+  // Run ALL initialization inside runZonedGuarded for error isolation.
+  // Both ensureInitialized() and runApp() MUST be in the same zone
+  // to satisfy Flutter's debugCheckZone assertion.
   runZonedGuarded(
     () async {
-      // Ensure bindings are initialized inside runZonedGuarded (same zone as runApp)
       WidgetsFlutterBinding.ensureInitialized();
-
       // Global error handling
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
@@ -277,6 +277,10 @@ Future<void> main() async {
       await avatarCacheService.initialize();
       Services.register<AvatarCacheService>(avatarCacheService);
 
+      // ── Photo Service (fetch foto dari backend LMS) ──
+      final photoService = PhotoService();
+      Services.register<PhotoService>(photoService);
+
       // ── Avatar Cubit (singleton global) ──
       // Satu instance dipakai bersama oleh header Home dan halaman Profile
       // agar foto yang tampil selalu identik. bootstrap() membaca NPM dari
@@ -284,6 +288,7 @@ Future<void> main() async {
       final avatarCubit = AvatarCubit(
         cache: avatarCacheService,
         academicCache: academicCacheService,
+        photoService: photoService,
       );
       Services.register<AvatarCubit>(avatarCubit);
       unawaited(avatarCubit.bootstrap());
@@ -351,11 +356,13 @@ Future<void> main() async {
       final getKhs = GetKhs(KhsRepositoryImpl(remoteDataSource: khsDataSource));
       Services.register<GetKhs>(getKhs);
 
-      // ── Data Initialization (Profile + KRS + KHS pipeline) ──
+      // ── Data Initialization (Profile + KRS + KHS + Photo pipeline) ──
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
         getKhs: getKhs,
         profileDataSource: Services.get<StudentProfileRemoteDataSource>(),
+        photoService: photoService,
+        avatarCache: avatarCacheService,
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(
@@ -429,49 +436,8 @@ Future<void> main() async {
       runApp(const LoncengUnmanApp());
     },
     (error, stackTrace) {
-      developer.log(
-        'Uncaught error: $error',
-        name: 'ErrorHandler',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      // If runApp() hasn't been called yet, show error UI instead of blackscreen
-      runApp(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Terjadi kesalahan saat startup',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$error',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      debugPrint('[ERROR] Uncaught error in runZonedGuarded: $error');
+      debugPrint('[ERROR] Stack: $stackTrace');
     },
   );
 }
@@ -539,22 +505,19 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
         // AvatarCubit singleton milik DI — dipakai bersama header Home dan
         // halaman Profile. Memakai .value agar tidak ditutup oleh widget ini.
         BlocProvider<AvatarCubit>.value(value: _avatarCubit),
-        BlocProvider<RefreshOverlayCubit>(create: (_) => RefreshOverlayCubit()),
       ],
-      child: GlobalRefreshOverlay(
-        child: ListenableBuilder(
-          listenable: _themeNotifier,
-          builder: (context, child) {
-            return MaterialApp.router(
-              title: 'Lonceng UnMan',
-              theme: lightTheme,
-              darkTheme: darkTheme,
-              themeMode: _themeNotifier.themeMode,
-              routerConfig: _router,
-              debugShowCheckedModeBanner: false,
-            );
-          },
-        ),
+      child: ListenableBuilder(
+        listenable: _themeNotifier,
+        builder: (context, child) {
+          return MaterialApp.router(
+            title: 'Lonceng UnMan',
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: _themeNotifier.themeMode,
+            routerConfig: _router,
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

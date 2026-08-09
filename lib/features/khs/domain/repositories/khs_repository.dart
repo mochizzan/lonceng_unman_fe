@@ -13,6 +13,7 @@ abstract class KhsRepository {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   });
 
   /// Extract KHS data from downloaded PDF.
@@ -21,6 +22,7 @@ abstract class KhsRepository {
     required String password,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   });
 
   /// Get cached KHS data for a specific semester.
@@ -28,5 +30,6 @@ abstract class KhsRepository {
     required String npm,
     required String tahunAjaran,
     required String semester,
+    bool forceRefresh = false,
   });
 }

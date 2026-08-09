@@ -8,17 +8,36 @@ class KrsRepositoryImpl implements KrsRepository {
   const KrsRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<void> downloadKrs({required String npm, required String password}) {
-    return remoteDataSource.downloadKrs(npm: npm, password: password);
+  Future<void> downloadKrs({
+    required String npm,
+    required String password,
+    bool forceRefresh = false,
+  }) {
+    return remoteDataSource.downloadKrs(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
   }
 
   @override
-  Future<void> extractKrs({required String npm, required String password}) {
-    return remoteDataSource.extractKrs(npm: npm, password: password);
+  Future<void> extractKrs({
+    required String npm,
+    required String password,
+    bool forceRefresh = false,
+  }) {
+    return remoteDataSource.extractKrs(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
   }
 
   @override
-  Future<KrsEntity> getKrsData({required String npm}) {
-    return remoteDataSource.getKrsData(npm: npm);
+  Future<KrsEntity> getKrsData({
+    required String npm,
+    bool forceRefresh = false,
+  }) {
+    return remoteDataSource.getKrsData(npm: npm, forceRefresh: forceRefresh);
   }
 }

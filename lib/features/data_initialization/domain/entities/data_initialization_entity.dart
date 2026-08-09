@@ -5,6 +5,7 @@ enum DataInitStatus {
   clearingCache,
   scrapingProfile,
   gettingProfile,
+  fetchingPhoto,
   downloadingKrs,
   extractingKrs,
   fetchingKrsData,

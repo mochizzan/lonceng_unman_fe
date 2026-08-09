@@ -74,6 +74,8 @@ abstract final class AppStrings {
       'Foto profil akan dihapus dari perangkat ini.';
   static const String avatarRemoveConfirmYes = 'Hapus';
   static const String avatarRemoveConfirmNo = 'Batal';
+  static const String avatarFetchingFromServer =
+      'Mengambil foto dari server...';
 
   // ─── Settings ─────────────────────────────────────────
   static const String settingsTitle = 'Pengaturan';

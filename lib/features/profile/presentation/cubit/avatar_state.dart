@@ -48,6 +48,25 @@ class AvatarProcessing extends AvatarState {
   int get hashCode => Object.hash(runtimeType, bytes);
 }
 
+/// Sedang mengambil foto dari backend LMS.
+/// [bytes] adalah avatar sebelumnya (untuk mencegah kedip kosong).
+class AvatarFetching extends AvatarState {
+  const AvatarFetching({this.bytes});
+
+  @override
+  final Uint8List? bytes;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AvatarFetching &&
+          runtimeType == other.runtimeType &&
+          bytes == other.bytes;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, bytes);
+}
+
 /// Avatar siap ditampilkan. [bytes] null berarti belum ada foto tersimpan.
 class AvatarReady extends AvatarState {
   const AvatarReady(this.bytes);

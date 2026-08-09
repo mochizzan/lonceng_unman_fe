@@ -12,6 +12,7 @@
 // Pemilihan gambar dan crop dilakukan di layer presentation (butuh
 // BuildContext untuk navigasi), cubit hanya menerima bytes PNG hasil crop.
 
+import 'dart:developer' as developer;
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,15 +20,20 @@ import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/profile/data/services/photo_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_state.dart';
 
 class AvatarCubit extends Cubit<AvatarState> {
-  AvatarCubit({AvatarCacheService? cache, AcademicCacheService? academicCache})
-    : _cache = cache ?? Services.get<AvatarCacheService>(),
-      // Tidak bisa memakai initializing formal: parameter bernama tidak boleh
-      // privat, sedangkan fieldnya privat.
-      _injectedAcademicCache = academicCache,
-      super(const AvatarInitial());
+  AvatarCubit({
+    AvatarCacheService? cache,
+    AcademicCacheService? academicCache,
+    PhotoService? photoService,
+  }) : _cache = cache ?? Services.get<AvatarCacheService>(),
+       // Tidak bisa memakai initializing formal: parameter bernama tidak boleh
+       // privat, sedangkan fieldnya privat.
+       _injectedAcademicCache = academicCache,
+       _photoService = photoService,
+       super(const AvatarInitial());
 
   final AvatarCacheService _cache;
 
@@ -35,6 +41,12 @@ class AvatarCubit extends Cubit<AvatarState> {
   /// dibutuhkan — supaya cubit tetap bisa dibuat pada test yang tidak
   /// mendaftarkan [AcademicCacheService].
   final AcademicCacheService? _injectedAcademicCache;
+
+  /// Service untuk mengambil foto dari backend LMS.
+  /// Bila null, lazy-loaded dari service locator saat dibutuhkan.
+  final PhotoService? _photoService;
+
+  PhotoService get _photo => _photoService ?? Services.get<PhotoService>();
 
   /// NPM pemilik avatar yang sedang terikat — sekaligus key di box `avatar`.
   /// Bernilai '' bila belum ada akun terikat (belum login / sudah logout).
@@ -88,6 +100,22 @@ class AvatarCubit extends Cubit<AvatarState> {
     }
   }
 
+  /// Reload avatar dari Hive cache untuk NPM yang sedang terikat.
+  ///
+  /// Berguna setelah DataInit pipeline selesai menyimpan foto baru ke
+  /// cache, sehingga UI langsung menampilkan foto tanpa harus pindah
+  /// halaman dulu. Tidak pernah melempar.
+  Future<void> reload() async {
+    if (_npm.isEmpty) return;
+    try {
+      final bytes = await _cache.loadAvatar(_npm);
+      if (_npm.isEmpty) return; // NPM bisa berubah selama await
+      _safeEmit(AvatarReady(bytes));
+    } catch (_) {
+      // Kegagalan reload tidak mengubah state yang sudah ada.
+    }
+  }
+
   /// Mengikat NPM dari kredensial tersimpan saat cold start, sebelum halaman
   /// Profile sempat terbuka, agar header Home langsung menampilkan foto.
   ///
@@ -103,6 +131,35 @@ class AvatarCubit extends Cubit<AvatarState> {
       _safeEmit(const AvatarReady(null));
     } catch (_) {
       _safeEmit(const AvatarReady(null));
+    }
+  }
+
+  /// Mengambil foto profil dari backend LMS dan menyimpannya ke cache lokal.
+  ///
+  /// Dipanggil saat DataInit pipeline dan saat user menekan "Perbarui Data".
+  /// Tidak melempar — kegagalan dicatat ke state tanpa menghentikan pipeline.
+  Future<void> fetchFromBackend({
+    required String npm,
+    required String password,
+  }) async {
+    if (_npm.isEmpty || _npm != npm) return;
+    final previous = state.bytes;
+    _safeEmit(AvatarFetching(bytes: previous));
+    try {
+      final bytes = await _photo.fetchPhoto(npm: npm, password: password);
+      if (_npm != npm) return; // NPM berganti selama await
+      if (bytes != null && bytes.isNotEmpty) {
+        await _cache.saveAvatar(npm: npm, bytes: bytes);
+        _safeEmit(AvatarReady(bytes));
+      } else {
+        // Backend tidak ada foto — pertahankan apa yang sudah ada
+        _safeEmit(AvatarReady(previous));
+      }
+    } catch (e) {
+      developer.log('fetchFromBackend gagal: $e', name: 'AvatarCubit');
+      // Kegagalan fetch tidak menghapus foto yang sudah ada
+      if (_npm != npm) return;
+      _safeEmit(AvatarReady(previous));
     }
   }
 

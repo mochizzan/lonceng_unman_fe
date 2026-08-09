@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/app_durations.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
@@ -28,10 +29,17 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
     DataInitStarted event,
     Emitter<DataInitBlocState> emit,
   ) async {
+    debugPrint(
+      '[DATA_INIT] _onStarted called — forceRefresh=${event.forceRefresh}',
+    );
     // Guard against concurrent / duplicate starts (login + shell bootstrap).
-    if (_isRunning) return;
+    if (_isRunning) {
+      debugPrint('[DATA_INIT] Already running — SKIP');
+      return;
+    }
 
     _isRunning = true;
+    debugPrint('[DATA_INIT] Emitting scrapingProfile');
     emit(const DataInitInProgress(DataInitStatus.scrapingProfile));
 
     try {
@@ -56,10 +64,15 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
       // Emit from within the handler so BLoC owns the Emitter lifecycle.
       await for (final progress in stream) {
         final status = progress.status;
+        debugPrint(
+          '[DATA_INIT] Stream emit: $status${progress.detail != null ? ' (${progress.detail})' : ''}',
+        );
         if (status == DataInitStatus.completed ||
             status == DataInitStatus.completedWithErrors) {
+          debugPrint('[DATA_INIT] Emitting DataInitSuccess');
           emit(const DataInitSuccess());
         } else if (status == DataInitStatus.failed) {
+          debugPrint('[DATA_INIT] Emitting DataInitFailure');
           emit(const DataInitFailure('Gagal memuat data akademik'));
         } else {
           emit(DataInitInProgress(status, detail: progress.detail));
@@ -77,6 +90,7 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
         );
       }
     } catch (error) {
+      debugPrint('[DATA_INIT] Exception: $error');
       final friendlyMessage = ErrorHandler.toHumanReadable(error);
       String? step;
       if (error is DataInitStepException) {

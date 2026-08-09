@@ -94,21 +94,24 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
     final hidden = Services.get<NavbarVisibilityNotifier>().value;
     if (!mounted) return;
 
-    if (hidden && _modalVisible) {
+    if (hidden) {
       // Modal dibuka → slide navbar ke bawah.
-      _modalVisible = false;
-      _modalAnimController.reverse();
-    } else if (!hidden && !_modalVisible) {
+      if (_modalVisible) {
+        _modalVisible = false;
+        _modalAnimController.reverse();
+      }
+    } else {
       // Modal ditutup → slide navbar ke atas.
-      _modalVisible = true;
-      _isAnimatingModal = true;
-      _scrollHide.show(); // Reset scroll ke visible.
-      _modalAnimController.forward().then((_) {
-        if (mounted) {
-          // Setelah animasi selesai, izinkan scroll-hide berfungsi normal.
-          _isAnimatingModal = false;
-        }
-      });
+      if (!_modalVisible) {
+        _modalVisible = true;
+        _isAnimatingModal = true;
+        _scrollHide.show(); // Reset scroll ke visible.
+        _modalAnimController.forward().then((_) {
+          if (mounted) {
+            _isAnimatingModal = false;
+          }
+        });
+      }
     }
   }
 
@@ -144,7 +147,10 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
       ),
       bottomNavigationBar: showNav
           ? AnimatedBuilder(
-              animation: _modalAnimController,
+              animation: Listenable.merge([
+                _modalAnimController,
+                _scrollHide.animation,
+              ]),
               builder: (_, child) {
                 // Slide offset gabungan: scroll-hide + modal-hide.
                 final scrollOffset = _scrollHide.value * _navBarHeight;

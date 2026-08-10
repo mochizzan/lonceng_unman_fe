@@ -124,7 +124,12 @@ class _FakeDataInitRepository implements DataInitializationRepository {
     required String npm,
     required String password,
     bool forceRefresh = true,
-  }) => const Stream<DataInitProgress>.empty();
+  }) async* {
+    // Emit at least one progress event so DataInitProgressView shows
+    // CircularProgressIndicator (it hides on DataInitSuccess/Failure).
+    yield const DataInitProgress(DataInitStatus.scrapingProfile);
+    yield const DataInitProgress(DataInitStatus.completed);
+  }
 }
 
 DataInitBloc _makeDataInitBloc() =>
@@ -261,12 +266,20 @@ void main() {
     await tester.enterText(find.byKey(const Key('password_field')), 'testpass');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Masuk Akun').last);
-    // Progress UI menampilkan indikator berputar; pumpAndSettle akan
-    // menggantung, jadi pompa beberapa frame saja.
+    // Profile scrape succeeds → AuthProfileReview → ReviewScreen appears.
     await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Confirm profile to proceed to AuthAuthenticated + DataInitProgressView.
+    expect(find.text('Ya, Konfirmasi'), findsOneWidget);
+    await tester.tap(find.text('Ya, Konfirmasi'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pump();
 
-    // After successful login, user should be on home screen
-    expect(find.text('Halo Mahasiswa!'), findsNothing);
+    // After confirmation, DataInitProgressView shows completion state
+    // ("Data akademik siap") — login form no longer visible.
+    expect(find.text('Data akademik siap'), findsOneWidget);
   });
 }

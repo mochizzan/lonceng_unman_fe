@@ -36,6 +36,7 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
     with TickerProviderStateMixin {
   late final ScrollHideController _scrollHide;
   late final AnimationController _modalAnimController;
+  late final AnimationController _fadeInController;
   final _navBarKey = GlobalKey();
   double _navBarHeight = 0;
   bool _modalVisible = true; // navbar terlihat = true
@@ -53,6 +54,11 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
       duration: const Duration(milliseconds: 300),
       value: 1.0, // 1.0 = navbar terlihat (tidak ter-slide)
     );
+    // Fade-in: 0.0 → 1.0 saat pertama kali mount (login → home transition).
+    _fadeInController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    )..forward();
     // Listen perubahan visibilitas navbar saat modal (bottom sheet) buka/tutup.
     Services.get<NavbarVisibilityNotifier>().addListener(_onModalVisibility);
     // Measure the rendered navbar height after the first frame so the
@@ -72,6 +78,7 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
   @override
   void dispose() {
     Services.get<NavbarVisibilityNotifier>().removeListener(_onModalVisibility);
+    _fadeInController.dispose();
     _modalAnimController.dispose();
     _scrollHide.dispose();
     super.dispose();
@@ -141,9 +148,12 @@ class _MainShellScaffoldState extends State<MainShellScaffold>
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: true,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _handleScroll,
-        child: widget.child,
+      body: FadeTransition(
+        opacity: _fadeInController,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _handleScroll,
+          child: widget.child,
+        ),
       ),
       bottomNavigationBar: showNav
           ? AnimatedBuilder(

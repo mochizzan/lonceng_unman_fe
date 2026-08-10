@@ -89,66 +89,68 @@ class _LoginPageState extends State<LoginPage> {
       },
       child: Scaffold(
         body: AuthBackground(
-          child: BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, authState) {
-              // Shared content switches smoothly via AnimatedSwitcher.
-              // AuthBackground stays mounted — no background flash.
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: authState is AuthProfileReview
-                    ? ReviewScreen(
-                        key: const ValueKey('review'),
-                        data: authState.profile,
-                        onConfirm: () => context.read<AuthBloc>().add(
-                          const AuthProfileConfirmed(),
+          child: SafeArea(
+            child: BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, authState) {
+                // Shared content switches smoothly via AnimatedSwitcher.
+                // AuthBackground stays mounted — no background flash.
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: authState is AuthProfileReview
+                      ? ReviewScreen(
+                          key: const ValueKey('review'),
+                          data: authState.profile,
+                          onConfirm: () => context.read<AuthBloc>().add(
+                            const AuthProfileConfirmed(),
+                          ),
+                          onReject: () => context.read<AuthBloc>().add(
+                            const AuthProfileRejected(),
+                          ),
+                        )
+                      : authState is AuthAuthenticated
+                      ? DataInitProgressView(
+                          key: const ValueKey('progress'),
+                          onComplete: () {
+                            if (!mounted) return;
+                            widget.authStatusNotifier.setStatus(
+                              AuthStatus.authenticated,
+                            );
+                          },
+                          onRetry: () {
+                            context.read<DataInitBloc>().add(
+                              const DataInitReset(),
+                            );
+                            context.read<AuthBloc>().add(
+                              const AuthLogoutRequested(),
+                            );
+                          },
+                        )
+                      : SingleChildScrollView(
+                          key: const ValueKey('login'),
+                          padding: EdgeInsets.fromLTRB(
+                            sp(context, AppDimens.space24),
+                            sp(context, AppDimens.space16),
+                            sp(context, AppDimens.space24),
+                            sp(context, AppDimens.space32) + bottomInset,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildGreeting(cs),
+                              SizedBox(height: sp(context, AppDimens.space32)),
+                              _LoginCard(
+                                npmController: _npmController,
+                                passwordController: _passwordController,
+                              ),
+                              SizedBox(height: sp(context, AppDimens.space24)),
+                              _buildFooter(cs),
+                            ],
+                          ),
                         ),
-                        onReject: () => context.read<AuthBloc>().add(
-                          const AuthProfileRejected(),
-                        ),
-                      )
-                    : authState is AuthAuthenticated
-                    ? DataInitProgressView(
-                        key: const ValueKey('progress'),
-                        onComplete: () {
-                          if (!mounted) return;
-                          widget.authStatusNotifier.setStatus(
-                            AuthStatus.authenticated,
-                          );
-                        },
-                        onRetry: () {
-                          context.read<DataInitBloc>().add(
-                            const DataInitReset(),
-                          );
-                          context.read<AuthBloc>().add(
-                            const AuthLogoutRequested(),
-                          );
-                        },
-                      )
-                    : SingleChildScrollView(
-                        key: const ValueKey('login'),
-                        padding: EdgeInsets.fromLTRB(
-                          sp(context, AppDimens.space24),
-                          sp(context, AppDimens.space16),
-                          sp(context, AppDimens.space24),
-                          sp(context, AppDimens.space32) + bottomInset,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildGreeting(cs),
-                            SizedBox(height: sp(context, AppDimens.space32)),
-                            _LoginCard(
-                              npmController: _npmController,
-                              passwordController: _passwordController,
-                            ),
-                            SizedBox(height: sp(context, AppDimens.space24)),
-                            _buildFooter(cs),
-                          ],
-                        ),
-                      ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

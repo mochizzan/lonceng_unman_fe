@@ -78,6 +78,13 @@ class _LoginPageState extends State<LoginPage> {
               forceRefresh: true,
             ),
           );
+        } else if (state is AuthInitial) {
+          // Clear form controllers when returning to login form
+          // (e.g. after "bukan akun saya" rejection or logout).
+          // BLoC's internal _npm/_password are already cleared;
+          // controllers must match to avoid stale text + validation mismatch.
+          _npmController.clear();
+          _passwordController.clear();
         } else if (state is AuthError) {
           // Show Toast for network-level errors that can't display inline.
           // All other errors display inline via BlocBuilder below.

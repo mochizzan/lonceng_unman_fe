@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
@@ -119,6 +120,35 @@ class SettingsPage extends StatelessWidget {
                           notifState.reminderIntervalMinutes,
                         );
                       },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          // ── Notification toggle per class ──
+          const SizedBox(height: AppDimens.space16),
+          BlocBuilder<NotificationCubit, NotificationState>(
+            builder: (context, notifState) {
+              if (notifState.notifications.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(title: AppStrings.settingsNotificationClasses),
+                  const SizedBox(height: AppDimens.space8),
+                  _SettingsCard(
+                    child: Column(
+                      children: notifState.notifications.map((notif) {
+                        return _NotificationToggleTile(
+                          notification: notif,
+                          onToggle: () => context
+                              .read<NotificationCubit>()
+                              .toggleNotification(notif.id),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
@@ -272,6 +302,55 @@ class _SectionHeader extends StatelessWidget {
         color: cs.primary,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+/// Toggle tile for a single notification in settings.
+class _NotificationToggleTile extends StatelessWidget {
+  const _NotificationToggleTile({
+    required this.notification,
+    required this.onToggle,
+  });
+
+  final ScheduledNotificationEntity notification;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final timeStr =
+        '${notification.classTime.hour.toString().padLeft(2, '0')}:'
+        '${notification.classTime.minute.toString().padLeft(2, '0')}';
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        notification.isActive
+            ? Icons.notifications_active
+            : Icons.notifications_off,
+        color: notification.isActive ? cs.primary : cs.onSurfaceVariant,
+        size: 22,
+      ),
+      title: Text(
+        notification.courseName,
+        style: TextStyle(
+          fontSize: AppDimens.textBase,
+          fontWeight: FontWeight.w500,
+          color: cs.onSurface,
+        ),
+      ),
+      subtitle: Text(
+        '${notification.dayOfWeek} • $timeStr • ${notification.room}',
+        style: TextStyle(
+          fontSize: AppDimens.textSM,
+          color: cs.onSurfaceVariant,
+        ),
+      ),
+      trailing: Switch(
+        value: notification.isActive,
+        onChanged: (_) => onToggle(),
       ),
     );
   }

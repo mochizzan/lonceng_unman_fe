@@ -167,6 +167,20 @@ class NotificationService {
     return true;
   }
 
+  /// Check current notification permission status without prompting.
+  /// Returns true if notifications are already enabled.
+  Future<bool> checkPermissionStatus() async {
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidPlugin != null) {
+      return await androidPlugin.areNotificationsEnabled() ?? false;
+    }
+    // Non-Android platforms: treat as granted.
+    return true;
+  }
+
   /// Request notification permission (required for Android 13+).
   /// Returns true if permission is granted.
   Future<bool> requestPermission() async {

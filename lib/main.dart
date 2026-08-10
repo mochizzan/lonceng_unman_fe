@@ -60,6 +60,10 @@ import 'package:lonceng_unman_fe/features/notification/data/repositories/notific
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/core/services/notification_scheduler_noop.dart';
+import 'package:lonceng_unman_fe/features/notification/data/models/notification_delivered_model.dart';
+import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_delivered_local_data_source.dart';
+import 'package:lonceng_unman_fe/features/notification/data/repositories/notification_delivered_repository_impl.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_delivered_repository.dart';
 import 'package:lonceng_unman_fe/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:lonceng_unman_fe/features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
@@ -169,6 +173,7 @@ Future<void> main() async {
 
       late Box<ScheduledNotificationModel> notificationsBox;
       late Box<int> settingsBox;
+      late Box<NotificationDeliveredModel> deliveredBox;
       try {
         if (hivePath != null) {
           await Hive.initFlutter(hivePath);
@@ -176,11 +181,15 @@ Future<void> main() async {
           await Hive.initFlutter();
         }
         Hive.registerAdapter(ScheduledNotificationModelAdapter());
+        Hive.registerAdapter(NotificationDeliveredModelAdapter());
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
         );
         settingsBox = await Hive.openBox<int>(
           NotificationConfig.notificationSettingsBox,
+        );
+        deliveredBox = await Hive.openBox<NotificationDeliveredModel>(
+          'notification_delivered',
         );
       } catch (e) {
         developer.log(
@@ -200,15 +209,20 @@ Future<void> main() async {
           await Hive.deleteBoxFromDisk(
             NotificationConfig.notificationSettingsBox,
           );
+          await Hive.deleteBoxFromDisk('notification_delivered');
         } catch (_) {
           // Ignore — fresh start if disk cleanup also fails
         }
         Hive.registerAdapter(ScheduledNotificationModelAdapter());
+        Hive.registerAdapter(NotificationDeliveredModelAdapter());
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
         );
         settingsBox = await Hive.openBox<int>(
           NotificationConfig.notificationSettingsBox,
+        );
+        deliveredBox = await Hive.openBox<NotificationDeliveredModel>(
+          'notification_delivered',
         );
       }
 
@@ -246,6 +260,16 @@ Future<void> main() async {
       Services.register<NotificationRepository>(
         NotificationRepositoryImpl(
           localDataSource: Services.get<NotificationLocalDataSource>(),
+        ),
+      );
+
+      // ── Notification delivered tracking ──
+      Services.register<NotificationDeliveredLocalDataSource>(
+        NotificationDeliveredLocalDataSource(box: deliveredBox),
+      );
+      Services.register<NotificationDeliveredRepository>(
+        NotificationDeliveredRepositoryImpl(
+          localDataSource: Services.get<NotificationDeliveredLocalDataSource>(),
         ),
       );
 

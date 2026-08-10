@@ -1,3 +1,4 @@
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
@@ -8,13 +9,16 @@ import 'package:lonceng_unman_fe/features/notification/domain/services/notificat
 /// Extends real class to maintain type safety in DI.
 class NotificationSchedulerNoop extends NotificationScheduler {
   NotificationSchedulerNoop()
-      : super(
-          repository: _NoOpRepository(),
-          notificationService: _NoOpNotificationService(),
-        );
+    : super(
+        repository: _NoOpRepository(),
+        notificationService: _NoOpNotificationService(),
+      );
 
   @override
   Future<void> scheduleForDay(JadwalEntity jadwal) async {}
+
+  @override
+  Future<void> scheduleAllDays(List<ScheduleItemEntity> items) async {}
 
   @override
   Future<void> scheduleSingle(ScheduledNotificationEntity entity) async {}

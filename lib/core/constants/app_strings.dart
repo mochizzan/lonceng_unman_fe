@@ -207,4 +207,11 @@ abstract final class AppStrings {
   static const String khsBelumAdaDataMk = 'Belum ada data mata kuliah';
   static const String khsMataKuliah = 'Mata Kuliah';
   static const String khsRekapitulasi = 'Rekapitulasi';
+
+  // ── Notification History ────────────────────────────────────
+  static const String notificationHistoryTitle = 'Riwayat Notifikasi';
+  static const String notificationHistoryEmpty = 'Belum ada notifikasi';
+  static const String notificationHistoryEmptySubtitle =
+      'Notifikasi akan muncul setelah jadwal dijadwalkan.';
+  static const String settingsNotificationClasses = 'Notifikasi Kelas';
 }

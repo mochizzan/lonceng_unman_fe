@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -59,9 +60,16 @@ class MockNotificationRepository implements NotificationRepository {
 class MockNotificationScheduler implements NotificationScheduler {
   bool scheduled = false;
   bool allCancelled = false;
+  List<ScheduleItemEntity>? lastScheduleAllItems;
 
   @override
   Future<void> scheduleForDay(JadwalEntity jadwal) async => scheduled = true;
+
+  @override
+  Future<void> scheduleAllDays(List<ScheduleItemEntity> items) async {
+    await cancelAll();
+    lastScheduleAllItems = items;
+  }
 
   @override
   Future<void> scheduleSingle(ScheduledNotificationEntity entity) async {}
@@ -101,6 +109,9 @@ class MockNotificationService implements NotificationService {
     AndroidScheduleMode androidScheduleMode =
         AndroidScheduleMode.exactAllowWhileIdle,
   }) async {}
+
+  @override
+  Future<bool> checkPermissionStatus() async => true;
 
   @override
   Future<bool> requestPermission() async => true;
@@ -230,5 +241,141 @@ void main() {
         predicate<NotificationState>((s) => s.notifications.isEmpty),
       ],
     );
+
+    blocTest<NotificationCubit, NotificationState>(
+      'scheduleAll schedules notifications for all items',
+      build: () {
+        mockRepo.setStore([]);
+        return cubit;
+      },
+      act: (cubit) async {
+        await cubit.scheduleAll([
+          ScheduleItemEntity(
+            courseName: 'Algoritma',
+            room: 'R.301',
+            startTime: DateTime(2026, 1, 1, 8, 0),
+            endTime: DateTime(2026, 1, 1, 10, 0),
+            dayOfWeek: 'Senin',
+          ),
+          ScheduleItemEntity(
+            courseName: 'Basis Data',
+            room: 'R.201',
+            startTime: DateTime(2026, 1, 2, 13, 0),
+            endTime: DateTime(2026, 1, 2, 15, 0),
+            dayOfWeek: 'Selasa',
+          ),
+        ]);
+      },
+      expect: () => [
+        const NotificationState(status: NotificationStatus.loading),
+        predicate<NotificationState>(
+          (s) => s.status == NotificationStatus.loaded,
+        ),
+      ],
+    );
+
+    blocTest<NotificationCubit, NotificationState>(
+      'scheduleAll cancels previous alarms before creating new ones',
+      build: () {
+        mockRepo.setStore([]);
+        return cubit;
+      },
+      act: (cubit) async {
+        await cubit.scheduleAll([
+          ScheduleItemEntity(
+            courseName: 'Test',
+            room: 'R.1',
+            startTime: DateTime(2026, 1, 1, 8, 0),
+            endTime: DateTime(2026, 1, 1, 10, 0),
+            dayOfWeek: 'Senin',
+          ),
+        ]);
+      },
+      verify: (_) {
+        expect(mockScheduler.allCancelled, isTrue);
+        expect(mockScheduler.lastScheduleAllItems, hasLength(1));
+      },
+    );
+
+    blocTest<NotificationCubit, NotificationState>(
+      'scheduleAll emits error when permission denied',
+      build: () {
+        // Use a service that denies permission
+        final deniedService = _DeniedPermissionService();
+        final deniedCubit = NotificationCubit(
+          scheduler: mockScheduler,
+          repository: mockRepo,
+          notificationService: deniedService,
+        );
+        return deniedCubit;
+      },
+      act: (cubit) async {
+        await cubit.scheduleAll([
+          ScheduleItemEntity(
+            courseName: 'Test',
+            room: 'R.1',
+            startTime: DateTime(2026, 1, 1, 8, 0),
+            endTime: DateTime(2026, 1, 1, 10, 0),
+            dayOfWeek: 'Senin',
+          ),
+        ]);
+      },
+      expect: () => [
+        const NotificationState(status: NotificationStatus.loading),
+        predicate<NotificationState>(
+          (s) => s.notificationPermissionDenied == true,
+        ),
+        predicate<NotificationState>(
+          (s) =>
+              s.status == NotificationStatus.error &&
+              s.notificationPermissionDenied == true,
+        ),
+      ],
+    );
+
+    blocTest<NotificationCubit, NotificationState>(
+      'markHistoryViewed sets historyViewed to true',
+      build: () => cubit,
+      act: (cubit) async {
+        await cubit.loadNotifications();
+        cubit.markHistoryViewed();
+      },
+      verify: (cubit) {
+        expect(cubit.state.historyViewed, isTrue);
+      },
+    );
   });
+}
+
+/// Mock service that denies notification permission.
+class _DeniedPermissionService implements NotificationService {
+  @override
+  Future<bool> checkPermissionStatus() async => false;
+
+  @override
+  Future<bool> requestPermission() async => false;
+
+  @override
+  Future<void> cancel(int id) async {}
+
+  @override
+  Future<void> cancelAll() async {}
+
+  @override
+  Future<bool> canScheduleExactNotifications() async => true;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationChannel channel,
+    required tz.TZDateTime scheduledDate,
+    DateTimeComponents? matchDateTimeComponents,
+    AndroidScheduleMode androidScheduleMode =
+        AndroidScheduleMode.exactAllowWhileIdle,
+  }) async {}
 }

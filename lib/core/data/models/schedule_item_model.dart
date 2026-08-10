@@ -17,6 +17,7 @@ class ScheduleItemModel extends ScheduleItemEntity {
     super.group,
     super.sks,
     super.status,
+    super.dayOfWeek,
   });
 
   factory ScheduleItemModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +33,7 @@ class ScheduleItemModel extends ScheduleItemEntity {
       group: json['group'] as String?,
       sks: json['sks'] as String?,
       status: _parseStatus(json['status'] as String? ?? 'upcoming'),
+      dayOfWeek: json['dayOfWeek'] as String? ?? '',
     );
   }
 

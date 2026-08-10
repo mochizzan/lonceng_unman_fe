@@ -3,16 +3,19 @@
 // Check in to version control
 
 import 'package:hive_ce/hive_ce.dart';
+import 'package:lonceng_unman_fe/features/notification/data/models/notification_delivered_model.dart';
 import 'package:lonceng_unman_fe/features/notification/data/models/scheduled_notification_model.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(NotificationDeliveredModelAdapter());
     registerAdapter(ScheduledNotificationModelAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(NotificationDeliveredModelAdapter());
     registerAdapter(ScheduledNotificationModelAdapter());
   }
 }

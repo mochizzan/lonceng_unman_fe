@@ -10,6 +10,7 @@ class NotificationState {
     this.reminderIntervalMinutes = NotificationConfig.defaultReminderMinutes,
     this.errorMessage,
     this.notificationPermissionDenied = false,
+    this.historyViewed = false,
   });
 
   final NotificationStatus status;
@@ -18,6 +19,11 @@ class NotificationState {
   final String? errorMessage;
   final bool notificationPermissionDenied;
 
+  /// Whether the user has opened the notification history page since
+  /// the last time notifications changed. Used to show the red dot
+  /// only when there are new/unseen notifications.
+  final bool historyViewed;
+
   NotificationState copyWith({
     NotificationStatus? status,
     List<ScheduledNotificationEntity>? notifications,
@@ -25,6 +31,7 @@ class NotificationState {
     String? errorMessage,
     bool clearErrorMessage = false,
     bool? notificationPermissionDenied,
+    bool? historyViewed,
   }) {
     return NotificationState(
       status: status ?? this.status,
@@ -36,6 +43,7 @@ class NotificationState {
           : (errorMessage ?? this.errorMessage),
       notificationPermissionDenied:
           notificationPermissionDenied ?? this.notificationPermissionDenied,
+      historyViewed: historyViewed ?? this.historyViewed,
     );
   }
 
@@ -48,7 +56,8 @@ class NotificationState {
           notifications == other.notifications &&
           reminderIntervalMinutes == other.reminderIntervalMinutes &&
           errorMessage == other.errorMessage &&
-          notificationPermissionDenied == other.notificationPermissionDenied;
+          notificationPermissionDenied == other.notificationPermissionDenied &&
+          historyViewed == other.historyViewed;
 
   @override
   int get hashCode => Object.hash(
@@ -57,5 +66,6 @@ class NotificationState {
     reminderIntervalMinutes,
     errorMessage,
     notificationPermissionDenied,
+    historyViewed,
   );
 }

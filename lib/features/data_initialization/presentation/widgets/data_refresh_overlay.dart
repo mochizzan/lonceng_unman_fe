@@ -6,6 +6,8 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
+import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
+import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 
 /// Full-screen blocking overlay for data refresh progress.
 /// Shows [DataInitProgressView] over a semi-transparent barrier.
@@ -81,6 +83,15 @@ class DataRefreshOverlay extends StatelessWidget {
         );
         if (state is DataInitSuccess) {
           debugPrint('[DATA_REFRESH] Success — dismissing overlay in 500ms');
+          // Trigger JadwalBloc re-fetch so notifications get re-scheduled
+          try {
+            context.read<JadwalBloc>().add(const JadwalFetchRequested());
+            debugPrint(
+              '[DATA_REFRESH] JadwalFetchRequested dispatched after refresh',
+            );
+          } catch (e) {
+            debugPrint('[DATA_REFRESH] JadwalFetch dispatch failed: $e');
+          }
           Future.delayed(const Duration(milliseconds: 500), () {
             if (context.mounted) {
               Navigator.of(context).pop();

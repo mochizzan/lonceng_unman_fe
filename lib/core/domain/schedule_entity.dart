@@ -28,6 +28,7 @@ class ScheduleItemEntity {
   final String? lecturer;
   final String? group;
   final String? sks;
+  final String dayOfWeek;
 
   const ScheduleItemEntity({
     required this.courseName,
@@ -38,6 +39,7 @@ class ScheduleItemEntity {
     this.lecturer,
     this.group,
     this.sks,
+    this.dayOfWeek = '',
   });
 
   @override
@@ -52,7 +54,8 @@ class ScheduleItemEntity {
           lecturer == other.lecturer &&
           group == other.group &&
           sks == other.sks &&
-          status == other.status;
+          status == other.status &&
+          dayOfWeek == other.dayOfWeek;
 
   @override
   int get hashCode => Object.hash(
@@ -64,5 +67,6 @@ class ScheduleItemEntity {
     group,
     sks,
     status,
+    dayOfWeek,
   );
 }

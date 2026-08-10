@@ -22,6 +22,7 @@ import 'package:lonceng_unman_fe/features/home/presentation/widgets/home_header.
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/home_skeleton.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/quick_stats.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/widgets/today_schedule.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
@@ -141,6 +142,10 @@ class _HomePageViewState extends State<_HomePageView>
 
   Widget _buildContent(BuildContext context, HomeLoaded state) {
     final data = state.data;
+    final notifState = context.watch<NotificationCubit>().state;
+    final hasUnseen =
+        notifState.notifications.any((n) => n.isActive) &&
+        !notifState.historyViewed;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -166,6 +171,9 @@ class _HomePageViewState extends State<_HomePageView>
               dateText: _getDateText(),
               userName: data.userName,
               avatarUrl: data.avatarUrl,
+              onNotificationTap: () =>
+                  context.pushNamed(RouteNames.notificationHistory),
+              hasUnseenNotifications: hasUnseen,
             ),
           ),
           SliverPadding(

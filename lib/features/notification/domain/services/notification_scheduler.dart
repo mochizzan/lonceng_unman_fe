@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/utils/day_name_mapper.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
@@ -33,31 +34,25 @@ class NotificationScheduler {
   /// 3. Registers alarm via flutter_local_notifications
   /// 4. Persists to Hive via repository
   Future<void> scheduleForDay(JadwalEntity jadwal) async {
-    // TODO: Implement per-day notification scheduling.
-    // Currently skipped when selectedDay is 'Semua' (all-days view)
-    // because DayNameMapper only handles specific day names (Senin-Minggu).
-    // When 'Semua' is selected, we should iterate each scheduleItem's actual
-    // dayOfWeek and schedule notifications per real day.
-    if (jadwal.selectedDay == 'Semua') {
-      developer.log(
-        'Skipping notification scheduling — selectedDay is Semua (all-days view)',
-        name: 'NotificationScheduler',
-      );
-      return;
-    }
+    // Cancel existing alarms first to prevent duplicates
+    await cancelAll();
 
     final reminderOffset = _repository.getReminderInterval();
     final entities = <ScheduledNotificationEntity>[];
 
     for (final item in jadwal.scheduleItems) {
+      final dayOfWeek = item.dayOfWeek.isNotEmpty
+          ? item.dayOfWeek
+          : jadwal.selectedDay;
+
       final entity = ScheduledNotificationEntity(
         id: ScheduledNotificationEntity.computeId(
           item.courseName,
-          jadwal.selectedDay,
+          dayOfWeek,
           item.startTime.hour,
         ),
         courseName: item.courseName,
-        dayOfWeek: jadwal.selectedDay,
+        dayOfWeek: dayOfWeek,
         classTime: item.startTime,
         reminderOffset: reminderOffset,
         room: item.room,
@@ -75,7 +70,59 @@ class NotificationScheduler {
     await _repository.saveAll(entities);
 
     developer.log(
-      'Scheduled ${entities.length} notifications for ${jadwal.selectedDay}',
+      '[NOTIF] scheduleForDay() OK: ${entities.length} notifikasi dijadwalkan',
+      name: 'NotificationScheduler',
+    );
+  }
+
+  /// Schedule notifications for ALL classes across ALL days.
+  ///
+  /// Primary entry point for auto-schedule after data init completes.
+  /// Cancels old alarms first, then creates new ones for every item.
+  Future<void> scheduleAllDays(List<ScheduleItemEntity> items) async {
+    developer.log(
+      '[NOTIF] scheduleAllDays() START — ${items.length} items',
+      name: 'NotificationScheduler',
+    );
+
+    // Cancel all existing alarms
+    await cancelAll();
+
+    final reminderOffset = _repository.getReminderInterval();
+    final entities = <ScheduledNotificationEntity>[];
+
+    for (final item in items) {
+      if (item.dayOfWeek.isEmpty) {
+        developer.log(
+          '[NOTIF] SKIP: ${item.courseName} has no dayOfWeek',
+          name: 'NotificationScheduler',
+        );
+        continue;
+      }
+
+      final entity = ScheduledNotificationEntity(
+        id: ScheduledNotificationEntity.computeId(
+          item.courseName,
+          item.dayOfWeek,
+          item.startTime.hour,
+        ),
+        courseName: item.courseName,
+        dayOfWeek: item.dayOfWeek,
+        classTime: item.startTime,
+        reminderOffset: reminderOffset,
+        room: item.room,
+        lecturer: item.lecturer,
+        isActive: true,
+      );
+
+      entities.add(entity);
+      await _scheduleAlarm(entity);
+    }
+
+    await _repository.saveAll(entities);
+
+    developer.log(
+      '[NOTIF] scheduleAllDays() OK: ${entities.length} notifikasi dijadwalkan',
       name: 'NotificationScheduler',
     );
   }
@@ -125,10 +172,6 @@ class NotificationScheduler {
       }
     }
   }
-
-  // TODO: When selectedDay is 'Semua', each ScheduleItemEntity should carry
-  // its own dayOfWeek so _scheduleAlarm can compute the correct next occurrence.
-  // Currently all items share jadwal.selectedDay which breaks for 'Semua'.
 
   /// Compute the trigger DateTime and schedule the alarm.
   Future<void> _scheduleAlarm(ScheduledNotificationEntity entity) async {

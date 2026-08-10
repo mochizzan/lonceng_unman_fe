@@ -36,6 +36,7 @@ import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/pages/notification_history_page.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/settings/presentation/pages/settings_page.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/pages/khs_detail_page.dart';
@@ -44,6 +45,9 @@ import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboardi
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/avatar_crop_page.dart';
 import 'package:lonceng_unman_fe/features/student_profile/presentation/pages/profil_lengkap_page.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
+import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
 ///
@@ -136,9 +140,19 @@ List<RouteBase> _buildRoutes(
             BlocProvider(create: (_) => HomeBloc(Services.get<GetHome>())),
             BlocProvider(create: (_) => JadwalBloc(Services.get<GetJadwal>())),
           ],
-          child: MainShellScaffold(
-            currentIndex: _indexForRoute(state.topRoute?.name),
-            child: child,
+          child: BlocListener<DataInitBloc, DataInitBlocState>(
+            listener: (context, state) {
+              if (state is DataInitSuccess) {
+                debugPrint(
+                  '[ROUTER] DataInitSuccess → dispatching JadwalFetchRequested',
+                );
+                context.read<JadwalBloc>().add(const JadwalFetchRequested());
+              }
+            },
+            child: MainShellScaffold(
+              currentIndex: _indexForRoute(state.topRoute?.name),
+              child: child,
+            ),
           ),
         );
       },
@@ -169,6 +183,12 @@ List<RouteBase> _buildRoutes(
           name: RouteNames.settings,
           path: '/${RouteNames.settings}',
           builder: (context, state) => SettingsPage(notifier: themeNotifier),
+        ),
+        // Notification History — accessible from bell icon and settings
+        GoRoute(
+          name: RouteNames.notificationHistory,
+          path: '/${RouteNames.notificationHistory}',
+          builder: (context, state) => const NotificationHistoryPage(),
         ),
       ],
     ),

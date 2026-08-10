@@ -96,6 +96,9 @@ class MockNotificationService implements NotificationService {
   Future<bool> canScheduleExactNotifications() async => canScheduleExact;
 
   @override
+  Future<bool> checkPermissionStatus() async => true;
+
+  @override
   Future<bool> requestPermission() async => true;
 }
 
@@ -134,6 +137,7 @@ void main() {
             room: 'R.301',
             sks: '3',
             status: ScheduleStatus.upcoming,
+            dayOfWeek: 'Senin',
           ),
         ],
       );
@@ -160,6 +164,7 @@ void main() {
             room: 'R.301',
             sks: '3',
             status: ScheduleStatus.upcoming,
+            dayOfWeek: 'Selasa',
           ),
           ScheduleItemEntity(
             courseName: 'Basis Data',
@@ -169,6 +174,7 @@ void main() {
             sks: '3',
             lecturer: 'Dr. Budi',
             status: ScheduleStatus.upcoming,
+            dayOfWeek: 'Selasa',
           ),
         ],
       );
@@ -196,6 +202,7 @@ void main() {
             room: 'R.1',
             sks: '2',
             status: ScheduleStatus.upcoming,
+            dayOfWeek: 'Senin',
           ),
         ],
       );
@@ -293,6 +300,75 @@ void main() {
       expect(mockService.allCancelled, isTrue);
       // Inactive should not be re-scheduled
       expect(mockService.scheduledIds, isEmpty);
+    });
+
+    test('scheduleAllDays cancels old alarms and creates new ones', () async {
+      final items = [
+        ScheduleItemEntity(
+          courseName: 'Algoritma',
+          startTime: DateTime(2026, 1, 1, 8, 0),
+          endTime: DateTime(2026, 1, 1, 10, 0),
+          room: 'R.301',
+          sks: '3',
+          status: ScheduleStatus.upcoming,
+          dayOfWeek: 'Senin',
+        ),
+        ScheduleItemEntity(
+          courseName: 'Basis Data',
+          startTime: DateTime(2026, 1, 2, 13, 0),
+          endTime: DateTime(2026, 1, 2, 15, 0),
+          room: 'R.201',
+          sks: '3',
+          status: ScheduleStatus.upcoming,
+          dayOfWeek: 'Selasa',
+        ),
+      ];
+
+      await scheduler.scheduleAllDays(items);
+
+      expect(mockService.allCancelled, isTrue);
+      expect(mockRepo.stored, hasLength(2));
+      expect(mockService.scheduledIds, hasLength(2));
+      expect(
+        mockRepo.stored.map((e) => e.dayOfWeek).toList(),
+        containsAll(['Senin', 'Selasa']),
+      );
+    });
+
+    test('scheduleForDay with Semua selectedDay schedules all items', () async {
+      final jadwal = JadwalEntity(
+        selectedDay: 'Semua',
+        days: ['Senin', 'Selasa', 'Rabu'],
+        scheduleItems: [
+          ScheduleItemEntity(
+            courseName: 'Algoritma',
+            startTime: DateTime(2026, 1, 1, 8, 0),
+            endTime: DateTime(2026, 1, 1, 10, 0),
+            room: 'R.301',
+            sks: '3',
+            status: ScheduleStatus.upcoming,
+            dayOfWeek: 'Senin',
+          ),
+          ScheduleItemEntity(
+            courseName: 'Basis Data',
+            startTime: DateTime(2026, 1, 2, 13, 0),
+            endTime: DateTime(2026, 1, 2, 15, 0),
+            room: 'R.201',
+            sks: '3',
+            status: ScheduleStatus.upcoming,
+            dayOfWeek: 'Selasa',
+          ),
+        ],
+      );
+
+      await scheduler.scheduleForDay(jadwal);
+
+      expect(mockRepo.stored, hasLength(2));
+      expect(mockService.scheduledIds, hasLength(2));
+      expect(
+        mockRepo.stored.map((e) => e.dayOfWeek).toList(),
+        containsAll(['Senin', 'Selasa']),
+      );
     });
 
     test('body includes room, time, and optional lecturer', () {

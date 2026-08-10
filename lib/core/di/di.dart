@@ -4,6 +4,7 @@ import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -83,6 +84,16 @@ class Services {
       debugPrint('[DI]   Step 2: Notifications cancelled OK');
     } catch (e) {
       debugPrint('[DI]   Step 2: Cancel notifications FAILED: $e');
+    }
+
+    // 2a. Clear notification Hive data
+    debugPrint('[DI]   Step 2a: Clearing notification Hive data...');
+    try {
+      final notifRepo = get<NotificationRepository>();
+      await notifRepo.deleteAll();
+      debugPrint('[DI]   Step 2a: Notification Hive data cleared OK');
+    } catch (e) {
+      debugPrint('[DI]   Step 2a: Clear notification Hive FAILED: $e');
     }
 
     // 2b. Delete FCM token so the device is unregistered from FCM

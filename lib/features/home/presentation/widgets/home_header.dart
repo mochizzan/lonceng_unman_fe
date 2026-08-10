@@ -17,6 +17,7 @@ class HomeHeader extends StatelessWidget {
     required this.avatarUrl,
     this.onNotificationTap,
     this.onAvatarTap,
+    this.hasUnseenNotifications = false,
   });
 
   final String dateText;
@@ -24,6 +25,7 @@ class HomeHeader extends StatelessWidget {
   final String avatarUrl;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onAvatarTap;
+  final bool hasUnseenNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -81,18 +83,19 @@ class HomeHeader extends StatelessWidget {
                         Icons.notifications_none,
                         size: AppDimens.text5XL,
                       ),
-                      Positioned(
-                        top: AppDimens.space4,
-                        right: AppDimens.space4,
-                        child: Container(
-                          width: AppDimens.dotXS,
-                          height: AppDimens.dotXS,
-                          decoration: BoxDecoration(
-                            color: cs.error,
-                            shape: BoxShape.circle,
+                      if (hasUnseenNotifications)
+                        Positioned(
+                          top: AppDimens.space4,
+                          right: AppDimens.space4,
+                          child: Container(
+                            width: AppDimens.dotXS,
+                            height: AppDimens.dotXS,
+                            decoration: BoxDecoration(
+                              color: cs.error,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),

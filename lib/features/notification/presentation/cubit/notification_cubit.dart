@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
+import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
@@ -29,6 +30,14 @@ class NotificationCubit extends Cubit<NotificationState> {
   /// Returns `true` if permission is granted, `false` otherwise.
   Future<bool> checkPermission() async {
     debugPrint('[NOTIF] checkPermission() START');
+    // First check current status without prompting the user
+    final currentStatus = await _notificationService.checkPermissionStatus();
+    if (currentStatus) {
+      debugPrint('[NOTIF]   OK: permission already granted');
+      emit(state.copyWith(notificationPermissionDenied: false));
+      return true;
+    }
+    // Only request if not yet granted
     final enabled = await _notificationService.requestPermission();
     debugPrint('[NOTIF]   OK: permission enabled=$enabled');
     emit(state.copyWith(notificationPermissionDenied: !enabled));
@@ -50,10 +59,55 @@ class NotificationCubit extends Cubit<NotificationState> {
           notifications: notifications,
           reminderIntervalMinutes: interval,
           clearErrorMessage: true,
+          historyViewed: false,
         ),
       );
     } catch (e) {
       debugPrint('[NOTIF] loadNotifications() CATCH: $e');
+      emit(
+        state.copyWith(
+          status: NotificationStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  /// Schedule notifications for ALL items across ALL days.
+  ///
+  /// Alternative entry point that takes raw [ScheduleItemEntity] list directly.
+  /// Uses [NotificationScheduler.scheduleAllDays] which cancels old alarms first.
+  /// The primary auto-schedule flow uses [scheduleFromJadwal] instead.
+  Future<void> scheduleAll(List<ScheduleItemEntity> items) async {
+    debugPrint('[NOTIF] scheduleAll() START — ${items.length} items');
+    emit(state.copyWith(status: NotificationStatus.loading));
+    try {
+      final hasPermission = await checkPermission();
+      if (!hasPermission) {
+        debugPrint('[NOTIF]   ERROR: permission ditolak, batal menjadwalkan');
+        emit(
+          state.copyWith(
+            status: NotificationStatus.error,
+            errorMessage: AppStrings.settingsNotificationPermissionDenied,
+          ),
+        );
+        return;
+      }
+      await _scheduler.scheduleAllDays(items);
+      final notifications = await _repository.getAll();
+      debugPrint(
+        '[NOTIF]   OK: ${notifications.length} notifikasi dijadwalkan',
+      );
+      emit(
+        state.copyWith(
+          status: NotificationStatus.loaded,
+          notifications: notifications,
+          clearErrorMessage: true,
+          historyViewed: false,
+        ),
+      );
+    } catch (e) {
+      debugPrint('[NOTIF] scheduleAll() CATCH: $e');
       emit(
         state.copyWith(
           status: NotificationStatus.error,
@@ -93,6 +147,7 @@ class NotificationCubit extends Cubit<NotificationState> {
           status: NotificationStatus.loaded,
           notifications: notifications,
           clearErrorMessage: true,
+          historyViewed: false,
         ),
       );
     } catch (e) {
@@ -138,7 +193,11 @@ class NotificationCubit extends Cubit<NotificationState> {
       final notifications = await _repository.getAll();
       debugPrint('[NOTIF]   OK: toggled id=$id -> active=${toggled.isActive}');
       emit(
-        state.copyWith(notifications: notifications, clearErrorMessage: true),
+        state.copyWith(
+          notifications: notifications,
+          clearErrorMessage: true,
+          historyViewed: false,
+        ),
       );
     } catch (e) {
       debugPrint('[NOTIF] toggleNotification($id) CATCH: $e');
@@ -164,6 +223,7 @@ class NotificationCubit extends Cubit<NotificationState> {
           reminderIntervalMinutes: minutes,
           notifications: notifications,
           clearErrorMessage: true,
+          historyViewed: false,
         ),
       );
     } catch (e) {
@@ -174,6 +234,13 @@ class NotificationCubit extends Cubit<NotificationState> {
           errorMessage: e.toString(),
         ),
       );
+    }
+  }
+
+  /// Mark notification history as viewed (hides red dot).
+  void markHistoryViewed() {
+    if (!state.historyViewed) {
+      emit(state.copyWith(historyViewed: true));
     }
   }
 

@@ -65,5 +65,6 @@ ScheduleItemModel toScheduleItem(
     lecturer: mk.dosen.isNotEmpty ? mk.dosen : null,
     sks: sksStr,
     status: determineStatus(startTime, endTime, now),
+    dayOfWeek: mk.hari,
   );
 }

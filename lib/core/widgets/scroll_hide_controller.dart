@@ -110,8 +110,8 @@ class ScrollHideController {
     return false; // Never consume — let notification propagate
   }
 
-  /// Snap to fully visible (value = 0.0). Call on tab/page switch.
-  void show() => _controller.reset();
+  /// Animate navbar back to visible (value → 0.0). Call on tab/page switch.
+  void show() => _controller.reverse();
 
   /// Update animation duration at runtime.
   set duration(Duration d) => _controller.duration = d;

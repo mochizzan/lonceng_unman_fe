@@ -81,3 +81,5 @@ test_notifications_*.hive
 test_settings_*.hive
 graphify-out/
 tmp/
+.codebase-memory/
+.serena/

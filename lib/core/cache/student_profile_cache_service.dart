@@ -4,7 +4,7 @@
 // Each user's profile is keyed by NPM.
 // Follows the same pattern as AcademicCacheService.
 
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:hive_ce/hive.dart';
 import 'package:lonceng_unman_fe/core/utils/map_cast.dart';
@@ -47,17 +47,13 @@ class StudentProfileCacheService {
     }
     // Verifikasi box benar-benar terbuka; buka ulang jika perlu.
     if (!_box.isOpen) {
-      developer.log(
-        'Hive box studentProfile closed after restart, re-opening',
-        name: 'StudentProfileCache',
+      debugPrint(
+        '[StudentProfileCache] Hive box studentProfile closed after restart, re-opening',
       );
       try {
         _box = await Hive.openBox<dynamic>(_boxName);
       } catch (e) {
-        developer.log(
-          'Failed to re-open Hive box: $e',
-          name: 'StudentProfileCache',
-        );
+        debugPrint('[StudentProfileCache] Failed to re-open Hive box: $e');
         // Recovery jika box corrupt
         await Hive.deleteBoxFromDisk(_boxName);
         _box = await Hive.openBox<dynamic>(_boxName);

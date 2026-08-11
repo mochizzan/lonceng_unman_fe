@@ -117,6 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                       : authState is AuthAuthenticated
                       ? DataInitProgressView(
                           key: const ValueKey('progress'),
+                          isFreshLogin: true,
                           onComplete: () {
                             if (!mounted) return;
                             widget.authStatusNotifier.setStatus(
@@ -131,29 +132,51 @@ class _LoginPageState extends State<LoginPage> {
                               const AuthLogoutRequested(),
                             );
                           },
+                          onCancel: () {
+                            context.read<DataInitBloc>().add(
+                              const DataInitReset(),
+                            );
+                            context.read<AuthBloc>().add(
+                              const AuthLogoutRequested(),
+                            );
+                          },
                         )
-                      : SingleChildScrollView(
+                      : LayoutBuilder(
                           key: const ValueKey('login'),
-                          padding: EdgeInsets.fromLTRB(
-                            sp(context, AppDimens.space24),
-                            sp(context, AppDimens.space16),
-                            sp(context, AppDimens.space24),
-                            sp(context, AppDimens.space32) + bottomInset,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildGreeting(cs),
-                              SizedBox(height: sp(context, AppDimens.space32)),
-                              _LoginCard(
-                                npmController: _npmController,
-                                passwordController: _passwordController,
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              padding: EdgeInsets.fromLTRB(
+                                sp(context, AppDimens.space24),
+                                sp(context, AppDimens.space16),
+                                sp(context, AppDimens.space24),
+                                sp(context, AppDimens.space32) + bottomInset,
                               ),
-                              SizedBox(height: sp(context, AppDimens.space24)),
-                              _buildFooter(cs),
-                            ],
-                          ),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildGreeting(cs),
+                                    SizedBox(
+                                      height: sp(context, AppDimens.space32),
+                                    ),
+                                    _LoginCard(
+                                      npmController: _npmController,
+                                      passwordController: _passwordController,
+                                    ),
+                                    SizedBox(
+                                      height: sp(context, AppDimens.space24),
+                                    ),
+                                    _buildFooter(cs),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                 );
               },

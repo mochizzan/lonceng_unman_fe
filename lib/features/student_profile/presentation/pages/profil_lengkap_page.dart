@@ -5,8 +5,6 @@
 // Data dimuat dari StudentProfileCacheService (Hive).
 // Semua field readonly.
 
-import 'dart:developer' as developer;
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
@@ -66,11 +64,8 @@ class _ProfilLengkapPageState extends State<ProfilLengkapPage> {
         });
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Gagal memuat profil lengkap: $e',
-        name: 'ProfilLengkapPage',
-        error: e,
-        stackTrace: stackTrace,
+      debugPrint(
+        '[ProfilLengkapPage] Gagal memuat profil lengkap: $e\n$stackTrace',
       );
       if (mounted) {
         setState(() {

@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
@@ -38,7 +38,7 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
     if (!forceRefresh) {
       final cached = await academicCacheService.loadKrsData(npm: npm);
       if (cached != null) {
-        developer.log('KRS already cached, skipping download', name: 'KrsDS');
+        debugPrint('[KrsDS] KRS already cached, skipping download');
         return;
       }
     }
@@ -60,7 +60,7 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
     if (!forceRefresh) {
       final cached = await academicCacheService.loadKrsData(npm: npm);
       if (cached != null) {
-        developer.log('KRS already cached, skipping extract', name: 'KrsDS');
+        debugPrint('[KrsDS] KRS already cached, skipping extract');
         return;
       }
     }

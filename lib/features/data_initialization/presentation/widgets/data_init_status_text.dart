@@ -36,6 +36,12 @@ String dataInitStatusText(DataInitStatus status, {String? detail}) {
           : 'Mengekstrak data KHS...';
     case DataInitStatus.fetchingKhsData:
       return detail != null ? 'Memuat KHS $detail...' : 'Mengambil data KHS...';
+    case DataInitStatus.krsEmpty:
+      return 'Mata kuliah kosong';
+    case DataInitStatus.khsEmpty:
+      return 'Riwayat nilai belum tersedia';
+    case DataInitStatus.photoEmpty:
+      return 'Foto belum tersedia';
     case DataInitStatus.completed:
       return 'Data akademik siap';
     case DataInitStatus.completedWithErrors:

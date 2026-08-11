@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
@@ -18,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoadAuthCredentials _loadCredentials;
   final StudentProfileRemoteDataSource _profileDataSource;
   final StudentProfileCacheService _profileCacheService;
+  final AcademicCacheService _academicCacheService;
 
   AuthBloc(
     this._getAuth, {
@@ -25,6 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LoadAuthCredentials? loadCredentials,
     StudentProfileRemoteDataSource? profileDataSource,
     StudentProfileCacheService? profileCacheService,
+    AcademicCacheService? academicCacheService,
   }) : _saveCredentials =
            saveCredentials ?? Services.get<SaveAuthCredentials>(),
        _loadCredentials =
@@ -33,6 +36,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
            profileDataSource ?? Services.get<StudentProfileRemoteDataSource>(),
        _profileCacheService =
            profileCacheService ?? Services.get<StudentProfileCacheService>(),
+       _academicCacheService =
+           academicCacheService ?? Services.get<AcademicCacheService>(),
        super(const AuthInitial()) {
     on<AuthNpmChanged>(_onNpmChanged);
     on<AuthPasswordChanged>(_onPasswordChanged);
@@ -83,24 +88,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
     emit(AuthLoading());
     try {
-      final AuthEntity user = await _getAuth(npm: _npm, password: _password);
-      // Cache credentials for next launch — await to prevent race condition
-      // with DataInitializationPage reading the same cache file.
-      await _saveCredentials(npm: _npm, password: _password);
+      // Authenticate credentials — result not used; credentials are
+      // cached only after user confirms profile in _onProfileConfirmed.
+      await _getAuth(npm: _npm, password: _password);
 
       // Scrape student profile for confirmation flow.
       try {
         await _profileDataSource.scrapeProfile(npm: _npm, password: _password);
-        final profileModel = await _profileDataSource.getProfile(
+        final profileModel = await _profileDataSource.getProfilePreview(
           npm: _npm,
           password: _password,
         );
         emit(AuthProfileReview(profileModel, _npm, _password));
       } catch (e) {
-        // Profile scrape failed — fall back to old flow for backward
-        // compatibility (e.g. backend not ready, network error).
-        debugPrint('[AUTH] Profile scrape failed, falling back: $e');
-        emit(AuthAuthenticated(user));
+        debugPrint('[AUTH] Profile fetch failed: $e');
+        emit(AuthError('Gagal mengambil profil'));
+        // Delay 3 seconds → return to login
+        await Future.delayed(const Duration(seconds: 3));
+        emit(const AuthInitial());
       }
     } on AppException catch (e) {
       emit(AuthError(e.message, error: e));
@@ -133,9 +138,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthProfileConfirmed event,
     Emitter emit,
   ) async {
-    // Profile is already cached by StudentProfileRemoteDataSourceImpl during
-    // the scrape + getProfile flow in _onSubmitted. No additional cache write
-    // needed — just build the AuthEntity and transition to authenticated.
+    // Save credentials HERE (after user confirms profile)
+    await _saveCredentials(npm: _npm, password: _password);
     final user = AuthEntity(npm: _npm, password: _password);
     emit(AuthAuthenticated(user));
   }
@@ -144,18 +148,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthProfileRejected event,
     Emitter emit,
   ) async {
-    // Save NPM before clearing for cache cleanup
     final npmToClear = _npm;
     _npm = '';
     _password = '';
-    // Clear the cached profile data for this NPM on rejection.
+
+    // Clear profile cache
     if (npmToClear.isNotEmpty) {
       try {
         await _profileCacheService.clearProfile(npm: npmToClear);
-      } catch (_) {
-        // Non-fatal: cache might not exist yet.
-      }
+      } catch (_) {}
     }
+
+    // Clear credentials cache (FIX: prevent auto-login loop)
+    try {
+      await _academicCacheService.clearCredentials();
+    } catch (_) {}
+
     emit(const AuthInitial());
   }
 }

@@ -22,6 +22,15 @@ class MataKuliahKhsModel extends MataKuliahKhsEntity {
       dosen: json['dosen'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'kode': kode,
+    'nama': nama,
+    'sks': sks,
+    'nilai': nilai,
+    'mutu': mutu,
+    'dosen': dosen,
+  };
 }
 
 class RekapitulasiModel extends RekapitulasiEntity {
@@ -38,6 +47,12 @@ class RekapitulasiModel extends RekapitulasiEntity {
       ipk: (json['ipk'] as num?)?.toDouble() ?? 0.0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'total_sks': totalSks,
+    'total_mutu': totalMutu,
+    'ipk': ipk,
+  };
 }
 
 class KhsDataModel extends KhsDataEntity {
@@ -68,6 +83,35 @@ class KhsDataModel extends KhsDataEntity {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'mahasiswa': {
+      'npm': mahasiswa.npm,
+      'nama': mahasiswa.nama,
+      'program_studi': mahasiswa.programStudi,
+    },
+    'periode': {
+      'tahun_ajaran': periode.tahunAjaran,
+      'semester': periode.semester,
+    },
+    'mata_kuliah': mataKuliah
+        .map(
+          (e) => {
+            'kode': e.kode,
+            'nama': e.nama,
+            'sks': e.sks,
+            'nilai': e.nilai,
+            'mutu': e.mutu,
+            'dosen': e.dosen,
+          },
+        )
+        .toList(),
+    'rekapitulasi': {
+      'total_sks': rekapitulasi.totalSks,
+      'total_mutu': rekapitulasi.totalMutu,
+      'ipk': rekapitulasi.ipk,
+    },
+  };
 }
 
 class KhsModel extends KhsEntity {
@@ -81,6 +125,42 @@ class KhsModel extends KhsEntity {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'khs': {
+      'mahasiswa': {
+        'npm': khs.mahasiswa.npm,
+        'nama': khs.mahasiswa.nama,
+        'program_studi': khs.mahasiswa.programStudi,
+      },
+      'periode': {
+        'tahun_ajaran': khs.periode.tahunAjaran,
+        'semester': khs.periode.semester,
+      },
+      'mata_kuliah': khs.mataKuliah
+          .map(
+            (e) => {
+              'kode': e.kode,
+              'nama': e.nama,
+              'sks': e.sks,
+              'nilai': e.nilai,
+              'mutu': e.mutu,
+              'dosen': e.dosen,
+            },
+          )
+          .toList(),
+      'rekapitulasi': {
+        'total_sks': khs.rekapitulasi.totalSks,
+        'total_mutu': khs.rekapitulasi.totalMutu,
+        'ipk': khs.rekapitulasi.ipk,
+      },
+    },
+    'metadata': {
+      'extracted_at': metadata.extractedAt,
+      'source_file': metadata.sourceFile,
+      'file_size': metadata.fileSize,
+    },
+  };
 }
 
 class KhsSemesterModel extends KhsSemesterEntity {

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
@@ -280,6 +281,28 @@ class _FakeNotificationScheduler implements NotificationScheduler {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
+/// Fake in-memory untuk BioCacheService — tanpa Hive.
+class _FakeBioCacheService extends BioCacheService {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> saveBio({required String npm, required String bio}) async {
+    _store[npm] = bio;
+  }
+
+  @override
+  Future<String?> loadBio({required String npm}) async => _store[npm];
+
+  @override
+  Future<void> deleteBio({required String npm}) async => _store.remove(npm);
+
+  @override
+  Future<void> clearAll() async => _store.clear();
+}
+
 /// Fake in-memory untuk StudentProfileCacheService — tanpa Hive.
 class _FakeStudentProfileCacheService extends StudentProfileCacheService {
   final Map<String, Map<String, dynamic>> _cache = {};
@@ -341,6 +364,23 @@ class _FakeStudentProfileRemoteDataSource
       statusKonversi: '2022',
     );
   }
+
+  @override
+  Future<StudentProfileModel> getProfilePreview({
+    required String npm,
+    required String password,
+  }) async {
+    return const StudentProfileModel(
+      nim: '',
+      nisn: '',
+      nik: '',
+      namaMahasiswa: 'Test User',
+      programStudi: 'SI',
+      semester: 'GANJIL',
+      kelas: 'Teknik',
+      statusKonversi: '2022',
+    );
+  }
 }
 
 /// Register all DI dependencies needed by pages.
@@ -367,6 +407,7 @@ void registerTestDependencies() {
   Services.register<NotificationRepository>(_FakeNotificationRepo());
   Services.register<NotificationService>(_FakeNotificationService());
   Services.register<NotificationScheduler>(_FakeNotificationScheduler());
+  Services.register<BioCacheService>(_FakeBioCacheService());
   Services.register<StudentProfileCacheService>(
     _FakeStudentProfileCacheService(),
   );

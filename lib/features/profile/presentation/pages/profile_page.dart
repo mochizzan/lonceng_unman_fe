@@ -49,6 +49,20 @@ class _ProfilePageView extends StatefulWidget {
 
 class _ProfilePageViewState extends State<_ProfilePageView> {
   @override
+  void initState() {
+    super.initState();
+    // If ProfileBloc is still in ProfileInitial when this page mounts,
+    // dispatch fetch immediately. The BlocListener<DataInitBloc> in the
+    // router only fires on STATE TRANSITIONS — if DataInitSuccess was
+    // already emitted before we mounted, the listener won't re-fire and
+    // the skeleton stays forever.
+    final bloc = context.read<ProfileBloc>();
+    if (bloc.state is ProfileInitial) {
+      bloc.add(const ProfileFetchRequested());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Mengikat AvatarCubit global ke NPM yang sedang login. Memakai

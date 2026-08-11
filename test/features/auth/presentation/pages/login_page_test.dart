@@ -18,6 +18,7 @@ import 'package:lonceng_unman_fe/features/data_initialization/domain/repositorie
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 
@@ -104,6 +105,90 @@ class _FakeStudentProfileRemoteDataSource
       statusKonversi: '2022',
     );
   }
+
+  @override
+  Future<StudentProfileModel> getProfilePreview({
+    required String npm,
+    required String password,
+  }) async {
+    return const StudentProfileModel(
+      nim: '',
+      nisn: '',
+      nik: '',
+      namaMahasiswa: 'Test User',
+      programStudi: 'SI',
+      semester: 'GANJIL',
+      kelas: 'Teknik',
+      statusKonversi: '2022',
+    );
+  }
+}
+
+/// Fake AcademicCacheService — no-op for tests.
+class _FakeAcademicCacheService implements AcademicCacheService {
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<void> saveCredentials({
+    required String npm,
+    required String password,
+  }) async {}
+  @override
+  Future<Map<String, String>?> loadCredentials() async => null;
+  @override
+  Future<Map<String, String>?> loadCredentialsByNpm(String npm) async => null;
+  @override
+  bool hasCredentials() => false;
+  @override
+  Future<void> clearCredentials() async {}
+  @override
+  Future<void> saveKrsData({
+    required String npm,
+    required Map<String, dynamic> data,
+  }) async {}
+  @override
+  Future<Map<String, dynamic>?> loadKrsData({required String npm}) async =>
+      null;
+  @override
+  bool hasKrsData({required String npm}) => false;
+  @override
+  Future<void> saveKhsList({
+    required String npm,
+    required List<dynamic> data,
+  }) async {}
+  @override
+  Future<List<dynamic>?> loadKhsList({required String npm}) async => null;
+  @override
+  bool hasKhsList({required String npm}) => false;
+  @override
+  Future<void> saveKhsDataSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+    required Map<String, dynamic> data,
+  }) async {}
+  @override
+  Future<Map<String, dynamic>?> loadKhsDataSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+  }) async => null;
+  @override
+  Future<bool> hasKhsDataSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+  }) async => false;
+  @override
+  bool hasAcademicData({required String npm}) => false;
+  @override
+  Future<void> clearKrsData() async {}
+  @override
+  Future<void> clearKhsData() async {}
+  @override
+  Future<void> clearAcademicData() async {}
+  @override
+  Future<void> clearAll() async {}
 }
 
 AuthBloc _makeBloc(GetAuth getAuth) => AuthBloc(
@@ -112,6 +197,7 @@ AuthBloc _makeBloc(GetAuth getAuth) => AuthBloc(
   loadCredentials: _FakeLoadCredentials(),
   profileDataSource: _FakeStudentProfileRemoteDataSource(),
   profileCacheService: _FakeStudentProfileCacheService(),
+  academicCacheService: _FakeAcademicCacheService(),
 );
 
 /// Repositori data-init palsu yang tidak pernah memancarkan progres.

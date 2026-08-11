@@ -8,6 +8,8 @@ import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/routes/app_router.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import '../helpers/test_di.dart';
 
@@ -50,27 +52,35 @@ void main() {
       }
     });
 
-    test('ShellRoute contains exactly home, jadwal, profile, settings', () {
-      final router = AppRouter.create(
-        authStatusNotifier: AuthStatusNotifier(),
-        themeNotifier: testThemeNotifier,
-      );
+    test(
+      'ShellRoute contains exactly home, jadwal, profile, settings, notificationHistory',
+      () {
+        final router = AppRouter.create(
+          authStatusNotifier: AuthStatusNotifier(),
+          themeNotifier: testThemeNotifier,
+        );
 
-      bool foundShell = false;
-      for (final config in router.configuration.routes) {
-        if (config is ShellRoute) {
-          foundShell = true;
-          // home, jadwal, profile, settings — settings ada di dalam
-          // ShellRoute agar mewarisi NotificationCubit dari parent.
-          expect(config.routes.length, 4);
-          expect((config.routes[0] as GoRoute).name, RouteNames.home);
-          expect((config.routes[1] as GoRoute).name, RouteNames.jadwal);
-          expect((config.routes[2] as GoRoute).name, RouteNames.profile);
-          expect((config.routes[3] as GoRoute).name, RouteNames.settings);
+        bool foundShell = false;
+        for (final config in router.configuration.routes) {
+          if (config is ShellRoute) {
+            foundShell = true;
+            // home, jadwal, profile, settings, notificationHistory —
+            // settings & notificationHistory ada di dalam ShellRoute
+            // agar mewarisi NotificationCubit dari parent.
+            expect(config.routes.length, 5);
+            expect((config.routes[0] as GoRoute).name, RouteNames.home);
+            expect((config.routes[1] as GoRoute).name, RouteNames.jadwal);
+            expect((config.routes[2] as GoRoute).name, RouteNames.profile);
+            expect((config.routes[3] as GoRoute).name, RouteNames.settings);
+            expect(
+              (config.routes[4] as GoRoute).name,
+              RouteNames.notificationHistory,
+            );
+          }
         }
-      }
-      expect(foundShell, isTrue, reason: 'No ShellRoute found');
-    });
+        expect(foundShell, isTrue, reason: 'No ShellRoute found');
+      },
+    );
 
     test('login is standalone, settings lives inside ShellRoute', () {
       final router = AppRouter.create(
@@ -128,13 +138,16 @@ void main() {
         );
 
         await tester.pumpWidget(
-          BlocProvider<AvatarCubit>.value(
-            value: Services.get<AvatarCubit>(),
-            child: MaterialApp.router(
-              routerConfig: router,
-              theme: lightTheme,
-              darkTheme: darkTheme,
-              themeMode: ThemeMode.system,
+          BlocProvider<DataInitBloc>(
+            create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
+            child: BlocProvider<AvatarCubit>.value(
+              value: Services.get<AvatarCubit>(),
+              child: MaterialApp.router(
+                routerConfig: router,
+                theme: lightTheme,
+                darkTheme: darkTheme,
+                themeMode: ThemeMode.system,
+              ),
             ),
           ),
         );
@@ -155,13 +168,16 @@ void main() {
       );
 
       await tester.pumpWidget(
-        BlocProvider<AvatarCubit>.value(
-          value: Services.get<AvatarCubit>(),
-          child: MaterialApp.router(
-            routerConfig: router,
-            theme: lightTheme,
-            darkTheme: darkTheme,
-            themeMode: ThemeMode.system,
+        BlocProvider<DataInitBloc>(
+          create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
+          child: BlocProvider<AvatarCubit>.value(
+            value: Services.get<AvatarCubit>(),
+            child: MaterialApp.router(
+              routerConfig: router,
+              theme: lightTheme,
+              darkTheme: darkTheme,
+              themeMode: ThemeMode.system,
+            ),
           ),
         ),
       );

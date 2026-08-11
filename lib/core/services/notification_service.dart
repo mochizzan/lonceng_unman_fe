@@ -1,6 +1,4 @@
 // lib/core/services/notification_service.dart
-import 'dart:developer' as developer;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
@@ -50,9 +48,8 @@ class NotificationService {
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.local);
     } catch (e) {
-      developer.log(
-        'Timezone init failed, using device time: $e',
-        name: 'NotificationService',
+      debugPrint(
+        '[NotificationService] Timezone init failed, using device time: $e',
       );
     }
 
@@ -95,9 +92,8 @@ class NotificationService {
       }
     }
 
-    developer.log(
-      'NotificationService initialized with ${NotificationChannel.values.length} channels',
-      name: 'NotificationService',
+    debugPrint(
+      '[NotificationService] Initialized with ${NotificationChannel.values.length} channels',
     );
   }
 
@@ -128,14 +124,12 @@ class NotificationService {
         matchDateTimeComponents: matchDateTimeComponents,
       );
 
-      developer.log(
-        'Scheduled [#${channel.id}] #$id: $title at $scheduledDate',
-        name: 'NotificationService',
+      debugPrint(
+        '[NotificationService] Scheduled [#${channel.id}] #$id: $title at $scheduledDate',
       );
     } on Exception catch (e) {
-      developer.log(
-        'WARNING: Failed to schedule notification — timezone data may be missing or invalid: $e',
-        name: 'NotificationService',
+      debugPrint(
+        '[NotificationService] WARNING: Failed to schedule notification — timezone data may be missing or invalid: $e',
       );
     }
   }
@@ -143,13 +137,13 @@ class NotificationService {
   /// Cancel a single notification by ID.
   Future<void> cancel(int id) async {
     await _plugin.cancel(id: id);
-    developer.log('Cancelled notification #$id', name: 'NotificationService');
+    debugPrint('[NotificationService] Cancelled notification #$id');
   }
 
   /// Cancel all scheduled notifications.
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
-    developer.log('Cancelled all notifications', name: 'NotificationService');
+    debugPrint('[NotificationService] Cancelled all notifications');
   }
 
   /// Check if exact notifications can be scheduled (Android 12+).

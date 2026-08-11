@@ -1,3 +1,31 @@
+/// Result of a single pipeline step.
+enum DataInitStepResult { success, empty, error }
+
+/// Wraps a single pipeline step outcome with its result and optional message.
+class DataInitStepOutcome {
+  final String step;
+  final DataInitStepResult result;
+  final String? message;
+
+  const DataInitStepOutcome({
+    required this.step,
+    required this.result,
+    this.message,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DataInitStepOutcome &&
+          runtimeType == other.runtimeType &&
+          step == other.step &&
+          result == other.result &&
+          message == other.message;
+
+  @override
+  int get hashCode => Object.hash(step, result, message);
+}
+
 /// Data initialization entity — tracks the post-login pipeline status.
 enum DataInitStatus {
   idle,
@@ -13,6 +41,9 @@ enum DataInitStatus {
   downloadingKhs,
   extractingKhs,
   fetchingKhsData,
+  krsEmpty,
+  khsEmpty,
+  photoEmpty,
   completed,
   completedWithErrors,
   failed,

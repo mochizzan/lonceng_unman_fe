@@ -179,6 +179,29 @@ lib/features/<feature>/
 - **Constants**: `static const` in dedicated classes (e.g. `AppStrings`, `AppDimens`)
 - **Route names**: `RouteNames` constants from `lib/core/routes/route_names.dart`
 
+### Logging
+
+> **⚠️ CRITICAL: NEVER use `developer.log()` from `dart:developer`.**
+>
+> Always use `debugPrint()` from `package:flutter/foundation.dart` (or `package:flutter/material.dart`).
+>
+> **Why:**
+> - `developer.log()` does **NOT** appear in `flutter run` console output — it only shows in Dart DevTools (logging tab).
+> - `debugPrint()` prints directly to `flutter run` console, making debugging easy.
+> - The entire codebase is already consistent with `debugPrint()` — do NOT introduce `dart:developer`.
+>
+> **Correct:**
+> ```dart
+> debugPrint('[MAIN] Hive path: $hivePath');
+> debugPrint('[ERROR] Init failed: $e');
+> ```
+>
+> **WRONG — DO NOT DO THIS:**
+> ```dart
+> import 'dart:developer' as developer;  // ← NO
+> developer.log('Hive path: $hivePath', name: 'main');  // ← NO
+> ```
+
 ### Barrel Files
 Every feature has a `barrel.dart` that re-exports its public API. Top-level `lib/barrel.dart` re-exports 6 feature barrels (auth, data_init, home, jadwal, notification, profile).
 

@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
@@ -81,10 +81,7 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
         semester: semester,
       );
       if (cached != null) {
-        developer.log(
-          'KHS already cached, skipping download: $semester',
-          name: 'KhsDS',
-        );
+        debugPrint('[KhsDS] KHS already cached, skipping download: $semester');
         return;
       }
     }
@@ -117,10 +114,7 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
         semester: semester,
       );
       if (cached != null) {
-        developer.log(
-          'KHS already cached, skipping extract: $semester',
-          name: 'KhsDS',
-        );
+        debugPrint('[KhsDS] KHS already cached, skipping extract: $semester');
         return;
       }
     }

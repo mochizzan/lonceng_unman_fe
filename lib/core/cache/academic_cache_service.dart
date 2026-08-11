@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:hive_ce/hive.dart';
 import 'package:lonceng_unman_fe/core/utils/map_cast.dart';
@@ -50,18 +50,12 @@ class AcademicCacheService {
     }
     // Verify boxes are actually open; re-open if needed.
     if (!_credentials.isOpen || !_academic.isOpen) {
-      developer.log(
-        'Hive boxes closed after restart, re-opening',
-        name: 'AcademicCache',
-      );
+      debugPrint('[AcademicCache] Hive boxes closed after restart, re-opening');
       try {
         _credentials = await Hive.openBox<dynamic>(_credentialsBox);
         _academic = await Hive.openBox<dynamic>(_academicBox);
       } catch (e) {
-        developer.log(
-          'Failed to re-open Hive boxes: $e',
-          name: 'AcademicCache',
-        );
+        debugPrint('[AcademicCache] Failed to re-open Hive boxes: $e');
         // Corruption recovery
         await Hive.deleteBoxFromDisk(_credentialsBox);
         await Hive.deleteBoxFromDisk(_academicBox);

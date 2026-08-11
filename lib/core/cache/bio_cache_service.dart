@@ -4,7 +4,7 @@
 // Each user is keyed by NPM (e.g. 'bio_12345678').
 // Follows the same pattern as AcademicCacheService.
 
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:hive_ce/hive.dart';
 
@@ -40,7 +40,7 @@ class BioCacheService {
       _bio = await Hive.openBox<dynamic>(_bioBox);
       _initialized = true;
     } catch (e) {
-      developer.log('Bio box corrupted, recovering: $e', name: 'BioCache');
+      debugPrint('[BioCache] Bio box corrupted, recovering: $e');
       // Corruption recovery — delete and recreate
       await Hive.deleteBoxFromDisk(_bioBox);
       _bio = await Hive.openBox<dynamic>(_bioBox);
@@ -69,14 +69,11 @@ class BioCacheService {
     }
     // Verify box is actually open; re-open if needed.
     if (!_bio.isOpen) {
-      developer.log(
-        'Hive bio box closed after restart, re-opening',
-        name: 'BioCache',
-      );
+      debugPrint('[BioCache] Hive bio box closed after restart, re-opening');
       try {
         _bio = await Hive.openBox<dynamic>(_bioBox);
       } catch (e) {
-        developer.log('Failed to re-open Hive bio box: $e', name: 'BioCache');
+        debugPrint('[BioCache] Failed to re-open Hive bio box: $e');
         // Corruption recovery
         await Hive.deleteBoxFromDisk(_bioBox);
         _bio = await Hive.openBox<dynamic>(_bioBox);

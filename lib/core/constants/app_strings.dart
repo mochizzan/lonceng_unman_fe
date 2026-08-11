@@ -161,13 +161,11 @@ abstract final class AppStrings {
 
   // ─── API Configuration ─────────────────────────────
   //
-  // Android emulator: 10.0.2.2 maps to host PC's localhost
-  // iOS simulator / Web: 127.0.0.1 works directly
-  // Physical device: use your PC's IP address (e.g. 192.168.x.x)
-  //
-  // For emulator builds, we use 10.0.2.2 as the default.
+  // Production: https://lonceng-unman-api.miproduction.web.id
+  // Android emulator (dev): 10.0.2.2 maps to host PC's localhost
   // To switch per environment, use --dart-define or flavor.
-  static const String apiBaseUrl = 'http://10.0.2.2:3000';
+  static const String apiBaseUrl =
+      'https://lonceng-unman-api.miproduction.web.id';
 
   // ─── Onboarding ─────────────────────────────────────
   static const String appName = 'Lonceng UnMan';

@@ -1,7 +1,7 @@
 // home - Abstract data source (interface)
 //
 // Defines the contract for fetching home screen data from cache.
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
@@ -44,44 +44,44 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       );
     }
 
-    // Read KRS data from cache
+    // Read KRS data from cache (optional — may not be available yet)
     final krsJson = await academicCacheService.loadKrsData(npm: npm);
-    if (krsJson == null) {
-      throw const ValidationException(
-        'Data KRS belum tersedia. Silakan login ulang.',
-      );
+    KrsDataEntity? krsData;
+    if (krsJson != null) {
+      krsData = KrsModel.fromJson(krsJson).krs;
     }
-    final krsData = KrsModel.fromJson(krsJson).krs;
 
     // Read KHS data from cache — load all available semesters for IPK
     double gpaGanjil = 0.0;
     double gpaGenap = 0.0;
     String? khsSemester;
-    try {
-      // Try to load GANJIL KHS
-      final ganjilKhs = await academicCacheService.loadKhsDataSemester(
-        npm: npm,
-        tahunAjaran: krsData.periode.tahunAjaran,
-        semester: 'GANJIL',
-      );
-      if (ganjilKhs != null) {
-        final khsData = KhsModel.fromJson(ganjilKhs).khs;
-        gpaGanjil = khsData.rekapitulasi.ipk;
-        khsSemester ??= khsData.periode.semester;
+    if (krsData != null) {
+      try {
+        // Try to load GANJIL KHS
+        final ganjilKhs = await academicCacheService.loadKhsDataSemester(
+          npm: npm,
+          tahunAjaran: krsData.periode.tahunAjaran,
+          semester: 'GANJIL',
+        );
+        if (ganjilKhs != null) {
+          final khsData = KhsModel.fromJson(ganjilKhs).khs;
+          gpaGanjil = khsData.rekapitulasi.ipk;
+          khsSemester ??= khsData.periode.semester;
+        }
+        // Try to load GENAP KHS
+        final genapKhs = await academicCacheService.loadKhsDataSemester(
+          npm: npm,
+          tahunAjaran: krsData.periode.tahunAjaran,
+          semester: 'GENAP',
+        );
+        if (genapKhs != null) {
+          final khsData = KhsModel.fromJson(genapKhs).khs;
+          gpaGenap = khsData.rekapitulasi.ipk;
+          khsSemester ??= khsData.periode.semester;
+        }
+      } catch (_) {
+        // KHS may not be available yet if data-init hasn't completed.
       }
-      // Try to load GENAP KHS
-      final genapKhs = await academicCacheService.loadKhsDataSemester(
-        npm: npm,
-        tahunAjaran: krsData.periode.tahunAjaran,
-        semester: 'GENAP',
-      );
-      if (genapKhs != null) {
-        final khsData = KhsModel.fromJson(genapKhs).khs;
-        gpaGenap = khsData.rekapitulasi.ipk;
-        khsSemester ??= khsData.periode.semester;
-      }
-    } catch (_) {
-      // KHS may not be available yet if data-init hasn't completed.
     }
 
     final now = DateTime.now();
@@ -89,20 +89,23 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     final todayDayName = weekdayToDayName(now.weekday);
 
     // Build today's schedule from KRS mata_kuliah
-    final todaySchedule =
-        krsData.mataKuliah
-            .where((mk) => mk.hari == todayDayName)
-            .map((mk) => toScheduleItem(mk, today, now))
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final todaySchedule = krsData != null
+        ? (krsData.mataKuliah
+              .where((mk) => mk.hari == todayDayName)
+              .map((mk) => toScheduleItem(mk, today, now))
+              .toList()
+            ..sort((a, b) => a.startTime.compareTo(b.startTime)))
+        : <ScheduleItemEntity>[];
 
     // Find next upcoming/ongoing class
-    final nextClass = _findNextClass(krsData.mataKuliah, today, now);
+    final nextClass = krsData != null
+        ? _findNextClass(krsData.mataKuliah, today, now)
+        : null;
 
     // Try to load profile data from StudentProfileCacheService
-    String userName = krsData.mahasiswa.nama;
-    String studyProgram = krsData.mahasiswa.programStudi;
-    String semester = khsSemester ?? krsData.periode.semester;
+    String userName = krsData?.mahasiswa.nama ?? '';
+    String studyProgram = krsData?.mahasiswa.programStudi ?? '';
+    String semester = khsSemester ?? krsData?.periode.semester ?? '';
     try {
       final profileJson = await studentProfileCacheService.loadProfile(
         npm: npm,
@@ -116,25 +119,22 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
             ? profile.programStudi
             : studyProgram;
         semester = profile.semester.isNotEmpty ? profile.semester : semester;
-        developer.log(
-          'Profile loaded from StudentProfileCacheService',
-          name: 'HomeDS',
-        );
+        debugPrint('[HomeDS] Profile loaded from StudentProfileCacheService');
       }
     } catch (_) {
       // Student profile cache may not be available yet.
     }
 
     return HomeModel(
-      userName: userName,
+      userName: userName.isNotEmpty ? userName : 'Mahasiswa',
       avatarUrl: '',
       nextClass: nextClass,
       scheduleItems: todaySchedule,
-      sksTaken: krsData.totalSks,
+      sksTaken: krsData?.totalSks ?? 0,
       todayClassCount: todaySchedule.length,
-      semester: semester,
-      tahunAjaran: krsData.periode.tahunAjaran,
-      studyProgram: studyProgram,
+      semester: semester.isNotEmpty ? semester : '-',
+      tahunAjaran: krsData?.periode.tahunAjaran ?? '',
+      studyProgram: studyProgram.isNotEmpty ? studyProgram : '-',
       gpaGanjil: gpaGanjil,
       gpaGenap: gpaGenap,
     );

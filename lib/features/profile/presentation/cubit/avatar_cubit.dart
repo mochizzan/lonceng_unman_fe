@@ -12,7 +12,7 @@
 // Pemilihan gambar dan crop dilakukan di layer presentation (butuh
 // BuildContext untuk navigasi), cubit hanya menerima bytes PNG hasil crop.
 
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -140,7 +140,7 @@ class AvatarCubit extends Cubit<AvatarState> {
         _safeEmit(AvatarReady(previous));
       }
     } catch (e) {
-      developer.log('fetchFromBackend gagal: $e', name: 'AvatarCubit');
+      debugPrint('[AvatarCubit] fetchFromBackend gagal: $e');
       // Kegagalan fetch tidak menghapus foto yang sudah ada
       if (_npm != npm) return;
       _safeEmit(AvatarReady(previous));

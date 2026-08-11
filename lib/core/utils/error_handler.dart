@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -11,10 +10,7 @@ class ErrorHandler {
   /// Show a user-friendly error toast.
   static void show(BuildContext context, Object error) {
     final message = toHumanReadable(error);
-    developer.log(
-      'ErrorHandler.show: $message (original: $error)',
-      name: 'ErrorHandler',
-    );
+    debugPrint('[ErrorHandler] show: $message (original: $error)');
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_LONG,

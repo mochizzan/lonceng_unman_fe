@@ -3,7 +3,7 @@
 // Defines the contract for fetching profile screen data from cache
 // and refreshing from remote API.
 
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
@@ -52,83 +52,74 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       );
     }
 
-    // Read KRS data from cache
-    final krsJson = await academicCacheService.loadKrsData(npm: npm);
-    if (krsJson == null) {
-      throw const ValidationException(
-        'Data KRS belum tersedia. Silakan login ulang.',
-      );
-    }
-    final krsData = KrsModel.fromJson(krsJson).krs;
-
-    // Read KHS data from cache (optional — may not be available yet)
-    double gpa = 0.0;
-    int cumulativeSks = 0;
-    try {
-      final khsJson = await academicCacheService.loadKhsDataSemester(
-        npm: npm,
-        tahunAjaran: krsData.periode.tahunAjaran,
-        semester: krsData.periode.semester,
-      );
-      if (khsJson != null) {
-        final khsData = KhsModel.fromJson(khsJson).khs;
-        gpa = khsData.rekapitulasi.ipk;
-        cumulativeSks = khsData.rekapitulasi.totalSks;
-      }
-    } catch (_) {
-      // KHS may not be available yet if data-init hasn't completed.
-    }
-
-    // Count today's classes
-    final now = DateTime.now();
-    final todayDayName = weekdayToDayName(now.weekday);
-    final todayClassCount = krsData.mataKuliah
-        .where((mk) => mk.hari == todayDayName)
-        .length;
-
-    // Read bio from BioCacheService
-    String? bio;
-    try {
-      bio = await bioCacheService.loadBio(npm: npm);
-    } catch (_) {
-      // Bio may not exist yet or box may be corrupted
-    }
-
-    // Try to load profile data from StudentProfileCacheService
-    String userName = krsData.mahasiswa.nama;
-    String npmValue = krsData.mahasiswa.npm;
-    String studyProgram = krsData.mahasiswa.programStudi;
-    String semester = krsData.periode.semester;
+    // 1. Load StudentProfile (primary source)
+    String userName = '';
+    String npmValue = npm;
+    String studyProgram = '';
+    String semester = '';
     try {
       final profileJson = await studentProfileCacheService.loadProfile(
         npm: npm,
       );
       if (profileJson != null) {
         final profile = StudentProfileModel.fromJson(profileJson);
-        userName = profile.namaMahasiswa.isNotEmpty
-            ? profile.namaMahasiswa
-            : userName;
-        npmValue = profile.nim.isNotEmpty ? profile.nim : npmValue;
-        studyProgram = profile.programStudi.isNotEmpty
-            ? profile.programStudi
-            : studyProgram;
-        semester = profile.semester.isNotEmpty ? profile.semester : semester;
-        developer.log(
-          'Profile loaded from StudentProfileCacheService',
-          name: 'ProfileDS',
+        userName = profile.namaMahasiswa;
+        npmValue = profile.nim.isNotEmpty ? profile.nim : npm;
+        studyProgram = profile.programStudi;
+        semester = profile.semester;
+        debugPrint(
+          '[ProfileDS] Profile loaded from StudentProfileCacheService',
         );
       }
-    } catch (_) {
-      // Student profile cache may not be available yet.
+    } catch (_) {}
+
+    // 2. Fallback to KRS if StudentProfile is empty
+    double gpa = 0.0;
+    int cumulativeSks = 0;
+    int todayClassCount = 0;
+    final krsJson = await academicCacheService.loadKrsData(npm: npm);
+    if (krsJson != null) {
+      final krsData = KrsModel.fromJson(krsJson).krs;
+      if (userName.isEmpty) userName = krsData.mahasiswa.nama;
+      if (npmValue.isEmpty) npmValue = krsData.mahasiswa.npm;
+      if (studyProgram.isEmpty) studyProgram = krsData.mahasiswa.programStudi;
+      if (semester.isEmpty) semester = krsData.periode.semester;
+
+      // Load KHS for GPA/SKS
+      try {
+        final khsJson = await academicCacheService.loadKhsDataSemester(
+          npm: npm,
+          tahunAjaran: krsData.periode.tahunAjaran,
+          semester: krsData.periode.semester,
+        );
+        if (khsJson != null) {
+          final khsData = KhsModel.fromJson(khsJson).khs;
+          gpa = khsData.rekapitulasi.ipk;
+          cumulativeSks = khsData.rekapitulasi.totalSks;
+        }
+      } catch (_) {}
+
+      // Count today's classes
+      final now = DateTime.now();
+      final todayDayName = weekdayToDayName(now.weekday);
+      todayClassCount = krsData.mataKuliah
+          .where((mk) => mk.hari == todayDayName)
+          .length;
     }
+
+    // 3. Read bio from BioCacheService
+    String? bio;
+    try {
+      bio = await bioCacheService.loadBio(npm: npm);
+    } catch (_) {}
 
     final prefs = await SharedPreferences.getInstance();
     return ProfileModel(
-      userName: userName,
+      userName: userName.isNotEmpty ? userName : 'Mahasiswa',
       avatarUrl: '',
       npm: npmValue,
-      studyProgram: studyProgram,
-      semester: semester,
+      studyProgram: studyProgram.isNotEmpty ? studyProgram : '-',
+      semester: semester.isNotEmpty ? semester : '-',
       gpa: gpa,
       sksTaken: cumulativeSks,
       sksTotal: 120, // Standard graduation requirement

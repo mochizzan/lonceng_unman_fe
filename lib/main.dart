@@ -3,7 +3,6 @@
 // Based on DESIGN.md theme configuration (section 3.10)
 
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -93,11 +92,9 @@ Future<void> main() async {
       // Global error handling
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
-        developer.log(
-          'FlutterError: ${details.exceptionAsString()}',
-          name: 'ErrorHandler',
-          error: details.exception,
-          stackTrace: details.stack,
+        debugPrint(
+          '[ErrorHandler] FlutterError: ${details.exceptionAsString()}'
+          '\n${details.stack}',
         );
       };
 
@@ -162,13 +159,10 @@ Future<void> main() async {
           if (!await cacheDir.exists()) {
             await cacheDir.create(recursive: true);
           }
-          developer.log('Hive path: $hivePath', name: 'main');
+          debugPrint('[MAIN] Hive path: $hivePath');
         }
       } catch (e) {
-        developer.log(
-          'External cache dir unavailable, using default: $e',
-          name: 'main',
-        );
+        debugPrint('[MAIN] External cache dir unavailable, using default: $e');
       }
 
       late Box<ScheduledNotificationModel> notificationsBox;
@@ -192,9 +186,8 @@ Future<void> main() async {
           'notification_delivered',
         );
       } catch (e) {
-        developer.log(
-          'Hive init failed, attempting corruption recovery: $e',
-          name: 'main',
+        debugPrint(
+          '[MAIN] Hive init failed, attempting corruption recovery: $e',
         );
         // Best-effort cleanup of corrupted boxes before retrying
         try {
@@ -250,9 +243,8 @@ Future<void> main() async {
         await notificationService.initialize();
         notificationServiceReady = true;
       } catch (e) {
-        developer.log(
-          'NotificationService init failed, local alarms disabled: $e',
-          name: 'main',
+        debugPrint(
+          '[MAIN] NotificationService init failed, local alarms disabled: $e',
         );
       }
 

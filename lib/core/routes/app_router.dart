@@ -24,6 +24,7 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart'
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
 import 'package:lonceng_unman_fe/features/home/domain/usecases/get_home.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
+import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
 import 'package:lonceng_unman_fe/features/home/presentation/pages/home_page.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/usecases/get_jadwal.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
@@ -139,14 +140,22 @@ List<RouteBase> _buildRoutes(
             ),
             BlocProvider(create: (_) => HomeBloc(Services.get<GetHome>())),
             BlocProvider(create: (_) => JadwalBloc(Services.get<GetJadwal>())),
+            BlocProvider(
+              create: (_) => ProfileBloc(
+                Services.get<GetProfile>(),
+                Services.get<BioCacheService>(),
+              ),
+            ),
           ],
           child: BlocListener<DataInitBloc, DataInitBlocState>(
             listener: (context, state) {
               if (state is DataInitSuccess) {
                 debugPrint(
-                  '[ROUTER] DataInitSuccess → dispatching JadwalFetchRequested',
+                  '[ROUTER] DataInitSuccess → dispatching refresh to all BLoCs',
                 );
                 context.read<JadwalBloc>().add(const JadwalFetchRequested());
+                context.read<HomeBloc>().add(const HomeFetchRequested());
+                context.read<ProfileBloc>().add(const ProfileFetchRequested());
               }
             },
             child: MainShellScaffold(
@@ -170,13 +179,7 @@ List<RouteBase> _buildRoutes(
         GoRoute(
           name: RouteNames.profile,
           path: '/${RouteNames.profile}',
-          builder: (context, state) => BlocProvider(
-            create: (_) => ProfileBloc(
-              Services.get<GetProfile>(),
-              Services.get<BioCacheService>(),
-            )..add(const ProfileFetchRequested()),
-            child: const ProfilePage(),
-          ),
+          builder: (context, state) => const ProfilePage(),
         ),
         // Settings is inside ShellRoute so it inherits NotificationCubit
         GoRoute(

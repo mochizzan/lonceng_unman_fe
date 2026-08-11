@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
@@ -69,9 +69,8 @@ class NotificationScheduler {
     // Persist all entities
     await _repository.saveAll(entities);
 
-    developer.log(
-      '[NOTIF] scheduleForDay() OK: ${entities.length} notifikasi dijadwalkan',
-      name: 'NotificationScheduler',
+    debugPrint(
+      '[NotificationScheduler] scheduleForDay() OK: ${entities.length} notifications scheduled',
     );
   }
 
@@ -80,9 +79,8 @@ class NotificationScheduler {
   /// Primary entry point for auto-schedule after data init completes.
   /// Cancels old alarms first, then creates new ones for every item.
   Future<void> scheduleAllDays(List<ScheduleItemEntity> items) async {
-    developer.log(
-      '[NOTIF] scheduleAllDays() START — ${items.length} items',
-      name: 'NotificationScheduler',
+    debugPrint(
+      '[NotificationScheduler] scheduleAllDays() START — ${items.length} items',
     );
 
     // Cancel all existing alarms
@@ -93,9 +91,8 @@ class NotificationScheduler {
 
     for (final item in items) {
       if (item.dayOfWeek.isEmpty) {
-        developer.log(
-          '[NOTIF] SKIP: ${item.courseName} has no dayOfWeek',
-          name: 'NotificationScheduler',
+        debugPrint(
+          '[NotificationScheduler] SKIP: ${item.courseName} has no dayOfWeek',
         );
         continue;
       }
@@ -121,9 +118,8 @@ class NotificationScheduler {
 
     await _repository.saveAll(entities);
 
-    developer.log(
-      '[NOTIF] scheduleAllDays() OK: ${entities.length} notifikasi dijadwalkan',
-      name: 'NotificationScheduler',
+    debugPrint(
+      '[NotificationScheduler] scheduleAllDays() OK: ${entities.length} notifications scheduled',
     );
   }
 
@@ -195,9 +191,8 @@ class NotificationScheduler {
     try {
       tzTrigger = tz.TZDateTime.from(triggerTime, tz.local);
     } catch (e) {
-      developer.log(
-        'WARNING: Timezone fallback — tz data may be missing or invalid: $e',
-        name: 'NotificationScheduler',
+      debugPrint(
+        '[NotificationScheduler] WARNING: Timezone fallback — tz data may be missing or invalid: $e',
       );
       tzTrigger = tz.TZDateTime(
         tz.local,
@@ -213,9 +208,8 @@ class NotificationScheduler {
     final canUseExact = await _notificationService
         .canScheduleExactNotifications();
     if (!canUseExact) {
-      developer.log(
-        'Exact notifications not available — scheduling inexact for ${entity.courseName}',
-        name: 'NotificationScheduler',
+      debugPrint(
+        '[NotificationScheduler] Exact notifications not available — scheduling inexact for ${entity.courseName}',
       );
     }
 

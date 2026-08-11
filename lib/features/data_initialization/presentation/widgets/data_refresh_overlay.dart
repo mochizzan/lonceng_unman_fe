@@ -6,8 +6,12 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
+import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
+import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 
 /// Full-screen blocking overlay for data refresh progress.
 /// Shows [DataInitProgressView] over a semi-transparent barrier.
@@ -83,14 +87,16 @@ class DataRefreshOverlay extends StatelessWidget {
         );
         if (state is DataInitSuccess) {
           debugPrint('[DATA_REFRESH] Success — dismissing overlay in 500ms');
-          // Trigger JadwalBloc re-fetch so notifications get re-scheduled
+          // Trigger all BLoCs re-fetch after refresh
           try {
             context.read<JadwalBloc>().add(const JadwalFetchRequested());
+            context.read<HomeBloc>().add(const HomeFetchRequested());
+            context.read<ProfileBloc>().add(const ProfileFetchRequested());
             debugPrint(
-              '[DATA_REFRESH] JadwalFetchRequested dispatched after refresh',
+              '[DATA_REFRESH] All BLoC refresh dispatched after refresh',
             );
           } catch (e) {
-            debugPrint('[DATA_REFRESH] JadwalFetch dispatch failed: $e');
+            debugPrint('[DATA_REFRESH] BLoC dispatch failed: $e');
           }
           Future.delayed(const Duration(milliseconds: 500), () {
             if (context.mounted) {
@@ -99,21 +105,25 @@ class DataRefreshOverlay extends StatelessWidget {
           });
         } else if (state is DataInitFailure) {
           debugPrint(
-            '[DATA_REFRESH] Failure: ${state.message} — dismissing overlay',
+            '[DATA_REFRESH] Failure: ${state.message} — auto-dismiss in 3s',
           );
-          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Gagal memperbarui data'),
-              action: SnackBarAction(
-                label: 'Coba lagi',
-                onPressed: () => DataRefreshOverlay.show(context),
-              ),
+              content: Text(state.message),
+              duration: const Duration(seconds: 3),
             ),
           );
+          Future.delayed(const Duration(seconds: 3), () {
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+          });
         }
       },
-      child: Material(color: cs.surface, child: const DataInitProgressView()),
+      child: Material(
+        color: cs.surface,
+        child: const DataInitProgressView(isFreshLogin: false),
+      ),
     );
   }
 }

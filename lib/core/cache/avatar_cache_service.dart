@@ -9,7 +9,7 @@
 // Key   : NPM mahasiswa
 // Value : bytes PNG hasil crop (Uint8List, 256x256)
 
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'dart:typed_data';
 
 import 'package:hive_ce/hive.dart';
@@ -28,9 +28,8 @@ class AvatarCacheService {
       _box = await Hive.openBox<dynamic>(boxName);
       _initialized = true;
     } catch (e) {
-      developer.log(
-        'Box avatar gagal dibuka, melakukan pemulihan korupsi: $e',
-        name: 'AvatarCache',
+      debugPrint(
+        '[AvatarCache] Box avatar gagal dibuka, melakukan pemulihan korupsi: $e',
       );
       await Hive.deleteBoxFromDisk(boxName);
       _box = await Hive.openBox<dynamic>(boxName);
@@ -46,17 +45,13 @@ class AvatarCacheService {
       return;
     }
     if (!_box.isOpen) {
-      developer.log(
-        'Box avatar tertutup setelah restart, membuka ulang',
-        name: 'AvatarCache',
+      debugPrint(
+        '[AvatarCache] Box avatar tertutup setelah restart, membuka ulang',
       );
       try {
         _box = await Hive.openBox<dynamic>(boxName);
       } catch (e) {
-        developer.log(
-          'Gagal membuka ulang box avatar: $e',
-          name: 'AvatarCache',
-        );
+        debugPrint('[AvatarCache] Gagal membuka ulang box avatar: $e');
         await Hive.deleteBoxFromDisk(boxName);
         _box = await Hive.openBox<dynamic>(boxName);
       }

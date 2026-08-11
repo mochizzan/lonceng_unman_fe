@@ -4,7 +4,7 @@
 // Mengikuti pattern dari KrsRemoteDataSource.
 // Menggunakan ApiClient untuk HTTP dan StudentProfileCacheService untuk caching.
 
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
@@ -35,6 +35,12 @@ abstract class StudentProfileRemoteDataSource {
     required String password,
     bool forceRefresh = false,
   });
+
+  /// Fetch profile from API WITHOUT caching. For login preview only.
+  Future<StudentProfileModel> getProfilePreview({
+    required String npm,
+    required String password,
+  });
 }
 
 /// Implementasi real HTTP via ApiClient dengan caching via StudentProfileCacheService.
@@ -62,10 +68,7 @@ class StudentProfileRemoteDataSourceImpl
     if (!forceRefresh) {
       final hasCached = cacheService.hasProfile(npm: npm);
       if (hasCached) {
-        developer.log(
-          'Profil sudah ter-cache, skip scrape',
-          name: 'StudentProfileDS',
-        );
+        debugPrint('[StudentProfileDS] Profil sudah ter-cache, skip scrape');
         return;
       }
     }
@@ -87,7 +90,7 @@ class StudentProfileRemoteDataSourceImpl
     if (!forceRefresh) {
       final cachedData = await cacheService.loadProfile(npm: npm);
       if (cachedData != null) {
-        developer.log('Profil ditemukan di cache', name: 'StudentProfileDS');
+        debugPrint('[StudentProfileDS] Profil ditemukan di cache');
         return StudentProfileModel.fromJson(cachedData);
       }
     }
@@ -101,6 +104,19 @@ class StudentProfileRemoteDataSourceImpl
     // Simpan ke cache untuk request selanjutnya
     await cacheService.saveProfile(npm: npm, profileData: response);
 
+    return StudentProfileModel.fromJson(response);
+  }
+
+  @override
+  Future<StudentProfileModel> getProfilePreview({
+    required String npm,
+    required String password,
+  }) async {
+    // Selalu fetch dari API, jangan cache — untuk preview login saja
+    final response = await apiClient.post(
+      '/api/v1/lms/student-profile/data',
+      body: lmsCredentialBody(npm: npm, password: password),
+    );
     return StudentProfileModel.fromJson(response);
   }
 }

@@ -9,8 +9,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
@@ -27,7 +27,7 @@ class PhotoService {
   final http.Client _client;
   final String _baseUrl;
 
-  static const Duration _timeout = Duration(seconds: 30);
+  static const Duration _timeout = Duration(minutes: 2);
 
   /// Mengambil foto profil untuk [npm].
   ///
@@ -42,7 +42,7 @@ class PhotoService {
   }) async {
     try {
       final uri = Uri.parse('$_baseUrl/api/v1/lms/student-profile/photo');
-      developer.log('Fetching photo for npm=$npm', name: 'PhotoService');
+      debugPrint('[PhotoService] Fetching photo for npm=$npm');
 
       final response = await _client
           .post(
@@ -56,16 +56,13 @@ class PhotoService {
           .timeout(_timeout);
 
       if (response.statusCode == 204) {
-        developer.log('No photo found (204)', name: 'PhotoService');
+        debugPrint('[PhotoService] No photo found (204)');
         return null;
       }
 
       if (response.statusCode == 200) {
         final bytes = response.bodyBytes;
-        developer.log(
-          'Photo fetched: ${bytes.length} bytes',
-          name: 'PhotoService',
-        );
+        debugPrint('[PhotoService] Photo fetched: ${bytes.length} bytes');
         return bytes;
       }
 

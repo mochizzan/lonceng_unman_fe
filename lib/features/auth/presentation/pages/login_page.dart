@@ -233,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class _LoginCard extends StatelessWidget {
+class _LoginCard extends StatefulWidget {
   const _LoginCard({
     required this.npmController,
     required this.passwordController,
@@ -241,6 +241,13 @@ class _LoginCard extends StatelessWidget {
 
   final TextEditingController npmController;
   final TextEditingController passwordController;
+
+  @override
+  State<_LoginCard> createState() => _LoginCardState();
+}
+
+class _LoginCardState extends State<_LoginCard> {
+  bool _obscurePassword = true;
 
   /// Reserved height for the submit action area so swapping
   /// AppButton ↔ CircularProgressIndicator does not shift layout.
@@ -288,7 +295,7 @@ class _LoginCard extends StatelessWidget {
           // NPM Field
           AppTextField(
             key: const Key('npm_field'),
-            controller: npmController,
+            controller: widget.npmController,
             label: AppStrings.loginNpmHint,
             icon: Icons.badge_outlined,
             keyboardType: TextInputType.number,
@@ -299,10 +306,18 @@ class _LoginCard extends StatelessWidget {
           // Password Field
           AppTextField(
             key: const Key('password_field'),
-            controller: passwordController,
+            controller: widget.passwordController,
             label: AppStrings.loginPasswordHint,
             icon: Icons.lock_outline,
-            obscureText: true,
+            obscureText: _obscurePassword,
+            suffix: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: cs.onSurfaceVariant,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
             onChanged: (v) =>
                 context.read<AuthBloc>().add(AuthPasswordChanged(v)),
           ),

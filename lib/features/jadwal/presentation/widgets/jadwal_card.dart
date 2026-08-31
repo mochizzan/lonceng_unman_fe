@@ -13,10 +13,16 @@ import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
 import 'package:lonceng_unman_fe/core/utils/format_utils.dart';
 
 class JadwalCard extends StatelessWidget {
-  const JadwalCard({super.key, required this.item, required this.index});
+  const JadwalCard({
+    super.key,
+    required this.item,
+    required this.index,
+    this.onTap,
+  });
 
   final ScheduleItemEntity item;
   final int index;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -41,158 +47,162 @@ class JadwalCard extends StatelessWidget {
         ? cs.onPrimaryContainer
         : cs.onSurfaceVariant;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(AppDimens.cardItemRadius),
-        border: borderColor != null ? Border.all(color: borderColor) : null,
-        boxShadow: AppShadows.card(cs),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimens.space20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status label (ongoing only)
-            if (isOngoing) ...[
-              Text(
-                AppStrings.jadwalStatusOngoing,
-                style: TextStyle(
-                  fontSize: AppDimens.textSM,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onPrimaryContainer.withValues(
-                    alpha: ColorValues.opacityMax,
-                  ),
-                  letterSpacing: AppDimens.letterSpacingWide,
-                ),
-              ),
-              const SizedBox(height: AppDimens.space12),
-            ],
-            // Course name + time badge
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Accent bar (upcoming only)
-                if (accentColor != null) ...[
-                  Container(
-                    width: AppDimens.space4,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(AppDimens.radiusXS),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.space12),
-                ],
-                // Course info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.courseName,
-                        style: TextStyle(
-                          fontSize: AppDimens.text2XL,
-                          fontWeight: FontWeight.w600,
-                          color: isOngoing
-                              ? cs.onPrimaryContainer
-                              : cs.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: AppDimens.space4),
-                      Text(
-                        item.lecturer ?? AppStrings.jadwalNullFallback,
-                        style: TextStyle(
-                          fontSize: AppDimens.textMD,
-                          color: isOngoing
-                              ? cs.onPrimaryContainer.withValues(
-                                  alpha: ColorValues.opacityFull,
-                                )
-                              : cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Time badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.space12,
-                    vertical: AppDimens.space6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: timeBadgeBg,
-                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-                  ),
-                  child: Text(
-                    '${formatTime(item.startTime)} - ${formatTime(item.endTime)}',
-                    style: TextStyle(
-                      fontSize: AppDimens.textSM,
-                      fontWeight: FontWeight.w500,
-                      color: timeBadgeText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.space16),
-            // Divider
-            Container(
-              height: 1,
-              color: isOngoing
-                  ? cs.onPrimaryContainer.withValues(alpha: 0.1)
-                  : cs.surfaceContainerHighest,
-            ),
-            const SizedBox(height: AppDimens.space16),
-            // Location + SKS row
-            Row(
-              children: [
-                Icon(
-                  Icons.location_on,
-                  size: AppDimens.iconSM,
-                  color: isOngoing
-                      ? cs.onPrimaryContainer.withValues(
-                          alpha: ColorValues.opacityMax,
-                        )
-                      : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppDimens.space6),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppDimens.cardItemRadius),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(AppDimens.cardItemRadius),
+          border: borderColor != null ? Border.all(color: borderColor) : null,
+          boxShadow: AppShadows.card(cs),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimens.space20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Status label (ongoing only)
+              if (isOngoing) ...[
                 Text(
-                  item.room,
+                  AppStrings.jadwalStatusOngoing,
                   style: TextStyle(
                     fontSize: AppDimens.textSM,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer.withValues(
+                      alpha: ColorValues.opacityMax,
+                    ),
+                    letterSpacing: AppDimens.letterSpacingWide,
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space12),
+              ],
+              // Course name + time badge
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Accent bar (upcoming only)
+                  if (accentColor != null) ...[
+                    Container(
+                      width: AppDimens.space4,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(AppDimens.radiusXS),
+                      ),
+                    ),
+                    const SizedBox(width: AppDimens.space12),
+                  ],
+                  // Course info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.courseName,
+                          style: TextStyle(
+                            fontSize: AppDimens.text2XL,
+                            fontWeight: FontWeight.w600,
+                            color: isOngoing
+                                ? cs.onPrimaryContainer
+                                : cs.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimens.space4),
+                        Text(
+                          item.lecturer ?? AppStrings.jadwalNullFallback,
+                          style: TextStyle(
+                            fontSize: AppDimens.textMD,
+                            color: isOngoing
+                                ? cs.onPrimaryContainer.withValues(
+                                    alpha: ColorValues.opacityFull,
+                                  )
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Time badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimens.space12,
+                      vertical: AppDimens.space6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: timeBadgeBg,
+                      borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+                    ),
+                    child: Text(
+                      '${formatTime(item.startTime)} - ${formatTime(item.endTime)}',
+                      style: TextStyle(
+                        fontSize: AppDimens.textSM,
+                        fontWeight: FontWeight.w500,
+                        color: timeBadgeText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppDimens.space16),
+              // Divider
+              Container(
+                height: 1,
+                color: isOngoing
+                    ? cs.onPrimaryContainer.withValues(alpha: 0.1)
+                    : cs.surfaceContainerHighest,
+              ),
+              const SizedBox(height: AppDimens.space16),
+              // Location + SKS row
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: AppDimens.iconSM,
                     color: isOngoing
                         ? cs.onPrimaryContainer.withValues(
-                            alpha: ColorValues.opacityFull,
+                            alpha: ColorValues.opacityMax,
                           )
                         : cs.onSurfaceVariant,
                   ),
-                ),
-                const SizedBox(width: AppDimens.space16),
-                Icon(
-                  Icons.confirmation_number,
-                  size: AppDimens.iconSM,
-                  color: isOngoing
-                      ? cs.onPrimaryContainer.withValues(
-                          alpha: ColorValues.opacityMax,
-                        )
-                      : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppDimens.space6),
-                Text(
-                  item.sks ?? '',
-                  style: TextStyle(
-                    fontSize: AppDimens.textSM,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(width: AppDimens.space6),
+                  Text(
+                    item.room,
+                    style: TextStyle(
+                      fontSize: AppDimens.textSM,
+                      fontWeight: FontWeight.w500,
+                      color: isOngoing
+                          ? cs.onPrimaryContainer.withValues(
+                              alpha: ColorValues.opacityFull,
+                            )
+                          : cs.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimens.space16),
+                  Icon(
+                    Icons.confirmation_number,
+                    size: AppDimens.iconSM,
                     color: isOngoing
-                        ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                        ? cs.onPrimaryContainer.withValues(
+                            alpha: ColorValues.opacityMax,
+                          )
                         : cs.onSurfaceVariant,
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: AppDimens.space6),
+                  Text(
+                    item.sks ?? '',
+                    style: TextStyle(
+                      fontSize: AppDimens.textSM,
+                      fontWeight: FontWeight.w500,
+                      color: isOngoing
+                          ? cs.onPrimaryContainer.withValues(alpha: 0.8)
+                          : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

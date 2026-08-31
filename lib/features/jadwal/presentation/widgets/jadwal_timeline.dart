@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
+import 'package:lonceng_unman_fe/core/utils/format_utils.dart';
+import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_card.dart';
 import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
@@ -127,7 +130,11 @@ class JadwalTimeline extends StatelessWidget {
                           padding: const EdgeInsets.only(
                             bottom: AppDimens.space16,
                           ),
-                          child: JadwalCard(item: item, index: globalIdx),
+                          child: JadwalCard(
+                            item: item,
+                            index: globalIdx,
+                            onTap: () => _showClassDetailSheet(context, item),
+                          ),
                         ),
                       ),
                     ],
@@ -174,7 +181,12 @@ class JadwalTimeline extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: AppDimens.space16),
-                    child: JadwalCard(item: filteredItems[index], index: index),
+                    child: JadwalCard(
+                      item: filteredItems[index],
+                      index: index,
+                      onTap: () =>
+                          _showClassDetailSheet(context, filteredItems[index]),
+                    ),
                   ),
                 ),
               ],
@@ -244,6 +256,109 @@ class JadwalTimeline extends StatelessWidget {
           height: AppDimens.dotSM,
           decoration: BoxDecoration(color: cs.surface, shape: BoxShape.circle),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showClassDetailSheet(
+    BuildContext context,
+    ScheduleItemEntity item,
+  ) async {
+    final cs = Theme.of(context).colorScheme;
+    final timeRange =
+        '${formatTime(item.startTime)} - ${formatTime(item.endTime)}';
+
+    // Hide navbar when bottom sheet opens so MainShellScaffold can animate
+    // the slide-down. Restored in the finally block after the sheet closes.
+    Services.get<NavbarVisibilityNotifier>().hide();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDimens.radiusLG),
+          ),
+        ),
+        builder: (context) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space20,
+              vertical: AppDimens.space16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space16),
+                Text(
+                  item.courseName,
+                  style: TextStyle(
+                    fontSize: AppDimens.textLG,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppDimens.space8),
+                Divider(color: cs.outlineVariant),
+                const SizedBox(height: AppDimens.space8),
+                _buildDetailRow(context, 'Waktu', timeRange),
+                _buildDetailRow(context, 'Ruang', item.room),
+                _buildDetailRow(
+                  context,
+                  'Dosen',
+                  item.lecturer ?? AppStrings.jadwalNullFallback,
+                ),
+                _buildDetailRow(context, 'SKS', item.sks ?? '-'),
+                const SizedBox(height: AppDimens.space16),
+              ],
+            ),
+          );
+        },
+      );
+    } finally {
+      // Show navbar again after the bottom sheet closes.
+      Services.get<NavbarVisibilityNotifier>().show();
+    }
+  }
+
+  Widget _buildDetailRow(BuildContext context, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppDimens.space4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: AppDimens.textSM,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: AppDimens.textSM,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

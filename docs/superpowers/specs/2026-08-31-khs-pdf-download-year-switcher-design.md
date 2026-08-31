@@ -83,11 +83,19 @@ Saved PDFs use the pattern: `KHS_{tahunAjaran}_{semester}.pdf`
 
 ### Data Loading Strategy
 
-**Cache-only (no auto-fetch):**
+**Two-tier strategy:**
+
+| Data | Source | Fallback |
+|------|--------|----------|
+| Academic year list | Cache-only (`loadKhsList()`) | None — if empty, hide switcher |
+| KHS data (courses, grades) | Cache-first (`loadKhsDataSemester()`) | Auto-fetch from API if not cached |
+
+**KHS data flow (cache-first → auto-fetch):**
 1. Check cache: `loadKhsDataSemester(tahunAjaran, 'GANJIL')`
 2. If cached → emit loaded immediately
-3. If not cached → emit loaded with empty data + info message "Data tidak tersimpan di perangkat"
-4. No automatic API call — data is only populated via post-login pipeline
+3. If not cached → show loading indicator → call `GetKhs().call(tahunAjaran, semester)`
+4. On success → cache result → emit loaded
+5. On error → emit error state with retry option
 
 ## Architecture
 
@@ -103,7 +111,8 @@ KhsDetailPage (UI)
 │   └── KHS data tables
 └── KhsDetailCubit (extended)
     ├── State: selectedTahunAjaran, availableYears, downloadStatus
-    ├── Load data: cache-only (no auto-fetch)
+    ├── Year list: cache-only (no auto-fetch)
+    ├── KHS data: cache-first → auto-fetch from API
     └── Download: KhsPdfService → save to device
 ```
 
@@ -178,11 +187,12 @@ downloadPdf(tahunAjaran, semester) {
 
 | Case | Handling |
 |------|----------|
-| Empty cache (year list) | Hide year switcher, show "Data tidak tersimpan di perangkat" message |
-| Empty cache (KHS data) | Show empty state with info message — no auto-fetch |
+| Empty cache (year list) | Hide year switcher, show info message — **no auto-fetch** |
+| Empty cache (KHS data) | **Auto-fetch from API** with loading indicator → cache result → display |
+| API fetch fails (KHS data) | Emit error state with retry option |
 | Download fails | Show error toast with retry option |
 | Permission denied | Show dialog explaining storage permission needed |
-| Year not in cache | Show empty state for that year — no auto-fetch |
+| Year not in cache (year list) | Not applicable — year list is cache-only |
 | Invalid year selected | Fallback to first available year |
 | Large PDF download | Show progress indicator, handle timeout |
 

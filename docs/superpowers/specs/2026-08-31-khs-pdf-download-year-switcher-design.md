@@ -73,10 +73,13 @@ Extend the existing `KhsDetailCubit` with new states for year selection and down
 4. Write bytes to file: `KHS_{tahunAjaran}_{semester}.pdf`
 5. Show success/error toast
 
-**UI:**
-- `KhsDownloadButton` — compact button with icon + "Simpan PDF" text
-- Shows progress indicator while downloading
-- Disabled during active download
+### PDF File Naming
+
+Saved PDFs use the pattern: `KHS_{tahunAjaran}_{semester}.pdf`
+
+- `tahunAjaran` has `/` replaced with `_` for filename safety (e.g., `2024/2025` → `2024_2025`)
+- Example: `KHS_2024_2025_GANJIL.pdf`
+- Saved to device Downloads folder (via `path_provider` `getDownloadsDirectory()`)
 
 ### Data Loading Strategy
 
@@ -157,15 +160,18 @@ enum DownloadStatus { idle, downloading, success, error }
 
 ### Download Flow
 
+**Credential source:** The cubit retrieves `npm` and `password` from `AcademicCacheService.credentialsBox` (populated during login). If credentials are missing, the download fails with an error toast prompting re-login.
+
 ```
 downloadPdf(tahunAjaran, semester) {
-  1. Check storage permission (permission_handler)
-  2. emit(downloadStatus: downloading)
-  3. KhsPdfService.download(tahunAjaran, semester)
+  1. Retrieve npm + password from credentialsBox
+  2. Check storage permission (permission_handler)
+  3. emit(downloadStatus: downloading)
+  4. KhsPdfService.download(npm, password, tahunAjaran, semester)
      → calls POST /api/v1/lms/khs/file
      → saves to Downloads folder via path_provider
-  4. On success → emit(downloadStatus: success) + toast
-  5. On error → emit(downloadStatus: error) + toast
+  5. On success → emit(downloadStatus: success) + toast
+  6. On error → emit(downloadStatus: error) + toast
 }
 ```
 

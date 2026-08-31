@@ -173,6 +173,7 @@ class _HomePageViewState extends State<_HomePageView>
               avatarUrl: data.avatarUrl,
               onNotificationTap: () =>
                   context.pushNamed(RouteNames.notificationHistory),
+              onAvatarTap: () => context.goNamed(RouteNames.profile),
               hasUnseenNotifications: hasUnseen,
             ),
           ),

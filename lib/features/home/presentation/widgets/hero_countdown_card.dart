@@ -28,17 +28,15 @@ String formatCountdown(Duration duration) {
 /// Hero countdown card with a live-updating countdown timer.
 ///
 /// When [nextClass] is non-null, shows either:
-///   - **Upcoming mode** – timer counts down to the class start time, label
-///     reads "SELANJUTNYA".
-///   - **Ongoing mode** – timer counts up from the class start time, label
-///     reads "SEDANG BERLANGSUNG" with a green pulsing indicator.
+///   - **Upcoming mode** – timer counts down to the class start time.
+///   - **Ongoing mode** – timer counts up from the class start time, with
+///     a green pulsing indicator.
 ///
 /// When [nextClass] is null, renders an empty-state placeholder.
 class HeroCountdownCard extends StatefulWidget {
-  const HeroCountdownCard({super.key, this.nextClass, this.onCtaTap});
+  const HeroCountdownCard({super.key, this.nextClass});
 
   final NextClassEntity? nextClass;
-  final VoidCallback? onCtaTap;
 
   @override
   State<HeroCountdownCard> createState() => _HeroCountdownCardState();
@@ -126,9 +124,6 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
     final liveColor = ongoing ? Colors.green : onPrimaryContainer;
     final timeRange =
         '${_formatTime(next.startTime)} - ${_formatTime(next.endTime)}';
-    final statusLabel = ongoing
-        ? AppStrings.jadwalStatusOngoing
-        : 'SELANJUTNYA';
     final countdownText = formatCountdown(_countdown);
 
     return Container(
@@ -327,60 +322,6 @@ class _HeroCountdownCardState extends State<HeroCountdownCard> {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: AppDimens.space20),
-
-            // ── Status label ───────────────────────────────────
-            Text(
-              statusLabel,
-              style: TextStyle(
-                fontSize: AppDimens.textSM,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                color: ongoing ? Colors.green : onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(height: AppDimens.space16),
-
-            // ── CTA button ─────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: widget.onCtaTap,
-                style: FilledButton.styleFrom(
-                  backgroundColor: cs.onPrimaryContainer,
-                  foregroundColor: cs.primaryContainer,
-                  disabledBackgroundColor: cs.onPrimaryContainer,
-                  disabledForegroundColor: cs.primaryContainer,
-                  elevation: 0,
-                  surfaceTintColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimens.radius3XL),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppDimens.space14,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      AppStrings.homeViewMaterials,
-                      style: TextStyle(
-                        fontSize: AppDimens.textMD,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: AppDimens.space8),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: AppDimens.iconSM,
-                      color: cs.primaryContainer,
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),

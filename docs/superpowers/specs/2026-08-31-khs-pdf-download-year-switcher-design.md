@@ -83,12 +83,11 @@ Saved PDFs use the pattern: `KHS_{tahunAjaran}_{semester}.pdf`
 
 ### Data Loading Strategy
 
-**Cache-first with edge case handling:**
+**Cache-only (no auto-fetch):**
 1. Check cache: `loadKhsDataSemester(tahunAjaran, 'GANJIL')`
 2. If cached → emit loaded immediately
-3. If not → call API via `GetKhs().call(tahunAjaran, semester)`
-4. On success → cache result → emit loaded
-5. On error → emit error state
+3. If not cached → emit loaded with empty data + info message "Data tidak tersimpan di perangkat"
+4. No automatic API call — data is only populated via post-login pipeline
 
 ## Architecture
 
@@ -104,7 +103,7 @@ KhsDetailPage (UI)
 │   └── KHS data tables
 └── KhsDetailCubit (extended)
     ├── State: selectedTahunAjaran, availableYears, downloadStatus
-    ├── Load data: cache-first → API fallback
+    ├── Load data: cache-only (no auto-fetch)
     └── Download: KhsPdfService → save to device
 ```
 
@@ -179,10 +178,11 @@ downloadPdf(tahunAjaran, semester) {
 
 | Case | Handling |
 |------|----------|
-| Empty cache | Hide year switcher, show "No cached data" message |
+| Empty cache (year list) | Hide year switcher, show "Data tidak tersimpan di perangkat" message |
+| Empty cache (KHS data) | Show empty state with info message — no auto-fetch |
 | Download fails | Show error toast with retry option |
 | Permission denied | Show dialog explaining storage permission needed |
-| Year not in cache | Auto-fetch from API with loading indicator |
+| Year not in cache | Show empty state for that year — no auto-fetch |
 | Invalid year selected | Fallback to first available year |
 | Large PDF download | Show progress indicator, handle timeout |
 

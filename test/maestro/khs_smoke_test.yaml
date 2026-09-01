@@ -1,0 +1,82 @@
+# KHS Page Smoke Test
+# Tests the KHS detail page UI elements: year switcher, download button, tabs
+# Run: maestro test test/maestro/khs_smoke_test.yaml
+
+appId: com.miproduction.loncengunman
+
+---
+# ── Launch app and wait for initial load ──
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# ── Login flow (if on login page) ──
+- runFlow:
+    when:
+      visible: "Masuk"
+    commands:
+      - tapOn: "NPM"
+      - inputText: "1234567890"
+      - tapOn: "Kata Sandi"
+      - inputText: "password123"
+      - tapOn: "Masuk"
+      - waitForAnimationToEnd:
+          timeout: 15000
+
+# ── Wait for home page to load ──
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# ── Navigate to KHS page via Lihat KHS button (use Key-based selector) ──
+- tapOn:
+    id: lihat_khs_button
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# ── Verify KHS page elements ──
+# Check if we're on KHS page by looking for Ganjil tab
+- assertVisible: "Ganjil"
+- assertVisible: "Genap"
+
+# ── Verify download button is visible in tab bar area ──
+- assertVisible:
+    id: khs_download_button
+
+# ── Test tab switching ──
+- tapOn: "Genap"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: khs_download_button
+
+- tapOn: "Ganjil"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: khs_download_button
+
+# ── Test year switcher bottom sheet (if visible) ──
+- runFlow:
+    when:
+      visible:
+        id: year_switcher_button
+    commands:
+      - tapOn:
+          id: year_switcher_button
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - assertVisible:
+          id: year_picker_sheet
+      - assertVisible: "Pilih Tahun Ajaran"
+      # Close by tapping selected year (first in list)
+      - tapOn: "2025/2026"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ── Verify download button tap ──
+- tapOn:
+    id: khs_download_button
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ── Test complete ──

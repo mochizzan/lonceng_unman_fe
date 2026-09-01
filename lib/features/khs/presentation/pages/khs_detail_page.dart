@@ -12,6 +12,8 @@ import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubit.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_state.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/widgets/year_switcher_button.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/widgets/khs_download_icon.dart';
 
 /// Detail page for KHS data.
 ///
@@ -45,6 +47,17 @@ class _KhsDetailPageState extends State<KhsDetailPage>
       vsync: this,
       initialIndex: initialIndex,
     );
+    _tabController.addListener(_onTabChanged);
+    // Load available years and KHS data.
+    final cubit = context.read<KhsDetailCubit>();
+    cubit.loadAvailableYears();
+    cubit.loadAll();
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      setState(() {});
+    }
   }
 
   @override
@@ -89,9 +102,16 @@ class _KhsDetailPageState extends State<KhsDetailPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '${AppStrings.khsTitle} ${widget.tahunAjaran}',
-          style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
+        title: BlocBuilder<KhsDetailCubit, KhsDetailState>(
+          builder: (context, state) {
+            return Text(
+              '${AppStrings.khsTitle} ${state.selectedTahunAjaran}',
+              style: TextStyle(
+                color: cs.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          },
         ),
         backgroundColor: cs.surface,
         elevation: 0,
@@ -99,19 +119,38 @@ class _KhsDetailPageState extends State<KhsDetailPage>
           icon: Icon(Icons.arrow_back, color: cs.onSurface),
           onPressed: () => context.pop(),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: cs.primary,
-          unselectedLabelColor: cs.onSurfaceVariant,
-          indicatorColor: cs.primary,
-          dividerColor: Colors.transparent,
-          indicator: UnderlineTabIndicator(
-            borderSide: BorderSide(color: cs.primary, width: 2),
+        actions: [
+          BlocBuilder<KhsDetailCubit, KhsDetailState>(
+            builder: (context, state) {
+              return YearSwitcherButton(
+                tahunAjaran: state.selectedTahunAjaran,
+                availableYears: state.availableYears,
+                onYearSelected: (year) {
+                  context.read<KhsDetailCubit>().selectYear(year);
+                },
+              );
+            },
           ),
-          tabs: const [
-            Tab(text: AppStrings.khsTabGanjil),
-            Tab(text: AppStrings.khsTabGenap),
-          ],
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: cs.primary,
+              unselectedLabelColor: cs.onSurfaceVariant,
+              indicatorColor: cs.primary,
+              dividerColor: Colors.transparent,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(color: cs.primary, width: 2),
+              ),
+              tabs: const [
+                Tab(text: AppStrings.khsTabGanjil),
+                Tab(text: AppStrings.khsTabGenap),
+              ],
+            ),
+          ),
         ),
       ),
       body: BlocBuilder<KhsDetailCubit, KhsDetailState>(
@@ -126,12 +165,14 @@ class _KhsDetailPageState extends State<KhsDetailPage>
                 isLoading: ganjil.isLoading,
                 error: ganjil.error,
                 data: ganjil.data,
+                semester: 'GANJIL',
               ),
               _buildSemesterTab(
                 cs: cs,
                 isLoading: genap.isLoading,
                 error: genap.error,
                 data: genap.data,
+                semester: 'GENAP',
               ),
             ],
           );
@@ -147,6 +188,7 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     required bool isLoading,
     required String? error,
     required KhsDataEntity? data,
+    required String semester,
   }) {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -160,7 +202,7 @@ class _KhsDetailPageState extends State<KhsDetailPage>
       return _buildEmptyState(cs);
     }
 
-    return _buildContent(cs, data);
+    return _buildContent(cs, data, semester);
   }
 
   Widget _buildEmptyState(ColorScheme cs) {
@@ -213,14 +255,14 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     );
   }
 
-  Widget _buildContent(ColorScheme cs, KhsDataEntity data) {
+  Widget _buildContent(ColorScheme cs, KhsDataEntity data, String semester) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimens.space20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Student Info Card ──
-          _buildInfoCard(cs, data),
+          _buildInfoCard(cs, data, semester),
           const SizedBox(height: AppDimens.space24),
 
           // ── Courses Table ──
@@ -236,7 +278,7 @@ class _KhsDetailPageState extends State<KhsDetailPage>
 
   // ── Info Card ───────────────────────────────────────────────
 
-  Widget _buildInfoCard(ColorScheme cs, KhsDataEntity data) {
+  Widget _buildInfoCard(ColorScheme cs, KhsDataEntity data, String semester) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space20),
@@ -261,6 +303,7 @@ class _KhsDetailPageState extends State<KhsDetailPage>
                   ),
                 ),
               ),
+              KhsDownloadIcon(semester: semester),
             ],
           ),
           const SizedBox(height: AppDimens.space12),

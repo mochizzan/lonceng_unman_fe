@@ -52,6 +52,18 @@ flutter build web
 - **Format**: `dart format .`
 - **Test**: `flutter test`
 
+### Environment Switching
+
+The API base URL is configured via `--dart-define`. Production is the default.
+
+```bash
+# Production (default) — no flag needed
+flutter run
+
+# Local backend (emulator loopback to host)
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+```
+
 ## Tech Stack
 
 | Layer | Technology |

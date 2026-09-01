@@ -3,6 +3,12 @@
     <!-- Local notification permissions -->
     <!-- Android 13+ (API 33): runtime permission for showing notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Android 9 and below (API 28-): storage permission for saving PDFs.
+         Not needed on Android 10+ (API 29+) due to scoped storage. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <!-- Android 12+ (API 31): schedule exact alarms (user-revocable) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <!-- Android 14+ (API 34): non-revocable exact alarm permission for alarm/timer apps

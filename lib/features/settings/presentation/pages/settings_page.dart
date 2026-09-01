@@ -4,7 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
@@ -120,6 +122,30 @@ class SettingsPage extends StatelessWidget {
                           notifState.reminderIntervalMinutes,
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(height: AppDimens.space8),
+                  _SettingsCard(
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.history,
+                        color: cs.onSurface,
+                        size: 22,
+                      ),
+                      title: Text(
+                        AppStrings.notificationHistoryTitle,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyLarge?.copyWith(color: cs.onSurface),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: cs.onSurfaceVariant,
+                        size: 22,
+                      ),
+                      onTap: () =>
+                          context.pushNamed(RouteNames.notificationHistory),
                     ),
                   ),
                 ],

@@ -83,3 +83,5 @@ graphify-out/
 tmp/
 .codebase-memory/
 .serena/
+# CocoIndex Code (ccc)
+/.cocoindex_code/

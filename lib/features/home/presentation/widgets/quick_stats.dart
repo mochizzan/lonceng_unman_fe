@@ -128,9 +128,17 @@ class QuickStats extends StatelessWidget {
                   ),
                   const Spacer(),
                   // Tombol Lihat KHS
-                  GestureDetector(
-                    onTap: onKhsTap,
-                    behavior: HitTestBehavior.opaque,
+                  TextButton(
+                    key: const Key('lihat_khs_button'),
+                    onPressed: onKhsTap,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.space8,
+                        vertical: AppDimens.space4,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

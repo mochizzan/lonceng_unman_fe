@@ -1,0 +1,17 @@
+# Maestro configuration for Lonceng UnMan
+# https://maestro.dev/documentation/reference/configuration
+
+# Default configuration for all flows
+appId: com.miproduction.loncengunman
+
+# Environment
+env:
+  ANDROID_SDK_PATH: /Android/Sdk
+
+# Timeouts
+timeout: 60000
+
+# Retry configuration
+retry:
+  maxAttempts: 2
+  delay: 1000

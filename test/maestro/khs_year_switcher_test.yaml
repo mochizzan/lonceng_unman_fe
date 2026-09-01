@@ -1,0 +1,56 @@
+# KHS Year Switcher Test
+# Focused test for the academic year switcher functionality
+# Run: maestro test test/maestro/khs_year_switcher_test.yaml
+
+appId: com.miproduction.loncengunman
+
+---
+# ── Launch and login ──
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Masuk"
+    commands:
+      - tapOn: "NPM"
+      - inputText: "1234567890"
+      - tapOn: "Kata Sandi"
+      - inputText: "password123"
+      - tapOn: "Masuk"
+      - waitForAnimationToEnd:
+          timeout: 15000
+
+# ── Navigate to KHS ──
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn: "Lihat KHS"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# ── Year Switcher Tests ──
+# Test 1: Year switcher button visible (if data cached)
+- runFlow:
+    when:
+      visible: "2024/2025"
+    commands:
+      - assertVisible: "2024/2025"
+      
+      # Test 2: Tap to open bottom sheet
+      - tapOn: "2024/2025"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      
+      # Test 3: Verify bottom sheet title
+      - assertVisible: "Pilih Tahun Ajaran"
+      
+      # Test 4: Verify year options are visible
+      - assertVisible: "2024/2025"
+      
+      # Test 5: Select same year (should close sheet)
+      - tapOn: "2024/2025"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ── Test complete ──

@@ -126,15 +126,7 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            title: const Text(AppStrings.profileTitleFull),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.edit_outlined, color: cs.onSurface),
-                onPressed: null,
-              ),
-            ],
-          ),
+          const SliverAppBar(title: Text(AppStrings.profileTitleFull)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimens.screenPaddingHorizontal,

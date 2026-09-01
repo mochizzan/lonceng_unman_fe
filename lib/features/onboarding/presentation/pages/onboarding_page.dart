@@ -102,7 +102,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   _totalPages,
-                  (index) => _DotIndicator(isActive: index == _currentPage),
+                  (index) => _DotIndicator(
+                    isActive: index == _currentPage,
+                    onTap: () => _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -114,22 +121,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
 }
 
 class _DotIndicator extends StatelessWidget {
-  const _DotIndicator({required this.isActive});
+  const _DotIndicator({required this.isActive, this.onTap});
 
   final bool isActive;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(horizontal: AppDimens.space4),
-      width: isActive ? AppDimens.dotLG : AppDimens.dotMD,
-      height: AppDimens.dotMD,
-      decoration: BoxDecoration(
-        color: isActive ? cs.primary : cs.outlineVariant,
-        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(horizontal: AppDimens.space4),
+        width: isActive ? AppDimens.dotLG : AppDimens.dotMD,
+        height: AppDimens.dotMD,
+        decoration: BoxDecoration(
+          color: isActive ? cs.primary : cs.outlineVariant,
+          borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+        ),
       ),
     );
   }

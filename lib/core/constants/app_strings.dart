@@ -163,9 +163,11 @@ abstract final class AppStrings {
   //
   // Production: https://lonceng-unman-api.miproduction.web.id
   // Android emulator (dev): 10.0.2.2 maps to host PC's localhost
-  // To switch per environment, use --dart-define or flavor.
-  static const String apiBaseUrl =
-      'https://lonceng-unman-api.miproduction.web.id';
+  // Override at build time: --dart-define=API_BASE_URL=http://10.0.2.2:3000
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://lonceng-unman-api.miproduction.web.id',
+  );
 
   // ─── Onboarding ─────────────────────────────────────
   static const String appName = 'Lonceng UnMan';
@@ -205,6 +207,19 @@ abstract final class AppStrings {
   static const String khsBelumAdaDataMk = 'Belum ada data mata kuliah';
   static const String khsMataKuliah = 'Mata Kuliah';
   static const String khsRekapitulasi = 'Rekapitulasi';
+
+  // ── KHS Year Switcher & Download ──────────────────────────────────
+  static const String khsYearSwitcherTooltip = 'Pilih Tahun Ajaran';
+  static const String khsYearPickerTitle = 'Pilih Tahun Ajaran';
+  static const String khsDownloadButton = 'Simpan PDF';
+  static const String khsDownloadDownloading = 'Mengunduh...';
+  static const String khsDownloadSuccess = 'PDF berhasil disimpan';
+  static const String khsDownloadError = 'Gagal mengunduh PDF';
+  static const String khsDownloadNoCredentials =
+      'Kredensial tidak ditemukan. Silakan masuk kembali.';
+  static const String khsDownloadPermissionDenied =
+      'Izin penyimpanan diperlukan untuk menyimpan PDF.';
+  static const String khsNoCachedData = 'Data tidak tersimpan di perangkat';
 
   // ── Notification History ────────────────────────────────────
   static const String notificationHistoryTitle = 'Riwayat Notifikasi';

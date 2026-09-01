@@ -167,6 +167,17 @@ lib/features/<feature>/
 
 **No CI/CD** — all commands run manually from developer machine. No Makefile, no scripts, no git hooks.
 
+### Environment Switching
+
+The API base URL is configured via `--dart-define`. Production is the default — no flag needed.
+
+| Command | Target | Use Case |
+|---|---|---|
+| `flutter run` | Production (`lonceng-unman-api.miproduction.web.id`) | Default, release testing |
+| `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000` | Local backend on host machine | Development with local Go server |
+
+The `ApiClient` and `PhotoService` both read `AppStrings.apiBaseUrl` at construction, so a single flag redirects all 11 endpoints.
+
 ---
 
 ## Code Conventions & Common Patterns

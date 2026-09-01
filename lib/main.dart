@@ -45,6 +45,7 @@ import 'package:lonceng_unman_fe/features/krs/data/repositories/krs_repository_i
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/khs/data/repositories/khs_repository_impl.dart';
+import 'package:lonceng_unman_fe/features/khs/data/services/khs_pdf_service.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
@@ -371,6 +372,9 @@ Future<void> main() async {
       Services.register<KhsRemoteDataSource>(khsDataSource);
       final getKhs = GetKhs(KhsRepositoryImpl(remoteDataSource: khsDataSource));
       Services.register<GetKhs>(getKhs);
+
+      // ── KHS PDF Service ──
+      Services.register<KhsPdfService>(KhsPdfService());
 
       // ── Data Initialization (Profile + KRS + KHS + Photo pipeline) ──
       final dataInitDataSource = DataInitializationRemoteDataSource(

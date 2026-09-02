@@ -7,11 +7,13 @@ abstract class KhsDetailState {
     required this.selectedTahunAjaran,
     required this.availableYears,
     required this.downloadStatus,
+    this.isFetching = false,
   });
 
   final String selectedTahunAjaran;
   final List<String> availableYears;
   final DownloadStatus downloadStatus;
+  final bool isFetching;
 }
 
 class KhsDetailLoading extends KhsDetailState {
@@ -36,6 +38,7 @@ class KhsDetailLoaded extends KhsDetailState {
     required super.selectedTahunAjaran,
     required super.availableYears,
     required super.downloadStatus,
+    super.isFetching,
   });
 
   final KhsDataEntity? ganjilData;
@@ -50,7 +53,8 @@ class KhsDetailLoaded extends KhsDetailState {
           genapData == other.genapData &&
           selectedTahunAjaran == other.selectedTahunAjaran &&
           availableYears == other.availableYears &&
-          downloadStatus == other.downloadStatus;
+          downloadStatus == other.downloadStatus &&
+          isFetching == other.isFetching;
 
   @override
   int get hashCode => Object.hash(
@@ -59,6 +63,7 @@ class KhsDetailLoaded extends KhsDetailState {
     selectedTahunAjaran,
     availableYears,
     downloadStatus,
+    isFetching,
   );
 }
 

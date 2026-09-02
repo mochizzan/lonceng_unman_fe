@@ -8,6 +8,7 @@
 // (bukan ApiClient yang hanya handle JSON).
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -82,7 +83,7 @@ class KhsPdfService {
               'Content-Type': 'application/json',
               'Accept': 'application/pdf',
             },
-            body: body,
+            body: jsonEncode(body),
           )
           .timeout(_timeout);
 

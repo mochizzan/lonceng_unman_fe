@@ -136,7 +136,6 @@ class YearPickerSheet extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () {
                       onYearSelected(tempSelected);
-                      Navigator.pop(context);
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: cs.primaryContainer,

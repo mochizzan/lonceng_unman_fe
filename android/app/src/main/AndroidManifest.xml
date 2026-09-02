@@ -3,12 +3,15 @@
     <!-- Local notification permissions -->
     <!-- Android 13+ (API 33): runtime permission for showing notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- Android 9 and below (API 28-): storage permission for saving PDFs.
-         Not needed on Android 10+ (API 29+) due to scoped storage. -->
+    <!-- Android 9 and below (API 28-): storage permission for saving PDFs. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Android 11+ (API 30+): manage all files access for saving PDFs to public directories.
+         Required for writing to /storage/emulated/0/Document/ on Android 11+. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
     <!-- Android 12+ (API 31): schedule exact alarms (user-revocable) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <!-- Android 14+ (API 34): non-revocable exact alarm permission for alarm/timer apps
@@ -25,7 +28,8 @@
     <application
         android:label="Lonceng UnMan"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

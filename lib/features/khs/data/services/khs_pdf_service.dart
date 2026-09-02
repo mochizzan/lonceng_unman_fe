@@ -128,14 +128,29 @@ class KhsPdfService {
     return '$baseDir/$fileName';
   }
 
-  /// Memeriksa izin penyimpanan untuk Android < 10.
+  /// Memeriksa dan meminta izin penyimpanan sesuai versi Android.
   ///
-  /// Pada Android 10+ (API 29+), scoped storage berarti tidak diperlukan
-  /// izin tambahan untuk menulis ke direktori publik.
+  /// - Android 9 dan bawah (API 28-): request WRITE_EXTERNAL_STORAGE (popup sistem)
+  /// - Android 10 (API 29): requestLegacyExternalStorage di manifest, tidak perlu runtime permission
+  /// - Android 11+ (API 30+): MANAGE_EXTERNAL_STORAGE (buka Settings, bukan popup)
   Future<void> _checkStoragePermission() async {
     if (!Platform.isAndroid) return;
 
-    try {
+    // Cek apakah MANAGE_EXTERNAL_STORAGE tersedia (Android 11+)
+    final manageStatus = await Permission.manageExternalStorage.status;
+    final isManageSupported = manageStatus != PermissionStatus.restricted;
+
+    if (isManageSupported) {
+      // Android 11+: gunakan MANAGE_EXTERNAL_STORAGE
+      final hasAccess = await Permission.manageExternalStorage.isGranted;
+      if (!hasAccess) {
+        // Request akan membuka Settings, bukan popup
+        // User harus grant manual di Settings
+        final result = await Permission.manageExternalStorage.request();
+        debugPrint('[KhsPdfService] MANAGE_EXTERNAL_STORAGE result: $result');
+      }
+    } else {
+      // Android 10 dan bawah: gunakan storage permission
       final status = await Permission.storage.status;
       if (status.isDenied) {
         final result = await Permission.storage.request();
@@ -145,11 +160,6 @@ class KhsPdfService {
           );
         }
       }
-      debugPrint('[KhsPdfService] Storage permission granted');
-    } on Exception catch (e) {
-      debugPrint(
-        '[KhsPdfService] Skipping storage permission on Android 10+: $e',
-      );
     }
   }
 }

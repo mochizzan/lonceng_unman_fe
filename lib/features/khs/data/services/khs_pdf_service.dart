@@ -118,9 +118,9 @@ class KhsPdfService {
 
   /// Membangun path publik untuk menyimpan file KHS.
   ///
-  /// Target: `/storage/emulated/0/Document/LoncengUnMan/KHS/{fileName}`
+  /// Target: `/storage/emulated/0/Documents/LoncengUnMan/KHS/{fileName}`
   Future<String> _buildPublicPath(String fileName) async {
-    const baseDir = '/storage/emulated/0/Document/LoncengUnMan/KHS';
+    const baseDir = '/storage/emulated/0/Documents/LoncengUnMan/KHS';
     final targetDir = Directory(baseDir);
     if (!targetDir.existsSync()) {
       targetDir.createSync(recursive: true);

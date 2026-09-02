@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/errors/bloc_error_handler.dart';
+import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/khs/data/services/khs_pdf_service.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
@@ -183,7 +185,7 @@ class KhsDetailCubit extends Cubit<KhsDetailState> with BlocErrorHandler {
     loadAll();
   }
 
-  Future<void> downloadPdf(String semester) async {
+  Future<void> downloadPdf(String semester, {BuildContext? context}) async {
     final creds = await _cache.loadCredentials();
     final npm = creds?['npm'];
     final password = creds?['password'];
@@ -191,14 +193,30 @@ class KhsDetailCubit extends Cubit<KhsDetailState> with BlocErrorHandler {
     if (npm == null || npm.isEmpty || password == null || password.isEmpty) {
       _downloadStatus = DownloadStatus.error;
       emit(_emitWithDownloadStatus(DownloadStatus.error));
+      if (context != null && context.mounted) {
+        ErrorHandler.show(
+          context,
+          'Kredensial tidak ditemukan. Silakan login ulang.',
+        );
+      }
       return;
+    }
+
+    // Show snackbar: download started
+    if (context != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Mengunduh KHS $_selectedTahunAjaran $semester...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
 
     _downloadStatus = DownloadStatus.downloading;
     emit(_emitWithDownloadStatus(DownloadStatus.downloading));
 
     try {
-      await _pdfService.download(
+      final filePath = await _pdfService.download(
         npm: npm,
         password: password,
         tahunAjaran: _selectedTahunAjaran,
@@ -206,10 +224,43 @@ class KhsDetailCubit extends Cubit<KhsDetailState> with BlocErrorHandler {
       );
       _downloadStatus = DownloadStatus.success;
       emit(_emitWithDownloadStatus(DownloadStatus.success));
+
+      // Show success alert modal
+      if (context != null && context.mounted) {
+        _showDownloadSuccessDialog(context, filePath);
+      }
     } catch (e) {
       _downloadStatus = DownloadStatus.error;
       emit(_emitWithDownloadStatus(DownloadStatus.error));
+      if (context != null && context.mounted) {
+        ErrorHandler.show(context, e);
+      }
     }
+  }
+
+  /// Shows an alert modal when download completes successfully.
+  void _showDownloadSuccessDialog(BuildContext context, String filePath) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(
+          Icons.check_circle_outline,
+          color: Colors.green,
+          size: 48,
+        ),
+        title: const Text('Unduhan Selesai'),
+        content: Text(
+          'File KHS berhasil disimpan di:\n$filePath',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> loadAvailableYears() async {

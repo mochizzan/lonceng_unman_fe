@@ -47,8 +47,10 @@ class KhsDownloadIcon extends StatelessWidget {
             key: const Key('khs_download_button'),
             icon: const Icon(Icons.download_outlined, size: AppDimens.iconMD),
             color: cs.onPrimaryContainer,
-            onPressed: () =>
-                context.read<KhsDetailCubit>().downloadPdf(semester),
+            onPressed: () => context.read<KhsDetailCubit>().downloadPdf(
+              semester,
+              context: context,
+            ),
             splashRadius: AppDimens.avatarMD,
           ),
         );

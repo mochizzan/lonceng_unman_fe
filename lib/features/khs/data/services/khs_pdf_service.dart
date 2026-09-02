@@ -16,7 +16,6 @@ import 'package:http/http.dart' as http;
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/credential_body.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Service untuk mengunduh file KHS PDF dari backend LMS.
@@ -24,8 +23,9 @@ import 'package:permission_handler/permission_handler.dart';
 /// Menggunakan [http.Client] langsung karena endpoint mengembalikan
 /// raw binary PDF, bukan JSON envelope seperti endpoint lain.
 ///
-/// File disimpan ke direktori Downloads perangkat dengan format nama:
-/// `KHS_{tahunAjaran}_{semester}.pdf` (garis miring diganti underscore).
+/// File disimpan ke direktori publik perangkat:
+/// `/storage/emulated/0/Document/LoncengUnMan/KHS/` dengan format nama:
+/// `KHS_{tahunAjaran}_{semester}.pdf`.
 class KhsPdfService {
   KhsPdfService({http.Client? client, String? baseUrl})
     : _client = client ?? http.Client(),
@@ -36,7 +36,7 @@ class KhsPdfService {
 
   static const Duration _timeout = Duration(seconds: 60);
 
-  /// Mengunduh KHS PDF dan menyimpan ke direktori Downloads.
+  /// Mengunduh KHS PDF dan menyimpan ke direktori publik.
   ///
   /// Mengembalikan path file pada saat sukses.
   ///
@@ -48,19 +48,11 @@ class KhsPdfService {
     required String tahunAjaran,
     required String semester,
   }) async {
-    // 1. Check storage permission (pre-Android 10)
     await _checkStoragePermission();
 
-    // 2. Get Downloads directory via path_provider
-    final directory = await getDownloadsDirectory();
-    if (directory == null) {
-      throw const ServerException('Tidak dapat mengakses direktori Downloads');
-    }
-
-    // 3. Call POST /api/v1/lms/khs/file with credentials
     final sanitizedTahunAjaran = tahunAjaran.replaceAll('/', '_');
     final fileName = 'KHS_${sanitizedTahunAjaran}_$semester.pdf';
-    final filePath = '${directory.path}/$fileName';
+    final filePath = await _buildPublicPath(fileName);
 
     debugPrint('[KhsPdfService] Downloading KHS PDF: $fileName');
     debugPrint(
@@ -87,22 +79,17 @@ class KhsPdfService {
           )
           .timeout(_timeout);
 
-      // 4. Check response status (200 = PDF bytes)
       if (response.statusCode == 200) {
         final bytes = response.bodyBytes;
         debugPrint('[KhsPdfService] PDF downloaded: ${bytes.length} bytes');
 
-        // 5. Write bytes to file
         final file = File(filePath);
         await file.writeAsBytes(bytes, flush: true);
 
         debugPrint('[KhsPdfService] PDF saved to: $filePath');
-
-        // 6. Return file path
         return filePath;
       }
 
-      // Map error status codes ke AppException
       if (response.statusCode == 401) {
         throw const AuthException('Sesi telah berakhir. Silakan login ulang.');
       }
@@ -129,20 +116,25 @@ class KhsPdfService {
     }
   }
 
+  /// Membangun path publik untuk menyimpan file KHS.
+  ///
+  /// Target: `/storage/emulated/0/Document/LoncengUnMan/KHS/{fileName}`
+  Future<String> _buildPublicPath(String fileName) async {
+    const baseDir = '/storage/emulated/0/Document/LoncengUnMan/KHS';
+    final targetDir = Directory(baseDir);
+    if (!targetDir.existsSync()) {
+      targetDir.createSync(recursive: true);
+    }
+    return '$baseDir/$fileName';
+  }
+
   /// Memeriksa izin penyimpanan untuk Android < 10.
   ///
   /// Pada Android 10+ (API 29+), scoped storage berarti tidak diperlukan
-  /// izin tambahan untuk menulis ke direktori Downloads.
-  ///
-  /// [Permission.storage] hanya di-resolve untuk Android < 10. Pada
-  /// Android 10+, permission_handler mengembalikan "not found in manifest"
-  /// warning karena WRITE_EXTERNAL_STORAGE sudah tidak berlaku — ini
-  /// bukan error dan diabaikan.
+  /// izin tambahan untuk menulis ke direktori publik.
   Future<void> _checkStoragePermission() async {
     if (!Platform.isAndroid) return;
 
-    // Android 10+ (API 29+) menggunakan scoped storage — tidak perlu
-    // izin tambahan untuk menulis ke direktori Downloads.
     try {
       final status = await Permission.storage.status;
       if (status.isDenied) {
@@ -155,8 +147,6 @@ class KhsPdfService {
       }
       debugPrint('[KhsPdfService] Storage permission granted');
     } on Exception catch (e) {
-      // Android 10+ throws when resolving WRITE_EXTERNAL_STORAGE since
-      // it's scoped-storage — this is expected and safe to ignore.
       debugPrint(
         '[KhsPdfService] Skipping storage permission on Android 10+: $e',
       );

@@ -43,7 +43,10 @@ class KhsDownloadButton extends StatelessWidget {
 
         return FilledButton.icon(
           key: const Key('khs_download_button'),
-          onPressed: () => context.read<KhsDetailCubit>().downloadPdf(semester),
+          onPressed: () => context.read<KhsDetailCubit>().downloadPdf(
+            semester,
+            context: context,
+          ),
           icon: const Icon(Icons.download, size: AppDimens.iconSM),
           label: const Text(AppStrings.khsDownloadButton),
           style: FilledButton.styleFrom(

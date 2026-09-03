@@ -153,15 +153,8 @@ class _HomePageViewState extends State<_HomePageView>
         try {
           await DataRefreshOverlay.triggerRefresh(context);
         } catch (e) {
+          // Error surfaced by the overlay itself; no extra snackbar here.
           debugPrint('[HOME] Pull-to-refresh error: $e');
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Gagal memperbarui data'),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
         }
       },
       child: CustomScrollView(

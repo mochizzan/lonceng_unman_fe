@@ -91,6 +91,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       onRefresh: () async {
         debugPrint('[JADWAL] Pull-to-refresh triggered');
         await DataRefreshOverlay.triggerRefresh(context);
+        if (!context.mounted) return;
         context.read<JadwalBloc>().add(const JadwalRefreshRequested());
       },
       child: SingleChildScrollView(

@@ -321,6 +321,7 @@ class _ProfilePageViewState extends State<_ProfilePageView> {
       onRefresh: () async {
         debugPrint('[PROFILE] Pull-to-refresh triggered');
         await DataRefreshOverlay.triggerRefresh(context);
+        if (!context.mounted) return;
         context.read<ProfileBloc>().add(const ProfileRefreshRequested());
         // Refresh foto dari backend bersamaan dengan data akademik
         final academicCache = Services.get<AcademicCacheService>();

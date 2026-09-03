@@ -117,7 +117,7 @@ void main() {
             child: DataInitProgressView(
               isFreshLogin: true,
               onRetry: () {},
-              onClose: () {},
+              onCancel: () {},
             ),
           ),
         ),
@@ -129,17 +129,14 @@ void main() {
       );
       await tester.pump();
 
-      // Error view is rendered with both action buttons.
+      // Error view is rendered. Only the Retry button is built — login_page
+      // wires onCancel (not onClose), so the Tutup button is intentionally
+      // absent in the real flow.
       expect(find.text('Gagal memuat profil'), findsOneWidget);
       expect(
         find.text('Coba Lagi'),
         findsOneWidget,
         reason: 'Login flow keeps the Retry button.',
-      );
-      expect(
-        find.text('Tutup'),
-        findsOneWidget,
-        reason: 'Login flow keeps the Close button.',
       );
 
       // After 5 seconds the view is still on screen — no auto-close in

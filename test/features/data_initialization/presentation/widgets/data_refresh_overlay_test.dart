@@ -100,4 +100,78 @@ void main() {
       reason: 'Overlay should auto-close 3 seconds after DataInitFailure.',
     );
   });
+
+  testWidgets(
+    'login failure (isFreshLogin: true) does NOT auto-close the view',
+    (tester) async {
+      // Mount DataInitProgressView directly in login mode (the actual login
+      // path uses this widget, not DataRefreshOverlay).
+      final bloc = _FakeDataInitBloc();
+      bloc.emitNow(const DataInitInProgress(DataInitStatus.scrapingProfile));
+      addTearDown(bloc.close);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<DataInitBloc>.value(
+            value: bloc,
+            child: DataInitProgressView(
+              isFreshLogin: true,
+              onRetry: () {},
+              onClose: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Pipeline fails.
+      bloc.emitNow(
+        const DataInitFailure('Gagal memuat profil', failedStep: 'profile'),
+      );
+      await tester.pump();
+
+      // Error view is rendered with both action buttons.
+      expect(find.text('Gagal memuat profil'), findsOneWidget);
+      expect(
+        find.text('Coba Lagi'),
+        findsOneWidget,
+        reason: 'Login flow keeps the Retry button.',
+      );
+      expect(
+        find.text('Tutup'),
+        findsOneWidget,
+        reason: 'Login flow keeps the Close button.',
+      );
+
+      // After 5 seconds the view is still on screen — no auto-close in
+      // login mode. This is the behavior the spec requires to stay
+      // byte-for-byte unchanged.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(DataInitProgressView),
+        findsOneWidget,
+        reason: 'Login failure must not auto-close.',
+      );
+    },
+  );
+
+  testWidgets('success auto-closes the overlay within ~500 ms', (tester) async {
+    final bloc = await _pumpOverlay(
+      tester,
+      initial: const DataInitInProgress(DataInitStatus.downloadingKrs),
+    );
+
+    // Pipeline succeeds.
+    bloc.emitNow(const DataInitSuccess());
+    await tester.pump();
+
+    // After 1 second (well past the 500 ms delay) the overlay is gone.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(
+      find.byType(DataInitProgressView),
+      findsNothing,
+      reason: 'Success path must still auto-dismiss within 500 ms.',
+    );
+  });
 }

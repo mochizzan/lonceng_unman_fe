@@ -206,7 +206,15 @@ void main() {
       findsNothing,
       reason: 'Close button must not appear in pull-refresh error view.',
     );
-    expect(find.text('Coba Lagi'), findsNothing);
-    expect(find.text('Tutup'), findsNothing);
+    expect(
+      find.text('Coba Lagi'),
+      findsNothing,
+      reason: 'Coba Lagi label must not appear without Retry button.',
+    );
+    expect(
+      find.text('Tutup'),
+      findsNothing,
+      reason: 'Tutup label must not appear without Close button.',
+    );
   });
 }

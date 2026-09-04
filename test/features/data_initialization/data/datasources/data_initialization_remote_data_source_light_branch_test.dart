@@ -1,6 +1,6 @@
-// Tests for the pull-refresh throttle branch in
+// Tests for the pull-refresh debounce branch in
 // DataInitializationRemoteDataSource (spec §5.5 poin 2):
-// a throttled pull-refresh takes the light (get-only) branch, an unthrottled
+// a debounced pull-refresh takes the light (get-only) branch, an undebounced
 // pull-refresh and a fresh login take the heavy branch.
 //
 // Hand-written fakes only — no mockito/mocktail (repo convention).
@@ -333,7 +333,7 @@ class _Fixture {
     photo = _FakePhotoService();
     avatarCache = _FakeAvatarCache();
     avatarCubit = AvatarCubit(cache: avatarCache);
-    throttle = _FakeDebounce();
+    debounce = _FakeDebounce();
     datasource = DataInitializationRemoteDataSource(
       getKrs: GetKrs(krsRepo),
       getKhs: GetKhs(khsRepo),
@@ -341,7 +341,7 @@ class _Fixture {
       photoService: photo,
       avatarCache: avatarCache,
       avatarCubit: avatarCubit,
-      debounce: throttle,
+      debounce: debounce,
     );
     addTearDown(avatarCubit.close);
   }
@@ -352,7 +352,7 @@ class _Fixture {
   late final _FakePhotoService photo;
   late final _FakeAvatarCache avatarCache;
   late final AvatarCubit avatarCubit;
-  late final _FakeDebounce throttle;
+  late final _FakeDebounce debounce;
   late final DataInitializationRemoteDataSource datasource;
 }
 
@@ -369,11 +369,11 @@ Future<List<DataInitProgress>> _run(_Fixture f, {bool isPullRefresh = true}) {
 
 void main() {
   group('DataInitializationRemoteDataSource pull-refresh branches', () {
-    group('cabang ringan (throttled)', () {
+    group('cabang ringan (debounced)', () {
       test('skip scrape/download/extract, emit urutan ringan lalu completed, '
           'tanpa recordHeavy', () async {
         final f = _Fixture();
-        f.throttle.useLight = true;
+        f.debounce.useLight = true;
 
         final events = await _run(f);
         final statuses = events.map((e) => e.status).toList();
@@ -414,21 +414,21 @@ void main() {
             .toList();
         expect(khsDetails, ['2024/2025 Ganjil', '2024/2025 Genap']);
 
-        // Pembukuan throttle: dicek sekali, tidak dicatat.
-        expect(f.throttle.shouldUseLightCalls, 1);
-        expect(f.throttle.lastShouldUseLightNpm, _npm);
-        expect(f.throttle.recordHeavyCalls, 0);
+        // Pembukuan debounce: dicek sekali, tidak dicatat.
+        expect(f.debounce.shouldUseLightCalls, 1);
+        expect(f.debounce.lastShouldUseLightNpm, _npm);
+        expect(f.debounce.recordHeavyCalls, 0);
 
         // Tail pipeline (cache foto) tetap jalan.
         expect(f.avatarCache.saveCalls, 1);
       });
     });
 
-    group('jalur berat (tidak throttled)', () {
+    group('jalur berat (tidak debounced)', () {
       test('urutan berat utuh + recordHeavy tepat sekali saat '
           'isPullRefresh true', () async {
         final f = _Fixture();
-        f.throttle.useLight = false;
+        f.debounce.useLight = false;
         f.khsRepo.semesters = _oneSemester;
 
         final events = await _run(f);
@@ -462,14 +462,14 @@ void main() {
         expect(f.khsRepo.downloadCalls, 1);
         expect(f.khsRepo.extractCalls, 1);
 
-        expect(f.throttle.shouldUseLightCalls, 1);
-        expect(f.throttle.recordHeavyCalls, 1);
-        expect(f.throttle.lastRecordHeavyNpm, _npm);
+        expect(f.debounce.shouldUseLightCalls, 1);
+        expect(f.debounce.recordHeavyCalls, 1);
+        expect(f.debounce.lastRecordHeavyNpm, _npm);
       });
     });
 
     group('fresh login (isPullRefresh false)', () {
-      test('throttle tidak dicek sama sekali, jalur berat jalan, '
+      test('debounce tidak dicek sama sekali, jalur berat jalan, '
           'recordHeavy tidak dipanggil', () async {
         final f = _Fixture();
         f.khsRepo.semesters = _oneSemester;
@@ -492,8 +492,8 @@ void main() {
           DataInitStatus.completed,
         ]);
 
-        expect(f.throttle.shouldUseLightCalls, 0);
-        expect(f.throttle.recordHeavyCalls, 0);
+        expect(f.debounce.shouldUseLightCalls, 0);
+        expect(f.debounce.recordHeavyCalls, 0);
         expect(f.profileDs.scrapeCalls, 2);
       });
     });
@@ -502,7 +502,7 @@ void main() {
       test('getProfile throw → stream melempar step profile_get '
           '(BLoC memetakan ke Failure)', () async {
         final f = _Fixture();
-        f.throttle.useLight = true;
+        f.debounce.useLight = true;
         f.profileDs.getProfileError = Exception('profile boom');
 
         await expectLater(
@@ -520,12 +520,12 @@ void main() {
         expect(f.photo.fetchCalls, 0);
         expect(f.krsRepo.getDataCalls, 0);
         expect(f.khsRepo.semestersCalls, 0);
-        expect(f.throttle.recordHeavyCalls, 0);
+        expect(f.debounce.recordHeavyCalls, 0);
       });
 
       test('getKrsData throw → krsEmpty lalu lanjut ke KHS', () async {
         final f = _Fixture();
-        f.throttle.useLight = true;
+        f.debounce.useLight = true;
         f.krsRepo.getDataError = Exception('krs boom');
 
         final events = await _run(f);
@@ -546,7 +546,7 @@ void main() {
 
       test('getSemesters throw → khsEmpty lalu completed', () async {
         final f = _Fixture();
-        f.throttle.useLight = true;
+        f.debounce.useLight = true;
         f.khsRepo.semestersError = Exception('semesters boom');
 
         final events = await _run(f);
@@ -566,7 +566,7 @@ void main() {
       test('satu semester getKhsData throw → semester lain tetap diproses + '
           'khsEmpty di akhir', () async {
         final f = _Fixture();
-        f.throttle.useLight = true;
+        f.debounce.useLight = true;
         f.khsRepo.failingSemesters = {'Ganjil'};
 
         final events = await _run(f);
@@ -589,7 +589,7 @@ void main() {
       test('AuthException dari getProfile ringan tetap rethrow '
           '(bukan jadi empty)', () async {
         final f = _Fixture();
-        f.throttle.useLight = true;
+        f.debounce.useLight = true;
         f.profileDs.getProfileError = const AuthException(
           'Sesi telah berakhir. Silakan login ulang.',
         );

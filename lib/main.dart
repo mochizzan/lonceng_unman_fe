@@ -47,7 +47,7 @@ import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_s
 import 'package:lonceng_unman_fe/features/khs/data/repositories/khs_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/khs/data/services/khs_pdf_service.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_throttle.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
@@ -378,17 +378,17 @@ Future<void> main() async {
       Services.register<KhsPdfService>(KhsPdfService());
 
       // ── Data Initialization (Profile + KRS + KHS + Photo pipeline) ──
-      // PullRefreshThrottle singleton WAJIB terdaftar sebelum
+      // PullRefreshDebounce singleton WAJIB terdaftar sebelum
       // DataInitializationRemoteDataSource dikonstruksi karena constructor
-      // memakai fallback `throttle ?? Services.get<PullRefreshThrottle>()`.
-      Services.register<PullRefreshThrottle>(PullRefreshThrottle());
+      // memakai fallback `debounce ?? Services.get<PullRefreshDebounce>()`.
+      Services.register<PullRefreshDebounce>(PullRefreshDebounce());
       final dataInitDataSource = DataInitializationRemoteDataSource(
         getKrs: getKrs,
         getKhs: getKhs,
         profileDataSource: Services.get<StudentProfileRemoteDataSource>(),
         photoService: photoService,
         avatarCache: avatarCacheService,
-        throttle: Services.get<PullRefreshThrottle>(),
+        debounce: Services.get<PullRefreshDebounce>(),
       );
       Services.register<DataInitializationRemoteDataSource>(dataInitDataSource);
       Services.register<GetDataInitialization>(

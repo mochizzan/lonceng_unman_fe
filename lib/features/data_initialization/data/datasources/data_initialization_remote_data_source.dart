@@ -11,7 +11,7 @@ import 'package:lonceng_unman_fe/features/profile/data/services/photo_service.da
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_throttle.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
 
 /// Orchestrates the post-login data initialization pipeline.
 ///
@@ -36,10 +36,12 @@ import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull
 ///
 /// Total: 11 endpoint hits.
 ///
-/// Pull-refresh throttling: [initialize] dispatches on [isPullRefresh] +
-/// [PullRefreshThrottle] — throttled refreshes take [_initializeLight]
-/// (get-only, skips scrape/download/extract), everything else takes
-/// [_initializeHeavy] (the full pipeline above, unchanged).
+/// Pull-refresh debouncing: [initialize] dispatches on [isPullRefresh] +
+/// [PullRefreshDebounce] — refreshes within the 2-minute window take
+/// [_initializeLight] (get-only, skips scrape/download/extract); the
+/// first refresh (or any after a 2-minute idle) records a timestamp and
+/// takes [_initializeHeavy] (the full pipeline above, unchanged). Fresh
+/// login (isPullRefresh=false) is never consulted by the debounce.
 class DataInitializationRemoteDataSource {
   final GetKrs _getKrs;
   final GetKhs _getKhs;
@@ -47,7 +49,7 @@ class DataInitializationRemoteDataSource {
   final PhotoService _photoService;
   final AvatarCacheService _avatarCache;
   final AvatarCubit _avatarCubit;
-  final PullRefreshThrottle _throttle;
+  final PullRefreshDebounce _debounce;
 
   DataInitializationRemoteDataSource({
     required GetKrs getKrs,
@@ -56,18 +58,19 @@ class DataInitializationRemoteDataSource {
     PhotoService? photoService,
     AvatarCacheService? avatarCache,
     AvatarCubit? avatarCubit,
-    PullRefreshThrottle? throttle,
+    PullRefreshDebounce? debounce,
   }) : _getKrs = getKrs,
        _getKhs = getKhs,
        _profileDataSource = profileDataSource,
        _photoService = photoService ?? Services.get<PhotoService>(),
        _avatarCache = avatarCache ?? Services.get<AvatarCacheService>(),
        _avatarCubit = avatarCubit ?? Services.get<AvatarCubit>(),
-       _throttle = throttle ?? Services.get<PullRefreshThrottle>();
+       _debounce = debounce ?? Services.get<PullRefreshDebounce>();
 
-  /// Dispatcher: throttled pull-refresh → [_initializeLight] (tanpa
-  /// recordHeavy); pull-refresh berat → catat kuota lalu [_initializeHeavy];
-  /// fresh login → [_initializeHeavy] tanpa catat kuota.
+  /// Dispatcher: pull-refresh dalam window debounce → [_initializeLight]
+  /// (tanpa recordHeavy); pull-refresh pertama / setelah window → catat
+  /// timestamp lalu [_initializeHeavy]; fresh login → [_initializeHeavy]
+  /// tanpa pernah dicek debounce.
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
@@ -78,13 +81,13 @@ class DataInitializationRemoteDataSource {
       '[DATA_INIT_DS] initialize() START — npm=$npm, forceRefresh=$forceRefresh, isPullRefresh=$isPullRefresh',
     );
 
-    if (isPullRefresh && _throttle.shouldThrottle(npm)) {
-      debugPrint('[DATA_INIT_DS] initialize() → LIGHT branch (throttled)');
+    if (isPullRefresh && _debounce.shouldUseLight(npm)) {
+      debugPrint('[DATA_INIT_DS] initialize() → LIGHT branch (debounced)');
       yield* _initializeLight(npm: npm, password: password);
       return;
     }
     if (isPullRefresh) {
-      _throttle.recordHeavy(npm);
+      _debounce.recordHeavy(npm);
       debugPrint(
         '[DATA_INIT_DS] initialize() → HEAVY branch (pull-refresh, recorded)',
       );
@@ -336,7 +339,7 @@ class DataInitializationRemoteDataSource {
     yield const DataInitProgress(DataInitStatus.completed);
   }
 
-  /// Cabang ringan pull-refresh (throttled): skip scrape/download/extract,
+  /// Cabang ringan pull-refresh (debounced): skip scrape/download/extract,
   /// langsung get dengan forceRefresh:true agar tetap hit network.
   ///
   /// Urutan: gettingProfile (wajib, rethrow) → fetchingPhoto (non-fatal) →
@@ -348,7 +351,7 @@ class DataInitializationRemoteDataSource {
     required String password,
   }) async* {
     debugPrint(
-      '[DATA_INIT_DS] _initializeLight() START — npm=$npm (throttled, forceRefresh=true)',
+      '[DATA_INIT_DS] _initializeLight() START — npm=$npm (debounced, forceRefresh=true)',
     );
 
     // 1. Profile (WAJIB — gagal = pipeline berhenti, tanpa scrape)

@@ -62,15 +62,18 @@ unduh PDF manual.
 
 ### 3.1 Pemicu pipeline: satu event untuk dua alur
 
-- `lib/features/auth/presentation/pages/login_page.dart:72-78`:
+- `lib/features/auth/presentation/pages/login_page.dart:72-81`:
   dispatch `DataInitReset()` + `DataInitStarted(npm, password, forceRefresh: true)`.
 - `lib/features/data_initialization/presentation/widgets/data_refresh_overlay.dart:143-150`
   (`_dispatchPipeline`, dipanggil saat overlay mount dan saat tombol Retry):
   dispatch event yang sama persis.
 - `DataInitBloc._onStarted` (`data_initialization_bloc.dart:28-105`):
   guard `_isRunning`, emit `DataInitInProgress`, menjalankan stream dari
-  `GetDataInitialization`, memetakan `completed/completedWithErrors → Success`,
+  `GetDataInitialization`, memetakan `completed (+ completedWithErrors bila ada) → Success`,
   `failed → Failure`, status lain → `InProgress`. Timeout `kDataInitTimeout`.
+  Catatan: cabang `completedWithErrors` ada di BLoC tetapi tidak pernah
+  di-emit oleh datasource saat ini (hanya `completed`, baris 377) — dead-code
+  yang tetap dipertahankan apa adanya, bukan perilaku aktif.
 - Artinya `DataInitializationRemoteDataSource.initialize()` berjalan identik di
   fresh login maupun pull-refresh. Inilah alasan dibutuhkan flag pembeda baru:
   hari ini tidak ada cara membedakan keduanya di lapisan data.
@@ -108,7 +111,9 @@ Semantik wajib vs opsional ini SUDAH berlaku di pull-refresh hari ini
   gettingProfile, fetchingPhoto, downloadingKrs, extractingKrs, fetchingKrsData,
   fetchingKhsSemesters, downloadingKhs, extractingKhs, fetchingKhsData,
   krsEmpty, khsEmpty, photoEmpty, completed, completedWithErrors, failed`.
-- BLoC (`_onStarted:70-79`): hanya `completed/completedWithErrors → Success`
+- BLoC (`_onStarted:64-72`): hanya `completed → Success`
+  (cabang `completedWithErrors → Success` ada di kode tetapi tidak pernah
+  di-emit datasource — dead-code)
   dan `failed → Failure`; semua status lain (termasuk `krsEmpty/khsEmpty/
   photoEmpty`) → `DataInitInProgress`.
 - `DataRefreshOverlay` (`isFreshLogin: false`): `Failure` → error view 3 detik
@@ -247,7 +252,7 @@ Titik keputusan di `initialize()`:
 if (isPullRefresh && throttle.shouldThrottle(npm)) {
   → cabang ringan (TANPA recordHeavy)
 } else {
-  throttle.recordHeavy(npm)   // hanya bila isPullRefresh; login tidak dicatat
+  if (isPullRefresh) throttle.recordHeavy(npm);  // login tidak dicatat
   → jalur berat (kode yang ada sekarang, tidak diubah)
 }
 ```
@@ -331,7 +336,7 @@ Yang di-skip: `POST /student-profile` (2x), `POST /krs`,
 Hasil eksplorasi pendalaman (bagian yang user minta dieksplorasi ulang):
 
 - Pipeline `initialize()` dipakai bersama login dan pull-refresh (bukti:
-  `login_page.dart:72-78` dan `data_refresh_overlay.dart:143-150` dispatch
+  `login_page.dart:72-81` dan `data_refresh_overlay.dart:143-150` dispatch
   `DataInitStarted` yang sama). Jadi aturan wajib-vs-opsional ADA di
   pull-refresh hari ini; dugaan "tidak ada" keliru — yang benar adalah
   manifestasinya berbeda (error view 3 detik vs tombol Retry/Cancel, dan status
@@ -352,7 +357,10 @@ Aturan cabang ringan (menyalin jalur berat apa adanya):
   bila ada error → `yield khsEmpty` di akhir blok (non-fatal).
 - `fetchPhoto` gagal/kosong → `yield photoEmpty` (non-fatal).
 - `failedStep` memakai nama lama (`profile_get`, `krs_data`, `khs_semesters`,
-  `khs_data_<detail>`) agar chip step di error view (`_humanReadableFailedStep`
+  `khs_data_<semester>` — perhatikan: hanya nama semester, mis.
+  `khs_data_Ganjil`, sesuai `_runStep('khs_data_${semesterEntry.semester}')`;
+  yang memakai `detail` tahunAjaran+semester hanya `_logStepOutcome`, bukan
+  `failedStep`) agar chip step di error view (`_humanReadableFailedStep`
   → `dataInitStatusText`) tidak berubah.
 - `AuthException` (401) dari endpoint ringan manapun tetap merethrow (bukan
   ditelan sebagai empty) → `ApiClient.onAuthError` → `performFullLogout`
@@ -416,7 +424,8 @@ Pull-refresh (Home/Jadwal/Profile)
               → DataInitializationRemoteDataSource.initialize
                 → throttle.shouldThrottle(npm)?
                     YA  → _initializeLight  (5 endpoint ringan, skip berat)
-                    TIDAK → recordHeavy + _initializeHeavy (jalur lama utuh)
+                    TIDAK → (bila pull-refresh: recordHeavy) + _initializeHeavy (jalur lama utuh;
+                            login langsung _initializeHeavy tanpa catat)
           → stream DataInitProgress → BLoC state → overlay/view
             → Success: refetch Jadwal/Home/Profile + pop
             → Failure: error view 3s + auto-close

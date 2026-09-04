@@ -16,7 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_throttle.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/repositories/data_initialization_repository.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
@@ -275,7 +275,7 @@ class _SpyRemoteDataSource extends DataInitializationRemoteDataSource {
         photoService: _DummyPhotoService(),
         avatarCache: _DummyAvatarCache(),
         avatarCubit: cubit,
-        throttle: PullRefreshThrottle(),
+        debounce: PullRefreshDebounce(),
       );
 
   final List<bool> calls = [];

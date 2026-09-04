@@ -12,7 +12,7 @@ import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/domain/metadata_entity.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
-import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_throttle.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/repositories/khs_repository.dart';
@@ -111,22 +111,22 @@ const _oneSemester = [
 
 // ─── Fakes ────────────────────────────────────────────────────────────────
 
-/// Fake throttle where the test controls [shouldThrottle] and observes
-/// [recordHeavy] / [shouldThrottle] call counts.
-class _FakeThrottle extends PullRefreshThrottle {
-  _FakeThrottle();
+/// Fake debounce where the test controls [shouldUseLight] and observes
+/// [recordHeavy] / [shouldUseLight] call counts.
+class _FakeDebounce extends PullRefreshDebounce {
+  _FakeDebounce();
 
-  bool throttleResult = false;
-  int shouldThrottleCalls = 0;
+  bool useLight = false;
+  int shouldUseLightCalls = 0;
   int recordHeavyCalls = 0;
-  String? lastShouldThrottleNpm;
+  String? lastShouldUseLightNpm;
   String? lastRecordHeavyNpm;
 
   @override
-  bool shouldThrottle(String npm, [DateTime? now]) {
-    shouldThrottleCalls++;
-    lastShouldThrottleNpm = npm;
-    return throttleResult;
+  bool shouldUseLight(String npm, [DateTime? now]) {
+    shouldUseLightCalls++;
+    lastShouldUseLightNpm = npm;
+    return useLight;
   }
 
   @override
@@ -333,7 +333,7 @@ class _Fixture {
     photo = _FakePhotoService();
     avatarCache = _FakeAvatarCache();
     avatarCubit = AvatarCubit(cache: avatarCache);
-    throttle = _FakeThrottle();
+    throttle = _FakeDebounce();
     datasource = DataInitializationRemoteDataSource(
       getKrs: GetKrs(krsRepo),
       getKhs: GetKhs(khsRepo),
@@ -341,7 +341,7 @@ class _Fixture {
       photoService: photo,
       avatarCache: avatarCache,
       avatarCubit: avatarCubit,
-      throttle: throttle,
+      debounce: throttle,
     );
     addTearDown(avatarCubit.close);
   }
@@ -352,7 +352,7 @@ class _Fixture {
   late final _FakePhotoService photo;
   late final _FakeAvatarCache avatarCache;
   late final AvatarCubit avatarCubit;
-  late final _FakeThrottle throttle;
+  late final _FakeDebounce throttle;
   late final DataInitializationRemoteDataSource datasource;
 }
 
@@ -373,7 +373,7 @@ void main() {
       test('skip scrape/download/extract, emit urutan ringan lalu completed, '
           'tanpa recordHeavy', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = true;
+        f.throttle.useLight = true;
 
         final events = await _run(f);
         final statuses = events.map((e) => e.status).toList();
@@ -415,8 +415,8 @@ void main() {
         expect(khsDetails, ['2024/2025 Ganjil', '2024/2025 Genap']);
 
         // Pembukuan throttle: dicek sekali, tidak dicatat.
-        expect(f.throttle.shouldThrottleCalls, 1);
-        expect(f.throttle.lastShouldThrottleNpm, _npm);
+        expect(f.throttle.shouldUseLightCalls, 1);
+        expect(f.throttle.lastShouldUseLightNpm, _npm);
         expect(f.throttle.recordHeavyCalls, 0);
 
         // Tail pipeline (cache foto) tetap jalan.
@@ -428,7 +428,7 @@ void main() {
       test('urutan berat utuh + recordHeavy tepat sekali saat '
           'isPullRefresh true', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = false;
+        f.throttle.useLight = false;
         f.khsRepo.semesters = _oneSemester;
 
         final events = await _run(f);
@@ -462,7 +462,7 @@ void main() {
         expect(f.khsRepo.downloadCalls, 1);
         expect(f.khsRepo.extractCalls, 1);
 
-        expect(f.throttle.shouldThrottleCalls, 1);
+        expect(f.throttle.shouldUseLightCalls, 1);
         expect(f.throttle.recordHeavyCalls, 1);
         expect(f.throttle.lastRecordHeavyNpm, _npm);
       });
@@ -492,7 +492,7 @@ void main() {
           DataInitStatus.completed,
         ]);
 
-        expect(f.throttle.shouldThrottleCalls, 0);
+        expect(f.throttle.shouldUseLightCalls, 0);
         expect(f.throttle.recordHeavyCalls, 0);
         expect(f.profileDs.scrapeCalls, 2);
       });
@@ -502,7 +502,7 @@ void main() {
       test('getProfile throw → stream melempar step profile_get '
           '(BLoC memetakan ke Failure)', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = true;
+        f.throttle.useLight = true;
         f.profileDs.getProfileError = Exception('profile boom');
 
         await expectLater(
@@ -525,7 +525,7 @@ void main() {
 
       test('getKrsData throw → krsEmpty lalu lanjut ke KHS', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = true;
+        f.throttle.useLight = true;
         f.krsRepo.getDataError = Exception('krs boom');
 
         final events = await _run(f);
@@ -546,7 +546,7 @@ void main() {
 
       test('getSemesters throw → khsEmpty lalu completed', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = true;
+        f.throttle.useLight = true;
         f.khsRepo.semestersError = Exception('semesters boom');
 
         final events = await _run(f);
@@ -566,7 +566,7 @@ void main() {
       test('satu semester getKhsData throw → semester lain tetap diproses + '
           'khsEmpty di akhir', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = true;
+        f.throttle.useLight = true;
         f.khsRepo.failingSemesters = {'Ganjil'};
 
         final events = await _run(f);
@@ -589,7 +589,7 @@ void main() {
       test('AuthException dari getProfile ringan tetap rethrow '
           '(bukan jadi empty)', () async {
         final f = _Fixture();
-        f.throttle.throttleResult = true;
+        f.throttle.useLight = true;
         f.profileDs.getProfileError = const AuthException(
           'Sesi telah berakhir. Silakan login ulang.',
         );

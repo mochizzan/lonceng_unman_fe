@@ -8,12 +8,6 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
-import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_bloc.dart';
-import 'package:lonceng_unman_fe/features/home/presentation/bloc/home_event.dart';
-import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
-import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
-import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc.dart';
-import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 
 /// Full-screen blocking overlay for data refresh progress.
 /// Shows [DataInitProgressView] over a semi-transparent barrier.
@@ -159,21 +153,13 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
           // arrives after a Failure (would not happen today, but safe).
           _autoCloseTimer?.cancel();
           debugPrint('[DATA_REFRESH] Success — dismissing overlay in 500ms');
-          // Trigger all BLoCs re-fetch after refresh
-          try {
-            listenerContext.read<JadwalBloc>().add(
-              const JadwalFetchRequested(),
-            );
-            listenerContext.read<HomeBloc>().add(const HomeFetchRequested());
-            listenerContext.read<ProfileBloc>().add(
-              const ProfileFetchRequested(),
-            );
-            debugPrint(
-              '[DATA_REFRESH] All BLoC refresh dispatched after refresh',
-            );
-          } catch (e) {
-            debugPrint('[DATA_REFRESH] BLoC dispatch failed: $e');
-          }
+          // BLoC refetch is owned by the ShellRoute's BlocListener
+          // (see app_router.dart: BlocListener<DataInitBloc> around
+          // MainShellScaffold). The overlay is a showGeneralDialog route
+          // built in the root Navigator and is OUTSIDE the ShellRoute's
+          // MultiBlocProvider — reading JadwalBloc/HomeBloc/ProfileBloc
+          // here would throw ProviderNotFoundException. Do not duplicate
+          // the dispatch from the overlay.
           // Notify optional success listener before dismissing.
           widget.onPipelineSuccess?.call();
           Future.delayed(const Duration(milliseconds: 500), () {

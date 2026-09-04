@@ -173,6 +173,44 @@ void main() {
     );
   });
 
+  testWidgets(
+    'success path does NOT touch ShellRoute-scoped BLoCs '
+    '(JadwalBloc/HomeBloc/ProfileBloc — ProviderNotFoundException regression)',
+    (tester) async {
+      // Regression: the success listener used to call
+      // `context.read<JadwalBloc>()` etc. inside the overlay route created
+      // by showGeneralDialog. That route is built in the root Navigator and
+      // is OUTSIDE the ShellRoute's MultiBlocProvider, so the lookup
+      // throws ProviderNotFoundException at runtime. A try/catch block
+      // swallowed the error so existing tests still passed — but the
+      // refetch BLoCs were never actually notified.
+      //
+      // The ShellRoute's own BlocListener (app_router.dart:151) is the
+      // single source of refetch dispatches; the overlay must not duplicate
+      // (or try to duplicate) that work.
+      final bloc = await _pumpOverlay(
+        tester,
+        initial: const DataInitInProgress(DataInitStatus.downloadingKrs),
+      );
+
+      bloc.emitNow(const DataInitSuccess());
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      // Any uncaught exception from the listener is collected here.
+      expect(
+        tester.takeException(),
+        isNull,
+        reason:
+            'Overlay listener must not read ShellRoute-scoped BLoCs '
+            '(JadwalBloc/HomeBloc/ProfileBloc). Doing so throws '
+            'ProviderNotFoundException because the overlay route '
+            '(showGeneralDialog) is built in the root Navigator, outside '
+            'the ShellRoute MultiBlocProvider.',
+      );
+    },
+  );
   testWidgets('pull-refresh failure view TIDAK menampilkan tombol apapun '
       '(auto-close only)', (tester) async {
     // 1. Mount the overlay in pull-refresh mode.

@@ -26,7 +26,6 @@ class DataRefreshOverlay extends StatefulWidget {
     super.key,
     this.npm,
     this.password,
-    this.onPipelineFailure,
     this.onPipelineSuccess,
   });
 
@@ -36,11 +35,6 @@ class DataRefreshOverlay extends StatefulWidget {
   /// fast-failing pipeline can still close the overlay.
   final String? npm;
   final String? password;
-
-  /// Optional callback (no longer invoked in pull-to-refresh failure path;
-  /// the overlay self-dismisses before this would fire). Retained for
-  /// source compatibility with any future caller.
-  final void Function(DataInitFailure failure)? onPipelineFailure;
 
   /// Optional callback invoked when the pipeline succeeds. Retained for
   /// source compatibility; the overlay already dispatches BLoC refetches
@@ -56,7 +50,6 @@ class DataRefreshOverlay extends StatefulWidget {
     BuildContext context, {
     String? npm,
     String? password,
-    void Function(DataInitFailure failure)? onPipelineFailure,
     VoidCallback? onPipelineSuccess,
   }) async {
     await showGeneralDialog(
@@ -69,7 +62,6 @@ class DataRefreshOverlay extends StatefulWidget {
         return DataRefreshOverlay(
           npm: npm,
           password: password,
-          onPipelineFailure: onPipelineFailure,
           onPipelineSuccess: onPipelineSuccess,
         );
       },
@@ -85,7 +77,6 @@ class DataRefreshOverlay extends StatefulWidget {
   /// overlay stuck on screen.
   static Future<void> triggerRefresh(
     BuildContext context, {
-    void Function(DataInitFailure failure)? onPipelineFailure,
     VoidCallback? onPipelineSuccess,
   }) async {
     debugPrint('[DATA_REFRESH] triggerRefresh() START');
@@ -112,7 +103,6 @@ class DataRefreshOverlay extends StatefulWidget {
         context,
         npm: npm,
         password: password,
-        onPipelineFailure: onPipelineFailure,
         onPipelineSuccess: onPipelineSuccess,
       );
     }

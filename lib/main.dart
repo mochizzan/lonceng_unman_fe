@@ -69,6 +69,9 @@ import 'package:lonceng_unman_fe/features/onboarding/data/datasources/onboarding
 import 'package:lonceng_unman_fe/features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
+import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_cubit.dart';
 
 /// Background message handler — must be top-level (not inside a class).
 /// Registered before runApp() so it works even when the app is terminated.
@@ -319,6 +322,12 @@ Future<void> main() async {
       final authStatusNotifier = AuthStatusNotifier();
       Services.register<AuthStatusNotifier>(authStatusNotifier);
 
+      // ── Connectivity Service (singleton — wrapped plugin, consumed by
+      //    ConnectivityCubit at the root, LoginPage, and DataInitBloc) ──
+      Services.register<ConnectivityService>(
+        ConnectivityServiceImpl(Connectivity()),
+      );
+
       // ── Navbar Visibility Notifier (global, controls navbar during modals) ──
       Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
 
@@ -485,7 +494,8 @@ class LoncengUnmanApp extends StatefulWidget {
   State<LoncengUnmanApp> createState() => _LoncengUnmanAppState();
 }
 
-class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
+class _LoncengUnmanAppState extends State<LoncengUnmanApp>
+    with WidgetsBindingObserver {
   late final AuthStatusNotifier _authNotifier;
   late final ThemeNotifier _themeNotifier;
   late final GoRouter _router;
@@ -497,6 +507,7 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _authNotifier =
         widget.authStatusNotifier ?? Services.get<AuthStatusNotifier>();
     _themeNotifier = widget.themeNotifier ?? Services.get<ThemeNotifier>();
@@ -519,12 +530,28 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp> {
       _themeNotifier.dispose();
     }
     super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('[LIFECYCLE] App resumed — refreshing connectivity');
+      try {
+        Services.get<ConnectivityService>().refresh();
+      } catch (e) {
+        debugPrint('[LIFECYCLE] Connectivity refresh failed: $e');
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider<ConnectivityCubit>(
+          create: (_) => ConnectivityCubit(Services.get<ConnectivityService>()),
+        ),
         BlocProvider(
           create: (_) => DataInitBloc(Services.get<GetDataInitialization>()),
         ),

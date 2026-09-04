@@ -20,6 +20,9 @@
     <!-- Boot receiver: re-schedule alarms after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Detect network state for offline banner & DataInit fail-fast -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <!-- Android 14+ (API 34): foreground services require a typed permission.
          flutter_local_notifications uses dataSync type. -->

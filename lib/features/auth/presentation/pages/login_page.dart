@@ -12,6 +12,8 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
+import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_cubit.dart';
+import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_state.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_text_field.dart';
 import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
@@ -348,6 +350,18 @@ class _LoginCardState extends State<_LoginCard> {
           ),
           SizedBox(height: sp(context, AppDimens.space8)),
 
+          // Offline banner — fixed-height slot prevents layout jump.
+          SizedBox(
+            height: sp(context, AppDimens.space48),
+            child: BlocBuilder<ConnectivityCubit, ConnectivityState>(
+              builder: (context, state) {
+                if (state.isOnline) return const SizedBox.shrink();
+                return const _OfflineBanner();
+              },
+            ),
+          ),
+          SizedBox(height: sp(context, AppDimens.space8)),
+
           // Submit Button — fixed-height area keeps card stable while loading
           SizedBox(
             height: sp(context, _submitAreaHeight),
@@ -384,6 +398,42 @@ class _LoginCardState extends State<_LoginCard> {
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: sp(context, AppDimens.space12),
+        vertical: sp(context, AppDimens.space8),
+      ),
+      decoration: BoxDecoration(
+        color: cs.tertiaryContainer,
+        borderRadius: BorderRadius.circular(sp(context, AppDimens.radiusMD)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off, size: 16, color: cs.onTertiaryContainer),
+          SizedBox(width: sp(context, AppDimens.space8)),
+          Expanded(
+            child: Text(
+              AppStrings.loginOfflineBanner,
+              style: TextStyle(
+                color: cs.onTertiaryContainer,
+                fontSize: responsiveFontSize(context, AppDimens.textSM),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

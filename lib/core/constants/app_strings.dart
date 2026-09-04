@@ -17,6 +17,8 @@ abstract final class AppStrings {
   static const String loginNpmHelper = 'Gunakan NPM aktif kamu';
   static const String loginHelpdesk = 'Butuh bantuan? ';
   static const String loginHelpdeskLink = 'Helpdesk IT';
+  static const String loginOfflineBanner =
+      'Mode offline — masuk mungkin gagal. Periksa koneksi internet.';
 
   // ─── Home ─────────────────────────────────────────────
   static const String homeNextClassIn = 'Kelas berikutnya dalam';
@@ -220,6 +222,18 @@ abstract final class AppStrings {
   static const String khsDownloadPermissionDenied =
       'Izin penyimpanan diperlukan untuk menyimpan PDF.';
   static const String khsNoCachedData = 'Data tidak tersimpan di perangkat';
+
+  // ── Data Refresh Overlay (pull-to-refresh errors) ────────────
+  static const String refreshErrorTitle = 'Gagal Memperbarui Data';
+  static const String refreshErrorRetry = 'Coba Lagi';
+  static const String refreshErrorClose = 'Tutup';
+  static const String refreshErrorStepPrefix = 'Langkah yang gagal:';
+  static const String refreshErrorStepUnknown = 'Tidak diketahui';
+  static const String refreshErrorHint =
+      'Coba lagi, atau periksa koneksi internet kamu.';
+  static const String dataInitNoConnection =
+      'Tidak ada koneksi internet. Coba lagi saat internet stabil.';
+  static const String dataInitNoConnectionStep = 'Tidak ada koneksi';
 
   // ── Notification History ────────────────────────────────────
   static const String notificationHistoryTitle = 'Riwayat Notifikasi';

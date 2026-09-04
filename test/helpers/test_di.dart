@@ -2,11 +2,14 @@
 /// Shared DI setup for tests that render pages using `Services.get<T>()`.
 library;
 
+// ignore_for_file: prefer_initializing_formals
+
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
+import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
@@ -384,6 +387,32 @@ class _FakeStudentProfileRemoteDataSource
   }
 }
 
+/// Hand-written [ConnectivityService] fake for tests that need
+/// `Services.get<ConnectivityService>()` to succeed. Defaults to online;
+/// tests can drive transitions via [setOnline].
+class FakeConnectivityService implements ConnectivityService {
+  FakeConnectivityService({bool isOnline = true}) : _isOnline = isOnline;
+
+  bool _isOnline;
+  final _controller = StreamController<bool>.broadcast();
+
+  @override
+  bool get isOnline => _isOnline;
+
+  @override
+  Stream<bool> get onStatusChange => _controller.stream;
+
+  @override
+  Future<void> refresh() async {}
+
+  /// Test driver: update [isOnline] and emit the transition on the stream.
+  void setOnline(bool v) {
+    if (_isOnline == v) return;
+    _isOnline = v;
+    _controller.add(v);
+  }
+}
+
 /// Register all DI dependencies needed by pages.
 /// Call in setUp() or setUpAll() before any widget rendering.
 void registerTestDependencies() {
@@ -415,6 +444,10 @@ void registerTestDependencies() {
   Services.register<StudentProfileRemoteDataSource>(
     _FakeStudentProfileRemoteDataSource(),
   );
+  // Connectivity fake — defaults to online; toggle via
+  // `Services.get<FakeConnectivityService>().setOnline(false)` to simulate offline.
+  final fakeConn = FakeConnectivityService(isOnline: true);
+  Services.register<ConnectivityService>(fakeConn);
   Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
 }
 

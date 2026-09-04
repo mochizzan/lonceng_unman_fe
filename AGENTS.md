@@ -109,7 +109,8 @@ lib/
 │   ├── khs/                     # Grade results (presentation + domain + data, no BLoC)
 │   ├── krs/                     # Course plan pipeline (domain + data only, no UI)
 │   ├── notification/            # Local notifications (full 3-layer, Cubit)
-│   ├── onboarding/              # First-run carousel (full 3-layer)
+│   ├── onboarding/              │ First-run carousel (full 3-layer)
+│   ├── connectivity/            │ Network detection (Cubit + service interface)
 │   ├── profile/                 # Student profile (full 3-layer)
 │   └── settings/                # Theme/notification prefs (presentation only)
 └── shared/                      # Reusable widgets
@@ -367,9 +368,11 @@ All API responses follow: `{status: int, data: dynamic, message: string}`
 ### Running Tests
 
 ```bash
-flutter test                    # Run all tests
-flutter test test/features/auth # Run auth tests only
-flutter analyze                 # Static analysis
+flutter test                       # Run all unit + widget tests
+flutter test test/features/auth    # Run auth tests only
+flutter analyze                    # Static analysis
+patrol test -t patrol_test/login_e2e_test.dart --device 127.0.0.1:5557 --no-uninstall
+                                   # Run native E2E test on emulator
 ```
 
 ### Test Structure
@@ -410,18 +413,30 @@ test/
     ├── errors/app_errors_test.dart     # 10 tests
     ├── services/notification_service_test.dart # 2 tests
     └── utils/day_name_mapper_test.dart # 12 tests
+
+patrol_test/                            # E2E smoke tests (run on emulator)
+├── setup_verification_test.dart        # Patrol setup sanity check
+├── app_launch_smoke_test.dart          # App reaches login screen
+├── login_api_isolated_test.dart        # Production backend reachable
+└── login_e2e_test.dart                 # Full E2E login (form → review → data init → home)
+
+integration_test/                       # Flutter integration tests (in-process, not native)
+└── app_smoke_test.dart                 # App-level smoke test
 ```
 
 ### Test Counts
 
 |Metric|Count|
 |---|---|
-|Test files|37|
+|Unit + widget test files|37|
 |Helper files|1 (test_di.dart)|
-|Total test cases|**~201**|
+|Patrol E2E test files|4 (patrol_test/)|
+|Integration test files|1 (integration_test/)|
+|Total test cases|**~205+** (4 patrolTest for E2E + ~201 unit/widget)|
 |— `test()` (unit)|~130|
 |— `testWidgets()` (widget)|49|
 |— `blocTest()` (BLoC)|22|
+|— `patrolTest()` (E2E native)|4|
 
 ### Test Patterns
 
@@ -455,21 +470,76 @@ blocTest<AuthBloc, AuthState>(
 );
 ```
 
+### Patrol E2E (Native) Smoke Tests
+
+For native (Android) UI smoke tests that run on real emulators, the project uses [Patrol](https://patrol.leancode.pl/) — a Flutter-native test framework with first-class support for `find.byKey`, retry-based waits, real key events, and HTTP.
+
+**Dependencies** (pubspec.yaml):
+- `patrol: ^4.9.0` (dev_dependency)
+- `integration_test` (dev_dependency)
+- `patrol_cli: 4.7.0` (global, via `dart pub global activate patrol_cli`)
+
+**Android build config** (`android/app/build.gradle.kts`):
+- `defaultConfig.testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"` (no `clearPackageData`)
+- `testOptions { execution = "ANDROIDX_TEST_ORCHESTRATOR" }`
+- `androidTestUtil("androidx.test:orchestrator:1.5.1")`
+
+**Native JUnit bridge** (REQUIRED — `patrol test` reports "0 tests" without it):
+- `android/app/src/androidTest/java/com/miproduction/loncengunman/MainActivityTest.java`
+- Verbatim from `~/.pub-cache/hosted/pub.dev/patrol-4.9.0/example/android/app/src/androidTest/java/pl/leancode/patrol/example/MainActivityTest.java`
+- Package name adjusted: `com.miproduction.loncengunman`
+
+**Test files** (in `patrol_test/`):
+- `setup_verification_test.dart` — bare Patrol setup check, fastest smoke test
+- `app_launch_smoke_test.dart` — pumps the real app, verifies it reaches the login screen
+- `login_api_isolated_test.dart` — verifies production backend reachable from the device
+- `login_e2e_test.dart` — **full E2E login flow**: fill form → submit → confirm profile → wait for 8-step data init pipeline → verify Home renders. ~50s on Android 15.
+
+**Prerequisites on emulator** (run once after a fresh install):
+```bash
+adb -s 127.0.0.1:5557 install -r ~/.gradle/caches/modules-2/files-2.1/androidx.test/orchestrator/1.5.1/<hash>/orchestrator-1.5.1.apk
+adb -s 127.0.0.1:5557 install -r ~/.gradle/caches/modules-2/files-2.1/androidx.test/services/test-services/1.5.0/<hash>/test-services-1.5.0.apk
+```
+
+**Running tests** (MuMu Player emulators on ports 5555/5557):
+```bash
+# Quick setup check (~30s on Android 15)
+patrol test -t patrol_test/setup_verification_test.dart --device 127.0.0.1:5557 --no-uninstall
+
+# Full login E2E (~50s on Android 15, ~80s on Android 12)
+patrol test -t patrol_test/login_e2e_test.dart --device 127.0.0.1:5557 --no-uninstall
+```
+
+**Patrol API gotchas** (verified):
+- **`$.enterText(finder, text)`** (top-level) simulates real key events, fires `onChanged` on `TextField`. The finder-scoped version `$(finder).enterText()` calls `tester.enterText` and bypasses `onChanged` — DO NOT use that.
+- **`$.tester.tap(finder)`** on the **FilledButton** itself, not the inner Text. Tapping a Text inside a button's Row may not propagate to `onPressed` in test mode. Use `find.byType(FilledButton).last`.
+- **`$.pump()` vs `$.pumpAndSettle()`**: After tapping a button that triggers loading (e.g., `CircularProgressIndicator`), use `$.pump()` — the spinner animates forever and `pumpAndSettle` will time out.
+- **Test names** MUST NOT contain `/` (Android Test Orchestrator crashes with `IllegalArgumentException`).
+- **`hive.Hive.init(tempDir.path)`** — `path_provider` is unreliable in test environment; use a `Directory.systemTemp` subdirectory.
+
+**Test bootstrap pattern** (`_bootstrapRealServicesForLogin()` in `login_e2e_test.dart`):
+- Registers all real services (no mocks) that `main()` registers, except Firebase/FCM
+- Uses temp Hive path
+- Skips onboarding via `OnboardingRepositoryImpl.markCompleted()`
+- Real HTTP against production backend by default; switch with `--dart-define=API_BASE_URL=http://10.0.2.2:3000` for local Go server
+
+**Why not Maestro**: Maestro works on the rendered tree, not Flutter widgets. It can't read bloc state, can't interact with widgets by Key, and the test is fragile. Patrol uses the Flutter widget tree directly.
+
 ### Coverage Gaps
 
 |Feature/Module|Has Tests|Notes|
 |---|---|---|
-|auth|✅|Full stack (9 files, ~30 tests)|
+|auth|✅|Full stack (9 files, ~30 tests) + E2E Patrol login|
 |notification|✅|Full stack (6 files, ~46 tests)|
 |profile|✅|Avatar-focused (7 files, ~51 tests)|
 |router|✅|Thorough (7 files, ~28 tests)|
+|data_initialization|✅|**Covered by Patrol E2E** (`login_e2e_test.dart` exercises full 8-step pipeline end-to-end)|
 |settings|⚠️|Minimal (1 test — renders page only)|
 |home|⚠️|3 tests (header avatar only — no HomeBloc, QuickStats, etc.)|
 |jadwal|❌|Zero tests|
-|khs|❌|Zero tests|
+|khs|❌|Zero unit tests (PDF service, repository) — UI is covered by Patrol E2E|
 |krs|❌|Zero tests|
 |onboarding|❌|Zero tests|
-|data_initialization|❌|CRITICAL — login prerequisite pipeline|
 |student_profile|❌|Zero tests|
 |core/cache|❌|Only tested via fakes|
 |core/network|❌|ApiClient untested|
@@ -565,12 +635,12 @@ login → krs download → krs extract → krs data → khs semesters → khs do
 
 ---
 
-## Documentation
+### Documentation
 
 |File|Size|Content|
 |---|---|---|
 |`README.md`|~3.1 KB|Overview, features, tech stack, project structure|
-|`AGENTS.md`|~20 KB|This file — AI agent onboarding guide|
+|`AGENTS.md`|~24 KB|This file — AI agent onboarding guide|
 |`API.md`|~56.8 KB|Full backend API documentation (9 endpoints, Go structs, error handling)|
 |`docs/superpowers/plans/`|29 files|Plan docs: bugfix audits, feature plans, routing refactor, theme migration|
 |`.superpowers/sdd/`|8+ files|Software design docs: task briefs, review diffs, progress tracking|

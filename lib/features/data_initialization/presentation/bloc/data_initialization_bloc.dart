@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/app_durations.dart';
+import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
+import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
@@ -15,9 +18,12 @@ const Duration kDataInitTimeout = AppDurations.dataInitPipeline;
 
 class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
   final GetDataInitialization _getDataInit;
+  final ConnectivityService? _connectivity;
   bool _isRunning = false;
 
-  DataInitBloc(this._getDataInit) : super(const DataInitIdle()) {
+  DataInitBloc(this._getDataInit, {ConnectivityService? connectivity})
+    : _connectivity = connectivity ?? Services.get<ConnectivityService>(),
+      super(const DataInitIdle()) {
     on<DataInitStarted>(_onStarted);
     on<DataInitReset>(_onReset);
   }
@@ -32,6 +38,18 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
     debugPrint(
       '[DATA_INIT] _onStarted called — forceRefresh=${event.forceRefresh}',
     );
+    // Fail-fast: if the device is offline, skip the entire pipeline.
+    // Avoids 30s/step × 8 step timeouts when there's no point trying.
+    if (_connectivity?.isOnline == false) {
+      debugPrint('[DATA_INIT] Offline detected — fail-fast');
+      emit(
+        const DataInitFailure(
+          AppStrings.dataInitNoConnection,
+          failedStep: 'no_connection',
+        ),
+      );
+      return;
+    }
     // Guard against concurrent / duplicate starts (login + shell bootstrap).
     if (_isRunning) {
       debugPrint('[DATA_INIT] Already running — SKIP');

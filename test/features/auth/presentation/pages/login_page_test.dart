@@ -1,9 +1,12 @@
+// ignore_for_file: prefer_initializing_formals
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
+import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/core/routes/route_names.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
@@ -13,6 +16,7 @@ import 'package:lonceng_unman_fe/features/auth/domain/usecases/load_auth_credent
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/save_auth_credentials.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/pages/login_page.dart';
+import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_cubit.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/repositories/data_initialization_repository.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
@@ -21,6 +25,30 @@ import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
+
+/// Hand-written [ConnectivityService] fake — required because
+/// [DataInitBloc] now resolves [ConnectivityService] in its constructor
+/// to support the offline fail-fast path.
+class _FakeConnectivityService implements ConnectivityService {
+  _FakeConnectivityService({bool isOnline = true}) : _isOnline = isOnline;
+
+  bool _isOnline;
+  final _controller = StreamController<bool>.broadcast();
+
+  @override
+  bool get isOnline => _isOnline;
+
+  @override
+  Stream<bool> get onStatusChange => _controller.stream;
+
+  @override
+  Future<void> refresh() async {}
+
+  void setOnline(bool v) {
+    _isOnline = v;
+    _controller.add(v);
+  }
+}
 
 /// Fake [AuthRepository] — completes login only when the test releases it
 /// via [completer], so we can assert the loading state.
@@ -219,8 +247,10 @@ class _FakeDataInitRepository implements DataInitializationRepository {
   }
 }
 
-DataInitBloc _makeDataInitBloc() =>
-    DataInitBloc(GetDataInitialization(_FakeDataInitRepository()));
+DataInitBloc _makeDataInitBloc() => DataInitBloc(
+  GetDataInitialization(_FakeDataInitRepository()),
+  connectivity: _FakeConnectivityService(isOnline: true),
+);
 
 /// Kartu login berada di bawah lipatan pada viewport uji baku 800x600,
 /// sehingga tap() meleset ke luar batas render tree. Perbesar permukaan uji
@@ -236,11 +266,17 @@ void main() {
     final authNotifier = AuthStatusNotifier();
     final completer = Completer<AuthEntity>();
     final authBloc = _makeBloc(GetAuth(FakeAuthRepository(completer)));
+    final connectivityCubit = ConnectivityCubit(
+      _FakeConnectivityService(isOnline: true),
+    );
     await tester.pumpWidget(
       MaterialApp(
         theme: lightTheme,
-        home: BlocProvider<AuthBloc>.value(
-          value: authBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<ConnectivityCubit>.value(value: connectivityCubit),
+            BlocProvider<AuthBloc>.value(value: authBloc),
+          ],
           child: LoginPage(authStatusNotifier: authNotifier),
         ),
       ),
@@ -256,12 +292,17 @@ void main() {
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     expect(find.textContaining('Butuh bantuan?'), findsOneWidget);
     expect(find.textContaining('Helpdesk IT'), findsOneWidget);
+
+    await connectivityCubit.close();
   });
 
   testWidgets('submit shows loading when pressed', (tester) async {
     final completer = Completer<AuthEntity>();
     final authStatusNotifier = AuthStatusNotifier();
     final authBloc = _makeBloc(GetAuth(FakeAuthRepository(completer)));
+    final connectivityCubit = ConnectivityCubit(
+      _FakeConnectivityService(isOnline: true),
+    );
     await _useTallSurface(tester);
 
     final router = GoRouter(
@@ -272,6 +313,7 @@ void main() {
           name: RouteNames.login,
           builder: (context, state) => MultiBlocProvider(
             providers: [
+              BlocProvider<ConnectivityCubit>.value(value: connectivityCubit),
               BlocProvider<AuthBloc>.value(value: authBloc),
               BlocProvider<DataInitBloc>(create: (_) => _makeDataInitBloc()),
             ],
@@ -307,6 +349,8 @@ void main() {
     completer.complete(AuthEntity(npm: '21081010001', password: 'testpass'));
     await tester.pump();
     await tester.pump();
+
+    await connectivityCubit.close();
   });
 
   testWidgets('submit navigates to home after successful login', (
@@ -317,6 +361,9 @@ void main() {
     final completer = Completer<AuthEntity>();
     completer.complete(AuthEntity(npm: '21081010001', password: 'testpass'));
     final authBloc = _makeBloc(GetAuth(FakeAuthRepository(completer)));
+    final connectivityCubit = ConnectivityCubit(
+      _FakeConnectivityService(isOnline: true),
+    );
     await _useTallSurface(tester);
 
     final router = GoRouter(
@@ -327,6 +374,7 @@ void main() {
           name: RouteNames.login,
           builder: (context, state) => MultiBlocProvider(
             providers: [
+              BlocProvider<ConnectivityCubit>.value(value: connectivityCubit),
               BlocProvider<AuthBloc>.value(value: authBloc),
               BlocProvider<DataInitBloc>(create: (_) => _makeDataInitBloc()),
             ],
@@ -368,5 +416,7 @@ void main() {
     // After confirmation, DataInitProgressView shows completion state
     // ("Data akademik siap") — login form no longer visible.
     expect(find.text('Data akademik siap'), findsOneWidget);
+
+    await connectivityCubit.close();
   });
 }

@@ -7,11 +7,13 @@ class DataInitStarted extends DataInitEvent {
   final String npm;
   final String password;
   final bool forceRefresh;
+  final bool isPullRefresh;
 
   const DataInitStarted({
     required this.npm,
     required this.password,
     this.forceRefresh = true,
+    this.isPullRefresh = false,
   });
 
   @override
@@ -21,10 +23,11 @@ class DataInitStarted extends DataInitEvent {
           runtimeType == other.runtimeType &&
           npm == other.npm &&
           password == other.password &&
-          forceRefresh == other.forceRefresh;
+          forceRefresh == other.forceRefresh &&
+          isPullRefresh == other.isPullRefresh;
 
   @override
-  int get hashCode => Object.hash(npm, password, forceRefresh);
+  int get hashCode => Object.hash(npm, password, forceRefresh, isPullRefresh);
 }
 
 class DataInitReset extends DataInitEvent {

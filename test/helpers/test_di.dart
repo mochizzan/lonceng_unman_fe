@@ -224,6 +224,7 @@ class _FakeDataInitRepo implements DataInitializationRepository {
     required String npm,
     required String password,
     bool forceRefresh = true,
+    bool isPullRefresh = false,
   }) async* {}
 }
 

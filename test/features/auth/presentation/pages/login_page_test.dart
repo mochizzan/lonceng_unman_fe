@@ -210,6 +210,7 @@ class _FakeDataInitRepository implements DataInitializationRepository {
     required String npm,
     required String password,
     bool forceRefresh = true,
+    bool isPullRefresh = false,
   }) async* {
     // Emit at least one progress event so DataInitProgressView shows
     // CircularProgressIndicator (it hides on DataInitSuccess/Failure).

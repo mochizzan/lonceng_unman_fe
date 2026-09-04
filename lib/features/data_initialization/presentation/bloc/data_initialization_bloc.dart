@@ -48,6 +48,7 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
             npm: event.npm,
             password: event.password,
             forceRefresh: event.forceRefresh,
+            isPullRefresh: event.isPullRefresh,
           ).timeout(
             kDataInitTimeout,
             onTimeout: (sink) {

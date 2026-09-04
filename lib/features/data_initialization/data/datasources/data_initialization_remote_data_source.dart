@@ -5,11 +5,13 @@ import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/da
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/features/krs/domain/usecases/get_krs.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
+import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/profile/data/services/photo_service.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_throttle.dart';
 
 /// Orchestrates the post-login data initialization pipeline.
 ///
@@ -33,6 +35,11 @@ import 'package:lonceng_unman_fe/core/di/di.dart';
 ///   POST /api/v1/lms/login
 ///
 /// Total: 11 endpoint hits.
+///
+/// Pull-refresh throttling: [initialize] dispatches on [isPullRefresh] +
+/// [PullRefreshThrottle] — throttled refreshes take [_initializeLight]
+/// (get-only, skips scrape/download/extract), everything else takes
+/// [_initializeHeavy] (the full pipeline above, unchanged).
 class DataInitializationRemoteDataSource {
   final GetKrs _getKrs;
   final GetKhs _getKhs;
@@ -40,6 +47,7 @@ class DataInitializationRemoteDataSource {
   final PhotoService _photoService;
   final AvatarCacheService _avatarCache;
   final AvatarCubit _avatarCubit;
+  final PullRefreshThrottle _throttle;
 
   DataInitializationRemoteDataSource({
     required GetKrs getKrs,
@@ -48,20 +56,57 @@ class DataInitializationRemoteDataSource {
     PhotoService? photoService,
     AvatarCacheService? avatarCache,
     AvatarCubit? avatarCubit,
+    PullRefreshThrottle? throttle,
   }) : _getKrs = getKrs,
        _getKhs = getKhs,
        _profileDataSource = profileDataSource,
        _photoService = photoService ?? Services.get<PhotoService>(),
        _avatarCache = avatarCache ?? Services.get<AvatarCacheService>(),
-       _avatarCubit = avatarCubit ?? Services.get<AvatarCubit>();
+       _avatarCubit = avatarCubit ?? Services.get<AvatarCubit>(),
+       _throttle = throttle ?? Services.get<PullRefreshThrottle>();
 
+  /// Dispatcher: throttled pull-refresh → [_initializeLight] (tanpa
+  /// recordHeavy); pull-refresh berat → catat kuota lalu [_initializeHeavy];
+  /// fresh login → [_initializeHeavy] tanpa catat kuota.
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
     bool forceRefresh = true,
+    bool isPullRefresh = false,
   }) async* {
     debugPrint(
-      '[DATA_INIT_DS] initialize() START — npm=$npm, forceRefresh=$forceRefresh',
+      '[DATA_INIT_DS] initialize() START — npm=$npm, forceRefresh=$forceRefresh, isPullRefresh=$isPullRefresh',
+    );
+
+    if (isPullRefresh && _throttle.shouldThrottle(npm)) {
+      debugPrint('[DATA_INIT_DS] initialize() → LIGHT branch (throttled)');
+      yield* _initializeLight(npm: npm, password: password);
+      return;
+    }
+    if (isPullRefresh) {
+      _throttle.recordHeavy(npm);
+      debugPrint(
+        '[DATA_INIT_DS] initialize() → HEAVY branch (pull-refresh, recorded)',
+      );
+    } else {
+      debugPrint('[DATA_INIT_DS] initialize() → HEAVY branch (fresh login)');
+    }
+    yield* _initializeHeavy(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  /// Jalur berat: pipeline penuh (pindahan body initialize() sebelumnya,
+  /// logika/urutan/nama step tidak berubah).
+  Stream<DataInitProgress> _initializeHeavy({
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+  }) async* {
+    debugPrint(
+      '[DATA_INIT_DS] _initializeHeavy() START — npm=$npm, forceRefresh=$forceRefresh',
     );
 
     // ═══════════════════════════════════════════════════════════════
@@ -97,67 +142,22 @@ class DataInitializationRemoteDataSource {
     // Step 1: Get Profile — juga meng-cache secara internal
     debugPrint('[DATA_INIT_DS] Step 1: gettingProfile');
     yield const DataInitProgress(DataInitStatus.gettingProfile);
-    try {
-      await _runStep(
-        'profile_get',
-        () => _profileDataSource.getProfile(
-          npm: npm,
-          password: password,
-          forceRefresh: forceRefresh,
-        ),
-      );
-      _logStepOutcome(
-        const DataInitStepOutcome(
-          step: 'profile_get',
-          result: DataInitStepResult.success,
-        ),
-      );
-    } catch (e) {
-      _logStepOutcome(
-        DataInitStepOutcome(
-          step: 'profile_get',
-          result: DataInitStepResult.error,
-          message: e.toString(),
-        ),
-      );
-      rethrow; // Profile is mandatory — rethrow to stop pipeline
-    }
+    await _fetchProfileOrThrow(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
 
     // ── Foto Profil (opsional) ──
 
     // Step 1b: Fetch photo from LMS
     debugPrint('[DATA_INIT_DS] Step 1b: fetchingPhoto');
     yield const DataInitProgress(DataInitStatus.fetchingPhoto);
-    Uint8List? photoBytes;
-    try {
-      photoBytes = await _photoService.fetchPhoto(npm: npm, password: password);
-      if (photoBytes == null || photoBytes.isEmpty) {
-        _logStepOutcome(
-          const DataInitStepOutcome(
-            step: 'fetch_photo',
-            result: DataInitStepResult.empty,
-            message: 'Foto kosong',
-          ),
-        );
-        yield const DataInitProgress(DataInitStatus.photoEmpty);
-      } else {
-        _logStepOutcome(
-          DataInitStepOutcome(
-            step: 'fetch_photo',
-            result: DataInitStepResult.success,
-            message: '${photoBytes.length} bytes',
-          ),
-        );
-      }
-    } catch (e) {
-      // Photo fetch failure is non-fatal — don't stop pipeline
-      _logStepOutcome(
-        DataInitStepOutcome(
-          step: 'fetch_photo',
-          result: DataInitStepResult.error,
-          message: e.toString(),
-        ),
-      );
+    final photoBytes = await _fetchPhotoBestEffort(
+      npm: npm,
+      password: password,
+    );
+    if (photoBytes == null || photoBytes.isEmpty) {
       yield const DataInitProgress(DataInitStatus.photoEmpty);
     }
 
@@ -203,27 +203,12 @@ class DataInitializationRemoteDataSource {
       // Step 4: Fetch KRS data (cache internally by data source)
       debugPrint('[DATA_INIT_DS] Step 4: fetchingKrsData');
       yield const DataInitProgress(DataInitStatus.fetchingKrsData);
-      final krsData = await _runStep(
-        'krs_data',
-        () => _getKrs(npm: npm, forceRefresh: forceRefresh),
+      final isKrsEmpty = await _fetchKrsDataOrEmpty(
+        npm: npm,
+        forceRefresh: forceRefresh,
       );
-      if (krsData.krs.mataKuliah.isEmpty) {
-        _logStepOutcome(
-          const DataInitStepOutcome(
-            step: 'krs_data',
-            result: DataInitStepResult.empty,
-            message: 'Mata kuliah kosong',
-          ),
-        );
+      if (isKrsEmpty) {
         yield const DataInitProgress(DataInitStatus.krsEmpty);
-      } else {
-        _logStepOutcome(
-          DataInitStepOutcome(
-            step: 'krs_data',
-            result: DataInitStepResult.success,
-            message: '${krsData.krs.mataKuliah.length} mata kuliah',
-          ),
-        );
       }
     } catch (e) {
       // KRS fetch failure is non-fatal — yield empty status
@@ -244,19 +229,7 @@ class DataInitializationRemoteDataSource {
       // Step 5: Get available KHS semesters
       debugPrint('[DATA_INIT_DS] Step 5: fetchingKhsSemesters');
       yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
-      final semesters = await _runStep(
-        'khs_semesters',
-        () => _getKhs.getSemesters(npm: npm, password: password),
-      );
-      _logStepOutcome(
-        DataInitStepOutcome(
-          step: 'khs_semesters',
-          result: semesters.isEmpty
-              ? DataInitStepResult.empty
-              : DataInitStepResult.success,
-          message: '${semesters.length} semester',
-        ),
-      );
+      final semesters = await _fetchKhsSemesters(npm: npm, password: password);
 
       // Steps 6-8: Process ALL available KHS semesters
       debugPrint(
@@ -310,20 +283,11 @@ class DataInitializationRemoteDataSource {
             DataInitStatus.fetchingKhsData,
             detail: detail,
           );
-          await _runStep(
-            'khs_data_${semesterEntry.semester}',
-            () => _getKhs(
-              npm: npm,
-              tahunAjaran: semesterEntry.tahunAjaran,
-              semester: semesterEntry.semester,
-              forceRefresh: forceRefresh,
-            ),
-          );
-          _logStepOutcome(
-            DataInitStepOutcome(
-              step: 'khs_data_$detail',
-              result: DataInitStepResult.success,
-            ),
+          await _fetchKhsDataForSemester(
+            npm: npm,
+            tahunAjaran: semesterEntry.tahunAjaran,
+            semester: semesterEntry.semester,
+            forceRefresh: forceRefresh,
           );
         } catch (e) {
           khsErrors.add('Gagal memuat KHS ${semesterEntry.semester}: $e');
@@ -362,12 +326,7 @@ class DataInitializationRemoteDataSource {
     // ═══════════════════════════════════════════════════════════════
 
     // KRS dan KHS sudah di-cache oleh data source masing-masing secara internal.
-    // Cache foto — dipindah dari dalam try/catch ke sini
-    if (photoBytes != null && photoBytes.isNotEmpty) {
-      await _avatarCache.saveAvatar(npm: npm, bytes: photoBytes);
-      unawaited(_avatarCubit.bindNpm(npm));
-      debugPrint('[DataInitDS] Photo cached: ${photoBytes.length} bytes');
-    }
+    await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
 
     // ═══════════════════════════════════════════════════════════════
     // SELESAI
@@ -375,6 +334,296 @@ class DataInitializationRemoteDataSource {
 
     debugPrint('[DATA_INIT_DS] Pipeline completed');
     yield const DataInitProgress(DataInitStatus.completed);
+  }
+
+  /// Cabang ringan pull-refresh (throttled): skip scrape/download/extract,
+  /// langsung get dengan forceRefresh:true agar tetap hit network.
+  ///
+  /// Urutan: gettingProfile (wajib, rethrow) → fetchingPhoto (non-fatal) →
+  /// blok KRS ringan (fetchingKrsData, non-fatal) → blok KHS ringan
+  /// (fetchingKhsSemesters + fetchingKhsData per semester, non-fatal) →
+  /// cache foto → completed. Semantik failure identik jalur berat.
+  Stream<DataInitProgress> _initializeLight({
+    required String npm,
+    required String password,
+  }) async* {
+    debugPrint(
+      '[DATA_INIT_DS] _initializeLight() START — npm=$npm (throttled, forceRefresh=true)',
+    );
+
+    // 1. Profile (WAJIB — gagal = pipeline berhenti, tanpa scrape)
+    debugPrint('[DATA_INIT_DS] Light Step 1: gettingProfile');
+    yield const DataInitProgress(DataInitStatus.gettingProfile);
+    await _fetchProfileOrThrow(
+      npm: npm,
+      password: password,
+      forceRefresh: true,
+    );
+
+    // 2. Foto Profil (opsional)
+    debugPrint('[DATA_INIT_DS] Light Step 1b: fetchingPhoto');
+    yield const DataInitProgress(DataInitStatus.fetchingPhoto);
+    final photoBytes = await _fetchPhotoBestEffort(
+      npm: npm,
+      password: password,
+    );
+    if (photoBytes == null || photoBytes.isEmpty) {
+      yield const DataInitProgress(DataInitStatus.photoEmpty);
+    }
+
+    // 3. Blok KRS ringan: langsung get data, skip download/extract (opsional)
+    try {
+      debugPrint('[DATA_INIT_DS] Light Step 4: fetchingKrsData');
+      yield const DataInitProgress(DataInitStatus.fetchingKrsData);
+      final isKrsEmpty = await _fetchKrsDataOrEmpty(
+        npm: npm,
+        forceRefresh: true,
+      );
+      if (isKrsEmpty) {
+        yield const DataInitProgress(DataInitStatus.krsEmpty);
+      }
+    } catch (e) {
+      // KRS fetch failure is non-fatal — yield empty status
+      _logStepOutcome(
+        DataInitStepOutcome(
+          step: 'krs',
+          result: DataInitStepResult.error,
+          message: e.toString(),
+        ),
+      );
+      debugPrint('[DATA_INIT_DS] KRS fetch failed (non-fatal): $e');
+      yield const DataInitProgress(DataInitStatus.krsEmpty);
+    }
+
+    // 4. Blok KHS ringan: semesters + get data per semester,
+    //    skip download/extract (opsional)
+    try {
+      debugPrint('[DATA_INIT_DS] Light Step 5: fetchingKhsSemesters');
+      yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
+      final semesters = await _fetchKhsSemesters(npm: npm, password: password);
+
+      debugPrint(
+        '[DATA_INIT_DS] Light: Processing ${semesters.length} KHS semesters (data only)',
+      );
+      final List<String> khsErrors = [];
+      for (final semesterEntry in semesters) {
+        final detail = '${semesterEntry.tahunAjaran} ${semesterEntry.semester}';
+        debugPrint('[DATA_INIT_DS] Light KHS semester: $detail');
+        try {
+          // Langsung get data — tanpa download/extract.
+          yield DataInitProgress(
+            DataInitStatus.fetchingKhsData,
+            detail: detail,
+          );
+          await _fetchKhsDataForSemester(
+            npm: npm,
+            tahunAjaran: semesterEntry.tahunAjaran,
+            semester: semesterEntry.semester,
+            forceRefresh: true,
+          );
+        } catch (e) {
+          khsErrors.add('Gagal memuat KHS ${semesterEntry.semester}: $e');
+          _logStepOutcome(
+            DataInitStepOutcome(
+              step: 'khs_$detail',
+              result: DataInitStepResult.error,
+              message: e.toString(),
+            ),
+          );
+          // Continue to next semester — don't stop pipeline
+        }
+      }
+
+      if (khsErrors.isNotEmpty) {
+        debugPrint(
+          '[DATA_INIT_DS] Light KHS completed with ${khsErrors.length} errors',
+        );
+        yield const DataInitProgress(DataInitStatus.khsEmpty);
+      }
+    } catch (e) {
+      // KHS fetch failure is non-fatal — yield empty status
+      _logStepOutcome(
+        DataInitStepOutcome(
+          step: 'khs',
+          result: DataInitStepResult.error,
+          message: e.toString(),
+        ),
+      );
+      debugPrint('[DATA_INIT_DS] KHS fetch failed (non-fatal): $e');
+      yield const DataInitProgress(DataInitStatus.khsEmpty);
+    }
+
+    // 5. Cache foto di akhir — identik jalur berat.
+    await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+
+    // 6. SELESAI
+    debugPrint('[DATA_INIT_DS] Light pipeline completed');
+    yield const DataInitProgress(DataInitStatus.completed);
+  }
+
+  /// Step 1 bersama: getProfile wajib — gagal = rethrow, pipeline berhenti.
+  /// [AppException] (termasuk AuthException/401) merethrow apa adanya,
+  /// bukan ditelan sebagai empty — sama seperti jalur berat.
+  Future<void> _fetchProfileOrThrow({
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+  }) async {
+    try {
+      await _runStep(
+        'profile_get',
+        () => _profileDataSource.getProfile(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        ),
+      );
+      _logStepOutcome(
+        const DataInitStepOutcome(
+          step: 'profile_get',
+          result: DataInitStepResult.success,
+        ),
+      );
+    } catch (e) {
+      _logStepOutcome(
+        DataInitStepOutcome(
+          step: 'profile_get',
+          result: DataInitStepResult.error,
+          message: e.toString(),
+        ),
+      );
+      rethrow; // Profile is mandatory — rethrow to stop pipeline
+    }
+  }
+
+  /// Step 1b bersama: fetchPhoto non-fatal — gagal/kosong = null.
+  /// Caller yield [DataInitStatus.photoEmpty] bila hasilnya null/kosong.
+  Future<Uint8List?> _fetchPhotoBestEffort({
+    required String npm,
+    required String password,
+  }) async {
+    try {
+      final photoBytes = await _photoService.fetchPhoto(
+        npm: npm,
+        password: password,
+      );
+      if (photoBytes == null || photoBytes.isEmpty) {
+        _logStepOutcome(
+          const DataInitStepOutcome(
+            step: 'fetch_photo',
+            result: DataInitStepResult.empty,
+            message: 'Foto kosong',
+          ),
+        );
+        return null;
+      }
+      _logStepOutcome(
+        DataInitStepOutcome(
+          step: 'fetch_photo',
+          result: DataInitStepResult.success,
+          message: '${photoBytes.length} bytes',
+        ),
+      );
+      return photoBytes;
+    } catch (e) {
+      // Photo fetch failure is non-fatal — don't stop pipeline
+      _logStepOutcome(
+        DataInitStepOutcome(
+          step: 'fetch_photo',
+          result: DataInitStepResult.error,
+          message: e.toString(),
+        ),
+      );
+      return null;
+    }
+  }
+
+  /// Step 4 bersama: getKrsData — return true bila mata kuliah kosong
+  /// (caller yield [DataInitStatus.krsEmpty]).
+  Future<bool> _fetchKrsDataOrEmpty({
+    required String npm,
+    required bool forceRefresh,
+  }) async {
+    final krsData = await _runStep(
+      'krs_data',
+      () => _getKrs(npm: npm, forceRefresh: forceRefresh),
+    );
+    if (krsData.krs.mataKuliah.isEmpty) {
+      _logStepOutcome(
+        const DataInitStepOutcome(
+          step: 'krs_data',
+          result: DataInitStepResult.empty,
+          message: 'Mata kuliah kosong',
+        ),
+      );
+      return true;
+    }
+    _logStepOutcome(
+      DataInitStepOutcome(
+        step: 'krs_data',
+        result: DataInitStepResult.success,
+        message: '${krsData.krs.mataKuliah.length} mata kuliah',
+      ),
+    );
+    return false;
+  }
+
+  /// Step 5 bersama: getSemesters (selalu fresh).
+  Future<List<KhsSemesterEntity>> _fetchKhsSemesters({
+    required String npm,
+    required String password,
+  }) async {
+    final semesters = await _runStep(
+      'khs_semesters',
+      () => _getKhs.getSemesters(npm: npm, password: password),
+    );
+    _logStepOutcome(
+      DataInitStepOutcome(
+        step: 'khs_semesters',
+        result: semesters.isEmpty
+            ? DataInitStepResult.empty
+            : DataInitStepResult.success,
+        message: '${semesters.length} semester',
+      ),
+    );
+    return semesters;
+  }
+
+  /// Step 8 bersama: getKhsData satu semester (tanpa download/extract).
+  /// failedStep memakai nama semester saja (`khs_data_Ganjil`).
+  Future<void> _fetchKhsDataForSemester({
+    required String npm,
+    required String tahunAjaran,
+    required String semester,
+    required bool forceRefresh,
+  }) async {
+    await _runStep(
+      'khs_data_$semester',
+      () => _getKhs(
+        npm: npm,
+        tahunAjaran: tahunAjaran,
+        semester: semester,
+        forceRefresh: forceRefresh,
+      ),
+    );
+    _logStepOutcome(
+      DataInitStepOutcome(
+        step: 'khs_data_$tahunAjaran $semester',
+        result: DataInitStepResult.success,
+      ),
+    );
+  }
+
+  /// Tail bersama: cache foto bila ada — identik di kedua cabang.
+  Future<void> _cachePhotoIfPresent({
+    required String npm,
+    Uint8List? photoBytes,
+  }) async {
+    if (photoBytes != null && photoBytes.isNotEmpty) {
+      await _avatarCache.saveAvatar(npm: npm, bytes: photoBytes);
+      unawaited(_avatarCubit.bindNpm(npm));
+      debugPrint('[DataInitDS] Photo cached: ${photoBytes.length} bytes');
+    }
   }
 
   /// Wraps [fn] in a try/catch, converting errors into [DataInitStepException].

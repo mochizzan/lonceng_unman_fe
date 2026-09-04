@@ -146,6 +146,7 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
         npm: widget.npm!,
         password: widget.password!,
         forceRefresh: true,
+        isPullRefresh: true,
       ),
     );
   }

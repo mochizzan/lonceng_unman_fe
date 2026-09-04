@@ -12,11 +12,13 @@ class DataInitializationRepositoryImpl implements DataInitializationRepository {
     required String npm,
     required String password,
     bool forceRefresh = true,
+    bool isPullRefresh = false,
   }) {
     return remoteDataSource.initialize(
       npm: npm,
       password: password,
       forceRefresh: forceRefresh,
+      isPullRefresh: isPullRefresh,
     );
   }
 }

@@ -26,6 +26,7 @@ class _NoOpRepo implements DataInitializationRepository {
     required String npm,
     required String password,
     bool forceRefresh = true,
+    bool isPullRefresh = false,
   }) {
     return const Stream<DataInitProgress>.empty();
   }

@@ -10,11 +10,13 @@ class GetDataInitialization {
     required String npm,
     required String password,
     bool forceRefresh = true,
+    bool isPullRefresh = false,
   }) {
     return repository.initialize(
       npm: npm,
       password: password,
       forceRefresh: forceRefresh,
+      isPullRefresh: isPullRefresh,
     );
   }
 }

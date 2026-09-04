@@ -224,22 +224,8 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
             color: cs.surface,
             child: DataInitProgressView(
               isFreshLogin: false,
-              onRetry: () {
-                debugPrint('[DATA_REFRESH] User tapped Retry');
-                if (!innerContext.mounted) return;
-                _dispatchPipeline(innerContext);
-              },
-              onClose: () {
-                debugPrint('[DATA_REFRESH] User tapped Close');
-                final navigator = Navigator.of(innerContext);
-                final bloc = innerContext.read<DataInitBloc>();
-                final lastState = bloc.state;
-                navigator.pop();
-                if (lastState is DataInitFailure &&
-                    widget.onPipelineFailure != null) {
-                  widget.onPipelineFailure!(lastState);
-                }
-              },
+              onRetry: null,
+              onClose: null,
             ),
           );
         },

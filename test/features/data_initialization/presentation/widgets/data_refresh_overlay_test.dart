@@ -172,4 +172,41 @@ void main() {
       reason: 'Success path must still auto-dismiss within 500 ms.',
     );
   });
+
+  testWidgets('pull-refresh failure view TIDAK menampilkan tombol apapun '
+      '(auto-close only)', (tester) async {
+    // 1. Mount the overlay in pull-refresh mode.
+    final bloc = await _pumpOverlay(
+      tester,
+      initial: const DataInitInProgress(DataInitStatus.downloadingKrs),
+    );
+
+    // 2. Pipeline fails.
+    bloc.emitNow(
+      const DataInitFailure(
+        'Server sedang tidak tersedia',
+        failedStep: 'downloadingKrs',
+      ),
+    );
+    await tester.pump();
+
+    // 3. Error view rendered (icon + message + step chip + hint).
+    expect(find.text('Server sedang tidak tersedia'), findsOneWidget);
+
+    // 4. CRITICAL: tidak ada tombol Retry/Close — auto-close 3s adalah
+    //    satu-satunya cara keluar. Spec §5.4: pull-refresh overlay TIDAK
+    //    menampilkan tombol apapun di error view.
+    expect(
+      find.byType(FilledButton),
+      findsNothing,
+      reason: 'Retry button must not appear in pull-refresh error view.',
+    );
+    expect(
+      find.byType(OutlinedButton),
+      findsNothing,
+      reason: 'Close button must not appear in pull-refresh error view.',
+    );
+    expect(find.text('Coba Lagi'), findsNothing);
+    expect(find.text('Tutup'), findsNothing);
+  });
 }

@@ -7,6 +7,8 @@
 //
 // Hand-written fakes only — no mockito/mocktail (repo convention).
 
+// ignore_for_file: prefer_initializing_formals, prefer_final_fields
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -14,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
+import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
@@ -33,6 +36,28 @@ import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubi
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_refresh_overlay.dart';
+
+/// Hand-written [ConnectivityService] fake — required because
+/// [DataInitBloc] now resolves [ConnectivityService] in its constructor
+/// to support the offline fail-fast path. The passthrough tests do not
+/// depend on the offline branch, so the default is online.
+class _FakeConnectivityService implements ConnectivityService {
+  _FakeConnectivityService({bool isOnline = true}) : _isOnline = isOnline;
+
+  bool _isOnline;
+  final _controller = StreamController<bool>.broadcast();
+
+  @override
+  bool get isOnline => _isOnline;
+
+  @override
+  Stream<bool> get onStatusChange => _controller.stream;
+
+  @override
+  Future<void> refresh() async {}
+}
+
+final _fakeConnectivity = _FakeConnectivityService(isOnline: true);
 
 void main() {
   group('DataInitStarted.isPullRefresh', () {
@@ -90,7 +115,10 @@ void main() {
       tester,
     ) async {
       final repo = _CapturingRepo();
-      final bloc = DataInitBloc(GetDataInitialization(repo));
+      final bloc = DataInitBloc(
+        GetDataInitialization(repo),
+        connectivity: _fakeConnectivity,
+      );
       addTearDown(bloc.close);
 
       // Ganti handler DataInitStarted dengan yang merekam event TAPI
@@ -134,7 +162,10 @@ void main() {
 
     testWidgets('tanpa kredensial tidak ada dispatch', (tester) async {
       final repo = _CapturingRepo();
-      final bloc = DataInitBloc(GetDataInitialization(repo));
+      final bloc = DataInitBloc(
+        GetDataInitialization(repo),
+        connectivity: _fakeConnectivity,
+      );
       addTearDown(bloc.close);
 
       await tester.pumpWidget(

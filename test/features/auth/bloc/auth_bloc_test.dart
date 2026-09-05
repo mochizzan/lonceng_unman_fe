@@ -183,7 +183,7 @@ class FakeStudentProfileRemoteDataSource
 void main() {
   final authEntity = AuthEntity(npm: '21081010001', password: 'testpass');
 
-  AuthBloc _bloc(GetAuth getAuth) => AuthBloc(
+  AuthBloc makeBloc(GetAuth getAuth) => AuthBloc(
     getAuth,
     saveCredentials: FakeSaveAuthCredentials(),
     loadCredentials: FakeLoadAuthCredentials(),
@@ -195,7 +195,7 @@ void main() {
   group('AuthBloc', () {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthProfileReview] on valid submit',
-      build: () => _bloc(FakeGetAuth(authEntity)),
+      build: () => makeBloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('21081010001'));
         bloc.add(const AuthPasswordChanged('testpass'));
@@ -222,7 +222,7 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'emits AuthError when NPM is empty',
-      build: () => _bloc(FakeGetAuth(authEntity)),
+      build: () => makeBloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(const AuthPasswordChanged('testpass'));
         bloc.add(AuthSubmitted());
@@ -232,7 +232,7 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'emits AuthError when password is empty',
-      build: () => _bloc(FakeGetAuth(authEntity)),
+      build: () => makeBloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('21081010001'));
         bloc.add(AuthSubmitted());
@@ -242,7 +242,7 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthProfileReview] when NPM is 10 digits (valid edge)',
-      build: () => _bloc(FakeGetAuth(authEntity)),
+      build: () => makeBloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('1234567890'));
         bloc.add(const AuthPasswordChanged('testpass'));
@@ -269,7 +269,7 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'emits AuthError when NPM is not 10-11 digits',
-      build: () => _bloc(FakeGetAuth(authEntity)),
+      build: () => makeBloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('123'));
         bloc.add(const AuthPasswordChanged('testpass'));
@@ -280,7 +280,7 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'emits AuthError when NPM has non-numeric characters',
-      build: () => _bloc(FakeGetAuth(authEntity)),
+      build: () => makeBloc(FakeGetAuth(authEntity)),
       act: (bloc) {
         bloc.add(AuthNpmChanged('123456789a'));
         bloc.add(const AuthPasswordChanged('testpass'));
@@ -291,8 +291,9 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'emits AuthError when login throws',
-      build: () =>
-          _bloc(FakeGetAuth(authEntity, NetworkException('Tidak ada koneksi'))),
+      build: () => makeBloc(
+        FakeGetAuth(authEntity, NetworkException('Tidak ada koneksi')),
+      ),
       act: (bloc) {
         bloc.add(AuthNpmChanged('21081010001'));
         bloc.add(const AuthPasswordChanged('testpass'));

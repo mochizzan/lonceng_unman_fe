@@ -6,9 +6,22 @@
 // The widget is pumped directly (not through show() / triggerRefresh() which
 // wrap showGeneralDialog) to keep the test synchronous and free of credentials.
 
+// Verifies the failure-path lifecycle of DataRefreshOverlay:
+//   1. Pull-to-refresh failure auto-closes the overlay after 3 seconds.
+//   2. Login-flow failure does NOT auto-close (no timer arms).
+//   3. Success still auto-closes within ~500 ms (existing behavior preserved).
+//
+// The widget is pumped directly (not through show() / triggerRefresh() which
+// wrap showGeneralDialog) to keep the test synchronous and free of credentials.
+
+// ignore_for_file: prefer_initializing_formals, prefer_final_fields
+
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/repositories/data_initialization_repository.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
@@ -16,6 +29,28 @@ import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_refresh_overlay.dart';
+
+/// Hand-written [ConnectivityService] fake — required because
+/// [DataInitBloc] now resolves [ConnectivityService] in its constructor
+/// to support the offline fail-fast path. The overlay tests do not
+/// depend on the offline branch, so the default is online.
+class _FakeConnectivityService implements ConnectivityService {
+  _FakeConnectivityService({bool isOnline = true}) : _isOnline = isOnline;
+
+  bool _isOnline;
+  final _controller = StreamController<bool>.broadcast();
+
+  @override
+  bool get isOnline => _isOnline;
+
+  @override
+  Stream<bool> get onStatusChange => _controller.stream;
+
+  @override
+  Future<void> refresh() async {}
+}
+
+final _fakeConnectivity = _FakeConnectivityService(isOnline: true);
 
 /// Minimal no-op repository — never invoked because the test never
 /// dispatches `DataInitStarted`. Required to satisfy `DataInitBloc`'s
@@ -33,7 +68,11 @@ class _NoOpRepo implements DataInitializationRepository {
 }
 
 class _FakeDataInitBloc extends DataInitBloc {
-  _FakeDataInitBloc() : super(GetDataInitialization(_NoOpRepo()));
+  _FakeDataInitBloc()
+    : super(
+        GetDataInitialization(_NoOpRepo()),
+        connectivity: _fakeConnectivity,
+      );
 
   /// Emit an arbitrary state for the test to drive the overlay's listener.
   void emitNow(DataInitBlocState state) => emit(state);

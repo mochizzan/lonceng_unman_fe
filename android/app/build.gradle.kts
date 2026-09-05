@@ -31,6 +31,11 @@ android {
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Patrol: use the Patrol instrumentation runner for E2E UI tests.
+        // See https://patrol.leancode.co/getting-started
+        // Note: we intentionally do NOT pass clearPackageData=true because it
+        // would wipe the user's logged-in Hive cache, forcing re-login each run.
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
     }
 
     buildTypes {
@@ -39,6 +44,13 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+
+    // Patrol E2E UI testing requires Android Test Orchestrator for test
+    // discovery (the runner talks to the orchestrator to enumerate Dart tests).
+    // See https://patrol.leancode.co/getting-started
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 }
 
@@ -51,6 +63,8 @@ kotlin {
 dependencies {
     // Required for flutter_local_notifications (core library desugaring)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Required by Patrol's ANDROIDX_TEST_ORCHESTRATOR execution
+    androidTestUtil("androidx.test:orchestrator:1.5.1")
 }
 
 flutter {

@@ -55,12 +55,43 @@ class KhsRemoteDataSourceImpl implements KhsRemoteDataSource {
       body: lmsCredentialBody(npm: npm, password: password),
     );
     final data = response;
-    final semesters = data['semesters'] as List<dynamic>? ?? [];
+    final rawSemesters = data['semesters'] as List<dynamic>? ?? [];
+    final normalized = rawSemesters.whereType<Map>().map((e) {
+      final m = Map<String, dynamic>.from(e);
+      final taRaw = m['tahunAjaran'] ?? m['tahun_ajaran'];
+      String tahunAjaran;
+      if (taRaw is Map) {
+        final tam = Map<String, dynamic>.from(taRaw);
+        final awal = tam['awal'] as String? ?? '';
+        final akhir = tam['akhir'] as String? ?? '';
+        if (awal.isNotEmpty && akhir.isNotEmpty) {
+          tahunAjaran = '$awal/$akhir';
+        } else {
+          tahunAjaran =
+              tam['tahunAjaran'] as String? ??
+              tam['tahun_ajaran'] as String? ??
+              '';
+        }
+      } else if (taRaw is String) {
+        tahunAjaran = taRaw;
+      } else {
+        tahunAjaran = '';
+      }
+      final sksRaw = m['sks'];
+      final sksNum = sksRaw is num
+          ? sksRaw.toInt()
+          : int.tryParse('$sksRaw') ?? 0;
+      return {
+        'tahunAjaran': tahunAjaran,
+        'semester': m['semester'] as String? ?? '',
+        'sks': sksNum,
+      };
+    }).toList();
 
-    // Save to cache
-    await academicCacheService.saveKhsList(npm: npm, data: semesters);
+    // Save normalized to cache (contract: tahunAjaran camelCase)
+    await academicCacheService.saveKhsList(npm: npm, data: normalized);
 
-    return semesters
+    return normalized
         .map((e) => KhsSemesterModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }

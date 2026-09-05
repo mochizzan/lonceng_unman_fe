@@ -3,48 +3,58 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:lonceng_unman_fe/core/utils/day_name_mapper.dart';
+import 'package:lonceng_unman_fe/core/utils/delivered_id.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/entities/notification_delivered_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_delivered_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_state.dart';
 
 /// Cubit managing notification scheduling state.
-///
-/// This is the first Cubit in the codebase (all existing features use Bloc).
-/// Chosen because notification state is simple (status + list + interval)
-/// and flutter_local_notifications callbacks need direct method calls.
 class NotificationCubit extends Cubit<NotificationState> {
   NotificationCubit({
     required this._scheduler,
     required this._repository,
     required this._notificationService,
-  }) : super(const NotificationState());
+    NotificationDeliveredRepository? deliveredRepository,
+  }) : _deliveredRepository = deliveredRepository,
+       super(const NotificationState());
 
   final NotificationScheduler _scheduler;
   final NotificationRepository _repository;
   final NotificationService _notificationService;
+  final NotificationDeliveredRepository? _deliveredRepository;
 
   /// Check if notification permission is granted.
-  /// Emits [notificationPermissionDenied] on the state if denied.
-  /// Returns `true` if permission is granted, `false` otherwise.
   Future<bool> checkPermission() async {
     debugPrint('[NOTIF] checkPermission() START');
-    // First check current status without prompting the user
     final currentStatus = await _notificationService.checkPermissionStatus();
     if (currentStatus) {
       debugPrint('[NOTIF]   OK: permission already granted');
       emit(state.copyWith(notificationPermissionDenied: false));
       return true;
     }
-    // Only request if not yet granted
     final enabled = await _notificationService.requestPermission();
     debugPrint('[NOTIF]   OK: permission enabled=$enabled');
     emit(state.copyWith(notificationPermissionDenied: !enabled));
     return enabled;
   }
 
-  /// Load all scheduled notifications and current reminder interval.
+  Future<List<NotificationDeliveredEntity>> _loadDelivered() async {
+    final repo = _deliveredRepository;
+    if (repo == null) return [];
+    try {
+      return await repo.getAll();
+    } catch (e) {
+      debugPrint('[NOTIF] _loadDelivered failed: $e');
+      return [];
+    }
+  }
+
+  /// Load all scheduled notifications and delivered history.
   Future<void> loadNotifications() async {
     debugPrint('[NOTIF] loadNotifications() START');
     emit(state.copyWith(status: NotificationStatus.loading));
@@ -52,11 +62,15 @@ class NotificationCubit extends Cubit<NotificationState> {
       await checkPermission();
       final notifications = await _repository.getAll();
       final interval = _repository.getReminderInterval();
-      debugPrint('[NOTIF]   OK: loaded ${notifications.length} notifikasi');
+      final delivered = await _loadDelivered();
+      debugPrint(
+        '[NOTIF]   OK: loaded ${notifications.length} notifikasi, ${delivered.length} delivered',
+      );
       emit(
         state.copyWith(
           status: NotificationStatus.loaded,
           notifications: notifications,
+          delivered: delivered,
           reminderIntervalMinutes: interval,
           clearErrorMessage: true,
           historyViewed: false,
@@ -73,11 +87,116 @@ class NotificationCubit extends Cubit<NotificationState> {
     }
   }
 
+  /// Refresh delivered list only.
+  Future<void> loadDelivered() async {
+    final delivered = await _loadDelivered();
+    emit(state.copyWith(delivered: delivered));
+  }
+
+  /// Reconciliation: generate missing weekly occurrences per scheduledId.
+  Future<void> reconcileDelivered() async {
+    final repo = _deliveredRepository;
+    if (repo == null) return;
+    try {
+      final scheduled = await _repository.getAll();
+      if (scheduled.isEmpty) return;
+      final deliveredAll = await repo.getAll();
+      final now = DateTime.now();
+      var created = 0;
+      for (final s in scheduled) {
+        if (!s.isActive) continue;
+        // Compute next trigger via scheduler helper
+        final tzTrigger = _scheduler.computeTrigger(s);
+        final triggerDt = DateTime(
+          tzTrigger.year,
+          tzTrigger.month,
+          tzTrigger.day,
+          tzTrigger.hour,
+          tzTrigger.minute,
+        );
+        final lastTrigger = now.isBefore(triggerDt)
+            ? triggerDt.subtract(const Duration(days: 7))
+            : triggerDt;
+
+        final forId = deliveredAll.where((d) => d.scheduledId == s.id).toList()
+          ..sort((a, b) => b.deliveredAt.compareTo(a.deliveredAt));
+        final lastSaved = forId.isEmpty ? null : forId.first.deliveredAt;
+        DateTime cursor;
+        if (lastSaved == null) {
+          cursor = lastTrigger;
+        } else {
+          cursor = lastSaved.add(const Duration(days: 7));
+        }
+        // Legacy 7-field rows have scheduledId==null — ignored for grouping to avoid duplicate
+        // Generate up to lastTrigger inclusive, but not future > now
+        while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
+          final deliveredId = deliveredIdFor(s.id, cursor);
+          if (!repo.containsKey(deliveredId)) {
+            await repo.save(
+              NotificationDeliveredEntity(
+                id: deliveredId,
+                courseName: s.courseName,
+                dayOfWeek: s.dayOfWeek,
+                classTime: s.classTime,
+                deliveredAt: cursor,
+                room: s.room,
+                lecturer: s.lecturer,
+                isRead: false,
+                source: NotificationSource.classReminder,
+                scheduledId: s.id,
+              ),
+            );
+            created++;
+          }
+          final next = cursor.add(const Duration(days: 7));
+          if (next.isAfter(lastTrigger)) break;
+          cursor = next;
+        }
+      }
+      if (created > 0) {
+        debugPrint('[NOTIF] reconcileDelivered created $created');
+        final refreshed = await repo.getAll();
+        emit(state.copyWith(delivered: refreshed));
+      }
+    } catch (e) {
+      debugPrint('[NOTIF] reconcileDelivered failed: $e');
+    }
+  }
+
+  Future<void> _emitDelivered() async {
+    final delivered = await _loadDelivered();
+    emit(state.copyWith(delivered: delivered));
+  }
+
+  Future<void> markAsRead(int id) async {
+    final repo = _deliveredRepository;
+    if (repo == null) return;
+    await repo.markAsRead(id);
+    await _emitDelivered();
+  }
+
+  Future<void> markAllRead() async {
+    final repo = _deliveredRepository;
+    if (repo == null) return;
+    await repo.markAllRead();
+    await _emitDelivered();
+  }
+
+  Future<void> deleteDelivered(int id) async {
+    final repo = _deliveredRepository;
+    if (repo == null) return;
+    await repo.delete(id);
+    await _emitDelivered();
+  }
+
+  Future<void> deleteAllDelivered() async {
+    final repo = _deliveredRepository;
+    if (repo == null) return;
+    await repo.deleteAll();
+    await _emitDelivered();
+  }
+
   /// Schedule notifications for ALL items across ALL days.
-  ///
-  /// Alternative entry point that takes raw [ScheduleItemEntity] list directly.
-  /// Uses [NotificationScheduler.scheduleAllDays] which cancels old alarms first.
-  /// The primary auto-schedule flow uses [scheduleFromJadwal] instead.
   Future<void> scheduleAll(List<ScheduleItemEntity> items) async {
     debugPrint('[NOTIF] scheduleAll() START — ${items.length} items');
     emit(state.copyWith(status: NotificationStatus.loading));
@@ -95,6 +214,7 @@ class NotificationCubit extends Cubit<NotificationState> {
       }
       await _scheduler.scheduleAllDays(items);
       final notifications = await _repository.getAll();
+      final delivered = await _loadDelivered();
       debugPrint(
         '[NOTIF]   OK: ${notifications.length} notifikasi dijadwalkan',
       );
@@ -102,6 +222,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         state.copyWith(
           status: NotificationStatus.loaded,
           notifications: notifications,
+          delivered: delivered,
           clearErrorMessage: true,
           historyViewed: false,
         ),
@@ -118,10 +239,6 @@ class NotificationCubit extends Cubit<NotificationState> {
   }
 
   /// Schedule notifications for all classes in [jadwal].
-  ///
-  /// Called when JadwalBloc emits JadwalLoaded.
-  /// Checks notification permission first — if denied, emits error and returns
-  /// early to avoid scheduling notifications that will never display.
   Future<void> scheduleFromJadwal(JadwalEntity jadwal) async {
     debugPrint('[NOTIF] scheduleFromJadwal() START');
     emit(state.copyWith(status: NotificationStatus.loading));
@@ -139,6 +256,7 @@ class NotificationCubit extends Cubit<NotificationState> {
       }
       await _scheduler.scheduleForDay(jadwal);
       final notifications = await _repository.getAll();
+      final delivered = await _loadDelivered();
       debugPrint(
         '[NOTIF]   OK: ${notifications.length} notifikasi dijadwalkan',
       );
@@ -146,6 +264,7 @@ class NotificationCubit extends Cubit<NotificationState> {
         state.copyWith(
           status: NotificationStatus.loaded,
           notifications: notifications,
+          delivered: delivered,
           clearErrorMessage: true,
           historyViewed: false,
         ),
@@ -191,10 +310,12 @@ class NotificationCubit extends Cubit<NotificationState> {
       }
 
       final notifications = await _repository.getAll();
+      final delivered = await _loadDelivered();
       debugPrint('[NOTIF]   OK: toggled id=$id -> active=${toggled.isActive}');
       emit(
         state.copyWith(
           notifications: notifications,
+          delivered: delivered,
           clearErrorMessage: true,
           historyViewed: false,
         ),
@@ -217,11 +338,13 @@ class NotificationCubit extends Cubit<NotificationState> {
       _repository.setReminderInterval(minutes);
       await _scheduler.rescheduleAllWithNewOffset(minutes);
       final notifications = await _repository.getAll();
+      final delivered = await _loadDelivered();
       debugPrint('[NOTIF]   OK: interval diupdate ke ${minutes}m');
       emit(
         state.copyWith(
           reminderIntervalMinutes: minutes,
           notifications: notifications,
+          delivered: delivered,
           clearErrorMessage: true,
           historyViewed: false,
         ),

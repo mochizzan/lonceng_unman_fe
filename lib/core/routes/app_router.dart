@@ -34,6 +34,7 @@ import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_bloc
 import 'package:lonceng_unman_fe/features/profile/presentation/bloc/profile_event.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/profile_page.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_delivered_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
@@ -136,6 +137,8 @@ List<RouteBase> _buildRoutes(
                 scheduler: Services.get<NotificationScheduler>(),
                 repository: Services.get<NotificationRepository>(),
                 notificationService: Services.get<NotificationService>(),
+                deliveredRepository:
+                    Services.get<NotificationDeliveredRepository>(),
               )..loadNotifications(),
             ),
             BlocProvider(create: (_) => HomeBloc(Services.get<GetHome>())),

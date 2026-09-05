@@ -7,11 +7,17 @@ abstract class KhsDetailState {
     required this.selectedTahunAjaran,
     required this.availableYears,
     required this.downloadStatus,
+    this.isFetching = false,
+    this.downloadedFileName,
+    this.downloadedFilePath,
   });
 
   final String selectedTahunAjaran;
   final List<String> availableYears;
   final DownloadStatus downloadStatus;
+  final bool isFetching;
+  final String? downloadedFileName;
+  final String? downloadedFilePath;
 }
 
 class KhsDetailLoading extends KhsDetailState {
@@ -19,14 +25,32 @@ class KhsDetailLoading extends KhsDetailState {
     super.selectedTahunAjaran = '',
     super.availableYears = const [],
     super.downloadStatus = DownloadStatus.idle,
+    super.isFetching = false,
+    super.downloadedFileName,
+    super.downloadedFilePath,
   });
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is KhsDetailLoading;
+      identical(this, other) ||
+      other is KhsDetailLoading &&
+          runtimeType == other.runtimeType &&
+          selectedTahunAjaran == other.selectedTahunAjaran &&
+          availableYears == other.availableYears &&
+          downloadStatus == other.downloadStatus &&
+          isFetching == other.isFetching &&
+          downloadedFileName == other.downloadedFileName &&
+          downloadedFilePath == other.downloadedFilePath;
 
   @override
-  int get hashCode => runtimeType.hashCode;
+  int get hashCode => Object.hash(
+    selectedTahunAjaran,
+    availableYears,
+    downloadStatus,
+    isFetching,
+    downloadedFileName,
+    downloadedFilePath,
+  );
 }
 
 class KhsDetailLoaded extends KhsDetailState {
@@ -36,6 +60,9 @@ class KhsDetailLoaded extends KhsDetailState {
     required super.selectedTahunAjaran,
     required super.availableYears,
     required super.downloadStatus,
+    super.isFetching = false,
+    super.downloadedFileName,
+    super.downloadedFilePath,
   });
 
   final KhsDataEntity? ganjilData;
@@ -50,7 +77,10 @@ class KhsDetailLoaded extends KhsDetailState {
           genapData == other.genapData &&
           selectedTahunAjaran == other.selectedTahunAjaran &&
           availableYears == other.availableYears &&
-          downloadStatus == other.downloadStatus;
+          downloadStatus == other.downloadStatus &&
+          isFetching == other.isFetching &&
+          downloadedFileName == other.downloadedFileName &&
+          downloadedFilePath == other.downloadedFilePath;
 
   @override
   int get hashCode => Object.hash(
@@ -59,6 +89,9 @@ class KhsDetailLoaded extends KhsDetailState {
     selectedTahunAjaran,
     availableYears,
     downloadStatus,
+    isFetching,
+    downloadedFileName,
+    downloadedFilePath,
   );
 }
 
@@ -69,6 +102,9 @@ class KhsDetailError extends KhsDetailState {
     required super.selectedTahunAjaran,
     required super.availableYears,
     required super.downloadStatus,
+    super.isFetching = false,
+    super.downloadedFileName,
+    super.downloadedFilePath,
   });
 
   final String? ganjilError;
@@ -83,7 +119,10 @@ class KhsDetailError extends KhsDetailState {
           genapError == other.genapError &&
           selectedTahunAjaran == other.selectedTahunAjaran &&
           availableYears == other.availableYears &&
-          downloadStatus == other.downloadStatus;
+          downloadStatus == other.downloadStatus &&
+          isFetching == other.isFetching &&
+          downloadedFileName == other.downloadedFileName &&
+          downloadedFilePath == other.downloadedFilePath;
 
   @override
   int get hashCode => Object.hash(
@@ -92,5 +131,8 @@ class KhsDetailError extends KhsDetailState {
     selectedTahunAjaran,
     availableYears,
     downloadStatus,
+    isFetching,
+    downloadedFileName,
+    downloadedFilePath,
   );
 }

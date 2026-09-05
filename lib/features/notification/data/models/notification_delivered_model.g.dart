@@ -25,13 +25,18 @@ class NotificationDeliveredModelAdapter
       deliveredAt: fields[4] as DateTime,
       room: fields[5] as String,
       lecturer: fields[6] as String?,
+      sourceIndex: (fields[7] as num?)?.toInt() ?? 0,
+      isRead: fields[8] as bool? ?? false,
+      scheduledId: (fields[9] as num?)?.toInt(),
+      title: fields[10] as String?,
+      body: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, NotificationDeliveredModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -45,7 +50,17 @@ class NotificationDeliveredModelAdapter
       ..writeByte(5)
       ..write(obj.room)
       ..writeByte(6)
-      ..write(obj.lecturer);
+      ..write(obj.lecturer)
+      ..writeByte(7)
+      ..write(obj.sourceIndex)
+      ..writeByte(8)
+      ..write(obj.isRead)
+      ..writeByte(9)
+      ..write(obj.scheduledId)
+      ..writeByte(10)
+      ..write(obj.title)
+      ..writeByte(11)
+      ..write(obj.body);
   }
 
   @override

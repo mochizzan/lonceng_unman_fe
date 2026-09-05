@@ -76,6 +76,8 @@ dependencies:
 
   # Android MediaStore for saving files to public Downloads (Android 10+)
   flutter_media_store: ^1.3.0
+  open_filex: ^4.7.0
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

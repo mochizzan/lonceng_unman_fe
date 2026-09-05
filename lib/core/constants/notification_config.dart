@@ -30,6 +30,17 @@ enum NotificationChannel {
     importance: Importance.high,
     enableVibration: true,
     enableLights: true,
+  ),
+
+  /// Unduhan berkas KHS (indeterminate ongoing → selesai/error).
+  /// ID range 7000–7999 reserved untuk download (lihat KhsDownloadNotificationController.notificationId).
+  downloads(
+    id: 'lonceng_unman_downloads',
+    name: 'Unduhan',
+    description: 'Notifikasi progres & status unduhan berkas KHS',
+    importance: Importance.high,
+    enableVibration: false,
+    enableLights: false,
   );
 
   const NotificationChannel({

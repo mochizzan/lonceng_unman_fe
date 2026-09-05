@@ -1,9 +1,30 @@
 // lib/core/services/notification_service.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
+
+/// Background isolate entry point for notification actions (Android).
+///
+/// `flutter_local_notifications` delivers taps on notification *actions*
+/// when the app is in background/terminated via this callback. It MUST be
+/// top-level and annotated `@pragma('vm:entry-point')` so the tree-shaker
+/// keeps it. We keep it minimal: just log. The real handling is forced to
+/// foreground via `showsUserInterface:true` on actions (see controller), so
+/// the foreground `onDidReceiveNotificationResponse` will fire after the app
+/// is brought forward. This handler exists only so the OS doesn't drop the
+/// intent on Android 14+ / OEMs that require a background handler to be
+/// registered at all.
+@pragma('vm:entry-point')
+void notificationTapBackgroundHandler(NotificationResponse response) {
+  debugPrint(
+    '[NotificationService-BG] onDidReceiveBackgroundNotificationResponse '
+    'id=${response.id} actionId=${response.actionId} payload=${response.payload}',
+  );
+}
 
 /// Thin wrapper around flutter_local_notifications plugin.
 ///
@@ -15,6 +36,17 @@ class NotificationService {
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _plugin;
+
+  /// External handler for notification tap / action responses.
+  /// Set by DI wiring (e.g. DownloadNotificationController). Invoked alongside
+  /// internal handling so features can react without owning initialization.
+  void Function(NotificationResponse response)? _externalResponseHandler;
+
+  void setExternalResponseHandler(
+    void Function(NotificationResponse response)? handler,
+  ) {
+    _externalResponseHandler = handler;
+  }
 
   /// Build [NotificationDetails] for a given [channel].
   static NotificationDetails _detailsFor(NotificationChannel channel) =>
@@ -70,7 +102,23 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings: initSettings);
+    await _plugin.initialize(
+      settings: initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        debugPrint(
+          '[NotificationService] onDidReceiveNotificationResponse '
+          'id=${response.id} actionId=${response.actionId} payload=${response.payload}',
+        );
+        // Forward to external handler (e.g. download controller).
+        try {
+          _externalResponseHandler?.call(response);
+        } catch (e) {
+          debugPrint('[NotificationService] External handler error: $e');
+        }
+      },
+      onDidReceiveBackgroundNotificationResponse:
+          notificationTapBackgroundHandler,
+    );
 
     // Create ALL notification channels (Android 8.0+)
     final androidPlugin = _plugin
@@ -132,6 +180,51 @@ class NotificationService {
         '[NotificationService] WARNING: Failed to schedule notification — timezone data may be missing or invalid: $e',
       );
     }
+  }
+
+  /// Show a simple notification immediately (no schedule).
+  ///
+  /// Thin wrapper over [_plugin.show] using channel defaults.
+  /// Prefer this over calling plugin directly so channels stay centralized.
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationChannel channel,
+    String? payload,
+    bool ongoing = false,
+    bool autoCancel = true,
+    List<AndroidNotificationAction>? actions,
+  }) async {
+    final androidDetails = AndroidNotificationDetails(
+      channel.id,
+      channel.name,
+      channelDescription: channel.description,
+      importance: channel.importance,
+      priority: Priority.high,
+      icon: NotificationConfig.icon,
+      color: const Color(NotificationConfig.accentColorValue),
+      enableVibration: channel.enableVibration,
+      enableLights: channel.enableLights,
+      ongoing: ongoing,
+      autoCancel: autoCancel,
+      actions: actions,
+    );
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
+      payload: payload,
+    );
   }
 
   /// Cancel a single notification by ID.

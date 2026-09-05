@@ -5,15 +5,19 @@
 // Layout follows flutter-use-column-row-first: Column for vertical,
 // Row for horizontal, Expanded/Flexible for flexible children.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
 import 'package:lonceng_unman_fe/features/khs/domain/entities/khs_entity.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_cubit.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/cubit/khs_detail_state.dart';
-import 'package:lonceng_unman_fe/features/khs/presentation/widgets/year_switcher_button.dart';
+import 'package:lonceng_unman_fe/features/khs/presentation/widgets/khs_app_bar_title.dart';
 import 'package:lonceng_unman_fe/features/khs/presentation/widgets/khs_download_icon.dart';
+import 'package:open_filex/open_filex.dart';
 
 /// Detail page for KHS data.
 ///
@@ -48,10 +52,14 @@ class _KhsDetailPageState extends State<KhsDetailPage>
       initialIndex: initialIndex,
     );
     _tabController.addListener(_onTabChanged);
-    // Load available years and KHS data.
-    final cubit = context.read<KhsDetailCubit>();
-    cubit.loadAvailableYears();
-    cubit.loadAll();
+    // Serialize: loadAvailableYears then loadAll to avoid race
+    Future.microtask(() async {
+      // ignore: use_build_context_synchronously
+      final cubit = context.read<KhsDetailCubit>();
+      await cubit.loadAvailableYears();
+      if (!mounted) return;
+      await cubit.loadAll();
+    });
   }
 
   void _onTabChanged() {
@@ -96,87 +104,224 @@ class _KhsDetailPageState extends State<KhsDetailPage>
 
   // ── Build ───────────────────────────────────────────────────
 
+  void _showSuccessDialog(
+    BuildContext context,
+    String? fileName,
+    String? filePath,
+  ) {
+    debugPrint(
+      '[KhsDetailPage] _showSuccessDialog called: fileName=$fileName filePath=$filePath mounted=${context.mounted} isCurrent=${ModalRoute.of(context)?.isCurrent}',
+    );
+    if (!context.mounted) {
+      debugPrint('[KhsDetailPage] _showSuccessDialog abort: not mounted');
+      return;
+    }
+    final isCurrent = ModalRoute.of(context)?.isCurrent;
+    debugPrint('[KhsDetailPage] _showSuccessDialog isCurrent=$isCurrent');
+    if (isCurrent != true) {
+      debugPrint(
+        '[KhsDetailPage] _showSuccessDialog abort: route not current (isCurrent=$isCurrent) — notification still shows',
+      );
+      return;
+    }
+    if (fileName == null || filePath == null) {
+      debugPrint(
+        '[KhsDetailPage] _showSuccessDialog abort: fileName=$fileName filePath=$filePath',
+      );
+      return;
+    }
+    debugPrint('[KhsDetailPage] showing success dialog: $fileName → $filePath');
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final cs = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          icon: Icon(Icons.check_circle, color: cs.primary, size: 48),
+          title: const Text(AppStrings.khsDownloadDialogTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                fileName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.khsDownloadDialogLocation,
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.khsDownloadDialogHint,
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                debugPrint('[KhsDetailPage] dialog Tutup pressed');
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text(AppStrings.khsDownloadDialogClose),
+            ),
+            FilledButton(
+              onPressed: () async {
+                debugPrint('[KhsDetailPage] dialog Buka pressed: $filePath');
+                Navigator.of(dialogContext).pop();
+                final exists = File(filePath).existsSync();
+                debugPrint(
+                  '[KhsDetailPage] dialog Buka existsSync=$exists path=$filePath',
+                );
+                if (!exists) {
+                  debugPrint(
+                    '[KhsDetailPage] dialog Buka file not found: $filePath',
+                  );
+                  Fluttertoast.showToast(
+                    msg: AppStrings.khsDownloadFileNotFound,
+                    toastLength: Toast.LENGTH_LONG,
+                    gravity: ToastGravity.BOTTOM,
+                  );
+                  return;
+                }
+                try {
+                  debugPrint(
+                    '[KhsDetailPage] dialog Buka → OpenFilex.open: $filePath',
+                  );
+                  final result = await OpenFilex.open(filePath);
+                  debugPrint(
+                    '[KhsDetailPage] dialog Buka result: type=${result.type} message=${result.message} path=$filePath',
+                  );
+                  if (result.type != ResultType.done) {
+                    debugPrint(
+                      '[KhsDetailPage] dialog Buka no app to handle: type=${result.type} $filePath',
+                    );
+                    Fluttertoast.showToast(
+                      msg: AppStrings.khsDownloadNoViewer,
+                      toastLength: Toast.LENGTH_LONG,
+                      gravity: ToastGravity.BOTTOM,
+                    );
+                  } else {
+                    debugPrint(
+                      '[KhsDetailPage] dialog Buka success: $filePath',
+                    );
+                  }
+                } catch (e, st) {
+                  debugPrint(
+                    '[KhsDetailPage] dialog Buka failed: $e\n$st path=$filePath',
+                  );
+                  Fluttertoast.showToast(
+                    msg: AppStrings.khsDownloadNoViewer,
+                    toastLength: Toast.LENGTH_LONG,
+                    gravity: ToastGravity.BOTTOM,
+                  );
+                }
+              },
+              child: const Text(AppStrings.khsDownloadActionOpen),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: BlocBuilder<KhsDetailCubit, KhsDetailState>(
-          builder: (context, state) {
-            return Text(
-              '${AppStrings.khsTitle} ${state.selectedTahunAjaran}',
-              style: TextStyle(
-                color: cs.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          },
-        ),
-        backgroundColor: cs.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: cs.onSurface),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          BlocBuilder<KhsDetailCubit, KhsDetailState>(
+    return BlocListener<KhsDetailCubit, KhsDetailState>(
+      listenWhen: (previous, current) {
+        final should =
+            previous.downloadStatus != current.downloadStatus &&
+            current.downloadStatus == DownloadStatus.success;
+        debugPrint(
+          '[KhsDetailPage] BlocListener listenWhen: ${previous.downloadStatus} → ${current.downloadStatus} fileName=${current.downloadedFileName} shouldTrigger=$should',
+        );
+        return should;
+      },
+      listener: (context, state) {
+        debugPrint(
+          '[KhsDetailPage] BlocListener triggered: success fileName=${state.downloadedFileName} filePath=${state.downloadedFilePath}',
+        );
+        _showSuccessDialog(
+          context,
+          state.downloadedFileName,
+          state.downloadedFilePath,
+        );
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: BlocBuilder<KhsDetailCubit, KhsDetailState>(
             builder: (context, state) {
-              return YearSwitcherButton(
+              return KhsAppBarTitle(
+                key: const Key('khs_app_bar_title'),
                 tahunAjaran: state.selectedTahunAjaran,
                 availableYears: state.availableYears,
-                onYearSelected: (year) {
-                  context.read<KhsDetailCubit>().selectYear(year);
-                },
+                isFetching: state.isFetching,
+                onYearSelected: (year) =>
+                    context.read<KhsDetailCubit>().selectYear(year),
               );
             },
           ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
-            child: TabBar(
-              controller: _tabController,
-              labelColor: cs.primary,
-              unselectedLabelColor: cs.onSurfaceVariant,
-              indicatorColor: cs.primary,
-              dividerColor: Colors.transparent,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(color: cs.primary, width: 2),
+          backgroundColor: cs.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: cs.onSurface),
+            onPressed: () => context.pop(),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(56),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space16,
               ),
-              tabs: const [
-                Tab(text: AppStrings.khsTabGanjil),
-                Tab(text: AppStrings.khsTabGenap),
-              ],
+              child: TabBar(
+                controller: _tabController,
+                labelColor: cs.primary,
+                unselectedLabelColor: cs.onSurfaceVariant,
+                indicatorColor: cs.primary,
+                dividerColor: Colors.transparent,
+                indicator: UnderlineTabIndicator(
+                  borderSide: BorderSide(color: cs.primary, width: 2),
+                ),
+                tabs: const [
+                  Tab(text: AppStrings.khsTabGanjil),
+                  Tab(text: AppStrings.khsTabGenap),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      body: BlocBuilder<KhsDetailCubit, KhsDetailState>(
-        builder: (context, state) {
-          final ganjil = _getGanjilData(state);
-          final genap = _getGenapData(state);
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildSemesterTab(
-                cs: cs,
-                isLoading: ganjil.isLoading,
-                error: ganjil.error,
-                data: ganjil.data,
-                semester: 'GANJIL',
-              ),
-              _buildSemesterTab(
-                cs: cs,
-                isLoading: genap.isLoading,
-                error: genap.error,
-                data: genap.data,
-                semester: 'GENAP',
-              ),
-            ],
-          );
-        },
+        body: BlocBuilder<KhsDetailCubit, KhsDetailState>(
+          builder: (context, state) {
+            final ganjil = _getGanjilData(state);
+            final genap = _getGenapData(state);
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                _buildSemesterTab(
+                  cs: cs,
+                  isLoading: ganjil.isLoading,
+                  error: ganjil.error,
+                  data: ganjil.data,
+                  semester: 'GANJIL',
+                  selectedTahunAjaran: state.selectedTahunAjaran,
+                  isFetching: state.isFetching,
+                ),
+                _buildSemesterTab(
+                  cs: cs,
+                  isLoading: genap.isLoading,
+                  error: genap.error,
+                  data: genap.data,
+                  semester: 'GENAP',
+                  selectedTahunAjaran: state.selectedTahunAjaran,
+                  isFetching: state.isFetching,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -189,6 +334,8 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     required String? error,
     required KhsDataEntity? data,
     required String semester,
+    required String selectedTahunAjaran,
+    required bool isFetching,
   }) {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -199,13 +346,21 @@ class _KhsDetailPageState extends State<KhsDetailPage>
     }
 
     if (data == null) {
-      return _buildEmptyState(cs);
+      return _buildEmptyState(
+        cs,
+        selectedTahunAjaran: selectedTahunAjaran,
+        isFetching: isFetching,
+      );
     }
 
     return _buildContent(cs, data, semester);
   }
 
-  Widget _buildEmptyState(ColorScheme cs) {
+  Widget _buildEmptyState(
+    ColorScheme cs, {
+    required String selectedTahunAjaran,
+    required bool isFetching,
+  }) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimens.space24),
@@ -225,6 +380,25 @@ class _KhsDetailPageState extends State<KhsDetailPage>
                 color: cs.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimens.space16),
+            FilledButton(
+              key: const Key('khs_fetch_year_button'),
+              onPressed: isFetching
+                  ? null
+                  : () => context.read<KhsDetailCubit>().fetchMissingYear(
+                      context: context,
+                    ),
+              child: isFetching
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: cs.onPrimary,
+                      ),
+                    )
+                  : Text('Muat KHS $selectedTahunAjaran'),
             ),
           ],
         ),

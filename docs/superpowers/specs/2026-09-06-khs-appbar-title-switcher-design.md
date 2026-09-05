@@ -30,10 +30,10 @@ Request: hapus duplikasi — jadikan **title AppBar itu sendiri tombol switch** 
 
 ### 2.2 Non-Tujuan
 
-- Tidak mengubah `KhsDetailCubit` / `KhsDetailState` / `KhsRemoteDataSource` / `KhsModel` / `AcademicCacheService` / `AppRouter` / `GetKhs` / `HomePage` pushNamed. Semua sudah correct di spec 2026-09-05.
+- Tidak mengubah `KhsDetailCubit` / `KhsDetailState` / `KhsRemoteDataSource` / `KhsModel` / `AcademicCacheService` / `AppRouter` / `GetKhs` / `HomePage` `pushNamed`. Semua sudah benar di spec 2026-09-05.
 - Tidak mengubah writer `tahunAjaran` camelCase, `isFetching`, maupun tombol `Muat KHS` di body.
 - Tidak menambah chip/pill/background pada title (C ditolak) dan tidak menambah animasi AppBar kustom.
-- Tidak menambah persist/migrasi cache.
+- Tidak menambah persistensi/migrasi cache.
 
 ## 3. Keputusan yang Disetujui
 

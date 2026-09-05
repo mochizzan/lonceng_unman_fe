@@ -8,6 +8,21 @@ abstract class NotificationDeliveredRepository {
   /// Save a delivered notification record.
   Future<void> save(NotificationDeliveredEntity entity);
 
+  /// Delete a single delivered record.
+  Future<void> delete(int id);
+
   /// Delete all delivered notification records.
   Future<void> deleteAll();
+
+  /// Mark one as read.
+  Future<void> markAsRead(int id);
+
+  /// Mark all as read.
+  Future<void> markAllRead();
+
+  /// Count unread visible (deliveredAt <= now).
+  int getUnreadCount();
+
+  /// Check existence.
+  bool containsKey(int id);
 }

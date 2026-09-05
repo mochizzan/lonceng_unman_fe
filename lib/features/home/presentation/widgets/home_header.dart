@@ -1,13 +1,24 @@
 // home - Header widget (top app bar)
 //
 // Sticky header with date, greeting, notification bell, and profile avatar.
-// Matches the HTML template's `<header>` section.
+// Bell dot driven by NotificationCubit.visibleDelivered unreadCount.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_state.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_state.dart';
+
+bool _hasNotificationCubit(BuildContext context) {
+  try {
+    context.read<NotificationCubit>();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
@@ -25,6 +36,8 @@ class HomeHeader extends StatelessWidget {
   final String avatarUrl;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onAvatarTap;
+
+  /// Legacy fallback (used when NotificationCubit not in tree, e.g. tests).
   final bool hasUnseenNotifications;
 
   @override
@@ -72,32 +85,21 @@ class HomeHeader extends StatelessWidget {
             // Notification + avatar
             Row(
               children: [
-                // Notification bell
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: onNotificationTap,
-                  icon: Stack(
-                    children: [
-                      const Icon(
-                        Icons.notifications_none,
-                        size: AppDimens.text5XL,
-                      ),
-                      if (hasUnseenNotifications)
-                        Positioned(
-                          top: AppDimens.space4,
-                          right: AppDimens.space4,
-                          child: Container(
-                            width: AppDimens.dotXS,
-                            height: AppDimens.dotXS,
-                            decoration: BoxDecoration(
-                              color: cs.error,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                // Notification bell — dot from NotificationCubit.unreadCount, fallback to prop
+                Builder(
+                  builder: (context) {
+                    final hasCubit = _hasNotificationCubit(context);
+                    if (hasCubit) {
+                      return BlocBuilder<NotificationCubit, NotificationState>(
+                        builder: (context, state) {
+                          final hasDot =
+                              state.unreadCount > 0 || hasUnseenNotifications;
+                          return _buildBell(hasDot: hasDot, cs: cs);
+                        },
+                      );
+                    }
+                    return _buildBell(hasDot: hasUnseenNotifications, cs: cs);
+                  },
                 ),
                 const SizedBox(width: AppDimens.space8),
                 // Profile avatar
@@ -152,6 +154,32 @@ class HomeHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBell({required bool hasDot, required ColorScheme cs}) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      onPressed: onNotificationTap,
+      icon: Stack(
+        children: [
+          const Icon(Icons.notifications_none, size: AppDimens.text5XL),
+          if (hasDot)
+            Positioned(
+              top: AppDimens.space4,
+              right: AppDimens.space4,
+              child: Container(
+                width: AppDimens.dotXS,
+                height: AppDimens.dotXS,
+                decoration: BoxDecoration(
+                  color: cs.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

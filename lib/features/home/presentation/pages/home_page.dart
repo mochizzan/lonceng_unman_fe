@@ -144,8 +144,10 @@ class _HomePageViewState extends State<_HomePageView>
     final data = state.data;
     final notifState = context.watch<NotificationCubit>().state;
     final hasUnseen =
-        notifState.notifications.any((n) => n.isActive) &&
-        !notifState.historyViewed;
+        notifState.unreadCount > 0 ||
+        (notifState.visibleDelivered.isEmpty &&
+            notifState.notifications.any((n) => n.isActive) &&
+            !notifState.historyViewed);
 
     return RefreshIndicator(
       onRefresh: () async {

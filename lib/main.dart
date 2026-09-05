@@ -707,7 +707,11 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp>
         final scheduler = Services.get<NotificationScheduler>();
         final scheduledRepo = Services.get<NotificationRepository>();
         // Fire-and-forget: reuse cubit logic without needing cubit instance
-        _reconcileDelivered(repo, scheduler, scheduledRepo);
+        unawaited(
+          _reconcileDelivered(repo, scheduler, scheduledRepo).catchError((e) {
+            debugPrint('[LIFECYCLE] reconcileDelivered failed: $e');
+          }),
+        );
       } catch (e) {
         debugPrint('[LIFECYCLE] reconcileDelivered failed: $e');
       }

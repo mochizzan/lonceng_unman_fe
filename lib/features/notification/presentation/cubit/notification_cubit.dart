@@ -104,53 +104,61 @@ class NotificationCubit extends Cubit<NotificationState> {
       final now = DateTime.now();
       var created = 0;
       for (final s in scheduled) {
-        if (!s.isActive) continue;
-        // Compute next trigger via scheduler helper
-        final tzTrigger = _scheduler.computeTrigger(s);
-        final triggerDt = DateTime(
-          tzTrigger.year,
-          tzTrigger.month,
-          tzTrigger.day,
-          tzTrigger.hour,
-          tzTrigger.minute,
-        );
-        final lastTrigger = now.isBefore(triggerDt)
-            ? triggerDt.subtract(const Duration(days: 7))
-            : triggerDt;
+        try {
+          if (!s.isActive) continue;
+          // Compute next trigger via scheduler helper
+          final tzTrigger = _scheduler.computeTrigger(s);
+          final triggerDt = DateTime(
+            tzTrigger.year,
+            tzTrigger.month,
+            tzTrigger.day,
+            tzTrigger.hour,
+            tzTrigger.minute,
+          );
+          final lastTrigger = now.isBefore(triggerDt)
+              ? triggerDt.subtract(const Duration(days: 7))
+              : triggerDt;
 
-        final forId = deliveredAll.where((d) => d.scheduledId == s.id).toList()
-          ..sort((a, b) => b.deliveredAt.compareTo(a.deliveredAt));
-        final lastSaved = forId.isEmpty ? null : forId.first.deliveredAt;
-        DateTime cursor;
-        if (lastSaved == null) {
-          cursor = lastTrigger;
-        } else {
-          cursor = lastSaved.add(const Duration(days: 7));
-        }
-        // Legacy 7-field rows have scheduledId==null — ignored for grouping to avoid duplicate
-        // Generate up to lastTrigger inclusive, but not future > now
-        while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
-          final deliveredId = deliveredIdFor(s.id, cursor);
-          if (!repo.containsKey(deliveredId)) {
-            await repo.save(
-              NotificationDeliveredEntity(
-                id: deliveredId,
-                courseName: s.courseName,
-                dayOfWeek: s.dayOfWeek,
-                classTime: s.classTime,
-                deliveredAt: cursor,
-                room: s.room,
-                lecturer: s.lecturer,
-                isRead: false,
-                source: NotificationSource.classReminder,
-                scheduledId: s.id,
-              ),
-            );
-            created++;
+          final forId =
+              deliveredAll.where((d) => d.scheduledId == s.id).toList()
+                ..sort((a, b) => b.deliveredAt.compareTo(a.deliveredAt));
+          final lastSaved = forId.isEmpty ? null : forId.first.deliveredAt;
+          DateTime startCursor;
+          if (lastSaved == null) {
+            // Backfill up to 12 weeks for fresh install
+            startCursor = lastTrigger.subtract(const Duration(days: 7 * 11));
+          } else {
+            startCursor = lastSaved.add(const Duration(days: 7));
           }
-          final next = cursor.add(const Duration(days: 7));
-          if (next.isAfter(lastTrigger)) break;
-          cursor = next;
+          DateTime cursor = startCursor;
+          // Legacy 7-field rows have scheduledId==null — ignored for grouping to avoid duplicate
+          // Generate up to lastTrigger inclusive, but not future > now
+          while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
+            final deliveredId = deliveredIdFor(s.id, cursor);
+            if (!repo.containsKey(deliveredId)) {
+              await repo.save(
+                NotificationDeliveredEntity(
+                  id: deliveredId,
+                  courseName: s.courseName,
+                  dayOfWeek: s.dayOfWeek,
+                  classTime: s.classTime,
+                  deliveredAt: cursor,
+                  room: s.room,
+                  lecturer: s.lecturer,
+                  isRead: false,
+                  source: NotificationSource.classReminder,
+                  scheduledId: s.id,
+                ),
+              );
+              created++;
+            }
+            final next = cursor.add(const Duration(days: 7));
+            if (next.isAfter(lastTrigger)) break;
+            cursor = next;
+          }
+        } catch (e) {
+          debugPrint('[reconcile] Skip ${s.courseName}: $e');
+          continue;
         }
       }
       if (created > 0) {

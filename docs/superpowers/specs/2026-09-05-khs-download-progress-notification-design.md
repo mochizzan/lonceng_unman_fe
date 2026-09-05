@@ -89,7 +89,7 @@ Global tap handler (NotificationService.initialize):
     └─ actionId==retry → Services.get<KhsDetailCubit>().downloadPdf(lastSemester)
 ```
 
-ID notifikasi tunggal `7001` — setiap `show*` dengan ID sama akan update in-place (Play Store pattern). `lastSemester` disimpan di controller saat `showOngoing`.
+ID notifikasi tunggal `7001` (range reserve `7000–7999` untuk download — lihat mitigasi §4.7) — setiap `show*` dengan ID sama akan update in-place (Play Store pattern). `lastSemester` disimpan di controller saat `showOngoing`.
 
 ### 4.2 Komponen & Data Flow (DISETUJUI)
 
@@ -107,15 +107,15 @@ ID notifikasi tunggal `7001` — setiap `show*` dengan ID sama akan update in-pl
 | `open_filex` | `Buka` → intent `ACTION_VIEW` `application/pdf` via FileProvider. Handle `noAppToOpen` → toast. |
 | `share_plus` | `Bagikan` → `Share.shareXFiles([XFile(filePath)])`. |
 
-**File yang dimodifikasi (6):**
+**File yang dimodifikasi (8 + 2 dep):**
 
 | File | Perubahan |
 |------|-----------|
 | `lib/core/services/notification_service.dart` | Tambah thin-wrapper `show()`/`showWithActions()`/`showOngoing()` di atas `_plugin.show` + pasang `onDidReceiveNotificationResponse` routing untuk `actionId ∈ {open, share, retry}` yang delegasi ke controller. Expose `areNotificationsEnabled()` jika belum ada (sudah ada `checkPermissionStatus`/`requestPermission`). |
 | `lib/features/khs/data/services/khs_pdf_service.dart` | **Minimal** — tidak diubah ke streaming di v1. Hanya pakai return `filePath` untuk notifikasi/modal. Seam `onProgress` opsional disiapkan untuk upgrade byte-progres nanti tanpa ubah caller. |
 | `lib/features/khs/presentation/cubit/khs_detail_cubit.dart` | `downloadPdf()` disisipkan soft-gate izin, guard blocking tetap, panggil controller `showOngoing`/`showCompleted`/`showError`, dan enrich state dengan `downloadedFileName/FilePath`. Menerima `DownloadNotificationController` via DI (fallback `Services.get`). Tidak import `open_filex`/`share_plus`. |
-| `lib/features/khs/presentation/cubit/khs_detail_state.dart` | Tambah 2 field opsional ke `KhsDetailState`: `downloadedFileName` + `downloadedFilePath` (nullable). `_emitWithDownloadStatus` ikut meneruskan. `success` isi keduanya dari return service; `error`/`idle` → null. |
-| `lib/features/khs/presentation/pages/khs_detail_page.dart` | Tambah `BlocListener<KhsDetailCubit,KhsDetailState>` yang trigger `AlertDialog` sukses hanya saat `success && filePath!=null && ModalRoute.isCurrent`. Alternatif: cubit trigger via context — dipilih listener agar tidak langgar `mounted` di cubit. |
+| `lib/features/khs/presentation/cubit/khs_detail_state.dart` | Tambah 2 field opsional ke `KhsDetailState`: `downloadedFileName` + `downloadedFilePath` (nullable). `_emitWithDownloadStatus` dan `_emitWithFetching` ikut meneruskan. `operator==` dan `hashCode` di semua subclass (`KhsDetailLoading`/`Loaded`/`Error`) diperbarui untuk mencakup 2 field baru. `success` isi keduanya dari return service; `error`/`idle` → null. |
+| `lib/features/khs/presentation/pages/khs_detail_page.dart` | Tambah `BlocListener<KhsDetailCubit,KhsDetailState>` yang trigger `AlertDialog` sukses hanya saat `success && filePath!=null && ModalRoute.isCurrent` (dengan `listenWhen: previous.downloadStatus != current.downloadStatus`). Alternatif: cubit trigger via context — dipilih listener agar tidak langgar `mounted` di cubit. |
 | `lib/main.dart` | Registrasi `DownloadNotificationController` di DI + channel `downloads` auto-create (tanpa ubah lain). |
 | `lib/core/constants/app_strings.dart` | 6–8 string baru: judul/body ongoing, selesai, error, label action Buka/Bagikan/Coba Lagi, dialog title/body/hint. |
 | `android/app/src/main/AndroidManifest.xml` | **Tidak perlu** izin baru untuk v1 (tanpa ForegroundService). Hanya tambah `<queries><intent><action android:name="android.intent.action.VIEW" /><data android:mimeType="application/pdf" /></intent></queries>` jika `open_filex` memerlukan. |
@@ -126,7 +126,7 @@ ID notifikasi tunggal `7001` — setiap `show*` dengan ID sama akan update in-pl
 
 ```dart
 abstract class DownloadNotificationController {
-  static const int notificationId = 7001; // tunggal — blocking sequential
+  static const int notificationId = 7001; // tunggal — blocking sequential, range 7000–7999 reserved
   Future<bool> ensurePermission(); // soft-gate: check → request → bool
   Future<void> showOngoing({required String fileName});
   Future<void> showCompleted({required String fileName, required String filePath});
@@ -252,6 +252,8 @@ Tidak menambah Patrol E2E untuk v1 — unduhan butuh kredensial real & file I/O;
 | Payload `filePath` hilang (app kill sebelum tap) | `handleResponse` guard `File.existsSync` → toast "Berkas tidak ditemukan" jika hilang. |
 | Double `showDialog` jika `success` emit 2× | Listener guard `listenWhen: previous.downloadStatus != current.downloadStatus` + cek `downloadedFilePath != null`. |
 | Channel `downloads` tidak ter-create di device lama | `NotificationService.initialize()` loop `values` sudah handle semua channel; tambah enum cukup. |
+| ID `7001` tabrakan dengan jadwal `computeId` | `computeId` = `hashCode & 0x7FFFFFFF` (31-bit, probabilistik) sedangkan `7001` di bawah 10k — ruang jadwal praktis ≥5 digit, tapi amankan dengan guard: `DownloadNotificationController.notificationId` dipilih dari range `7000–7999` yang di-reserve untuk download dan didokumentasi di `notification_config.dart` agar jadwal tidak pakai range tersebut. Alternatif: pakai `8000+` sentinel yang tidak mungkin keluar dari `computeId` untuk courseName normal. |
+| `Services.performFullLogout()` `cancelAll()` menghapus notifikasi download | Sebelumnya `NotificationService.cancelAll()` menghapus **semua** notifikasi termasuk download `7001` — tidak diinginkan jika user logout saat download selesai masih tampil. Saat implement, ubah `performFullLogout` menjadi cancel selektif untuk `classReminders` saja, atau setelah `cancelAll` re-show tidak diperlukan karena logout juga clear cache; cukup dokumentasi: `performFullLogout` tetap `cancelAll` (menghapus tray termasuk download selesai) — diterima karena logout adalah reset total. |
 
 **File map final:**
 
@@ -270,10 +272,10 @@ Tidak menambah Patrol E2E untuk v1 — unduhan butuh kredensial real & file I/O;
 
 **Estimasi implementasi (untuk writing-plans):**
 
-- Fase 1: `pubspec` deps + `notification_config` channel baru + `notification_service` wrapper + `DownloadNotificationController` baru.
-- Fase 2: `khs_detail_state` enrich + `khs_detail_cubit` wiring soft-gate & controller calls.
+- Fase 1: `pubspec` deps + `notification_config` channel baru (reserve range 7000–7999) + `notification_service` wrapper + `DownloadNotificationController` baru.
+- Fase 2: `khs_detail_state` enrich (`downloadedFileName/FilePath` + `==`/`hashCode` di 3 subclass + `_emitWithFetching` ikut meneruskan) + `khs_detail_cubit` wiring soft-gate & controller calls.
 - Fase 3: `khs_detail_page` `BlocListener` AlertDialog + `app_strings` + Manifest queries.
-- Fase 4: `main.dart` DI registrasi + `flutter analyze` + unit/widget tests.
+- Fase 4: `main.dart` DI registrasi + `performFullLogout` dokumentasi `cancelAll` vs download tray + `flutter analyze` + unit/widget tests.
 
 ## 5. Pertanyaan Terbuka
 

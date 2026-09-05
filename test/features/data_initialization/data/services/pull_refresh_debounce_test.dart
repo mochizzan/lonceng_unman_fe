@@ -1,8 +1,9 @@
-// Tests for PullRefreshDebounce tracker (spec §5.5 poin 1):
+// Tests for PullRefreshDebounce tracker — sliding 3m (spec 2026-09-05 sliding 3m):
 //   - first hit: shouldUseLight == false (heavy).
-//   - within 120s: shouldUseLight == true (light).
-//   - >= 120s: shouldUseLight == false (heavy again).
-//   - recordHeavy resets timestamp; per-NPM isolated.
+//   - within 180s: shouldUseLight == true (light).
+//   - >= 180s: shouldUseLight == false (heavy again).
+//   - touch resets timestamp (sliding: heavy maupun light sama-sama geser).
+//   - per-NPM isolated.
 //   - clock injectable; no Future.delayed.
 //
 // Hand-written, deterministic (no mockito/mocktail).
@@ -23,51 +24,51 @@ void main() {
       debounce = PullRefreshDebounce(clock: () => fakeNow);
     });
 
-    test('window 2 menit', () {
-      expect(PullRefreshDebounce.window, const Duration(minutes: 2));
+    test('window 3 menit (sliding)', () {
+      expect(PullRefreshDebounce.window, const Duration(minutes: 3));
     });
 
     test('hit pertama (belum ada catatan) → shouldUseLight == false', () {
       expect(debounce.shouldUseLight(npm), isFalse);
     });
 
-    test('recordHeavy lalu cek dalam 120s → shouldUseLight == true', () {
-      debounce.recordHeavy(npm, fakeNow);
+    test('touch lalu cek dalam 180s → shouldUseLight == true', () {
+      debounce.touch(npm, fakeNow);
       fakeNow = fakeNow.add(const Duration(seconds: 30));
       expect(debounce.shouldUseLight(npm), isTrue);
     });
 
-    test('tepat 119s → true; tepat 120s → false (boundary)', () {
+    test('tepat 179s → true; tepat 180s → false (boundary)', () {
       // fakeNow = setUp baseline (2026-09-05 12:00:00).
-      debounce.recordHeavy(npm, fakeNow);
+      debounce.touch(npm, fakeNow);
 
-      // 119s dari t0: < window → light.
-      fakeNow = fakeNow.add(const Duration(seconds: 119));
+      // 179s dari t0: < window → light.
+      fakeNow = fakeNow.add(const Duration(seconds: 179));
       expect(
         debounce.shouldUseLight(npm),
         isTrue,
-        reason: 'selisih 119s < window (120s) → light',
+        reason: 'selisih 179s < window (180s) → light',
       );
 
-      // +1s = 120s dari t0: >= window → boleh berat.
+      // +1s = 180s dari t0: >= window → boleh berat.
       fakeNow = fakeNow.add(const Duration(seconds: 1));
       expect(
         debounce.shouldUseLight(npm),
         isFalse,
-        reason: 'selisih 120s >= window → boleh berat',
+        reason: 'selisih 180s >= window → boleh berat',
       );
     });
 
-    test('recordHeavy kedua dalam window → reset timestamp', () {
+    test('touch kedua dalam window → reset timestamp', () {
       final t0 = DateTime(2026, 9, 5, 12, 0, 0);
-      debounce.recordHeavy(npm, t0);
+      debounce.touch(npm, t0);
 
       // 30s setelah t0: masih window.
       fakeNow = t0.add(const Duration(seconds: 30));
       expect(debounce.shouldUseLight(npm), isTrue);
 
-      // recordHeavy kedua di t=30 → reset timestamp ke 30.
-      debounce.recordHeavy(npm, fakeNow);
+      // touch kedua di t=30 → reset timestamp ke 30.
+      debounce.touch(npm, fakeNow);
 
       // 40s setelah reset (t=70): masih window dari timestamp baru.
       fakeNow = t0.add(const Duration(seconds: 70));
@@ -77,34 +78,70 @@ void main() {
         reason: '70s - 30s = 40s < window',
       );
 
-      // 200s setelah t0 = 170s dari reset (t=30): lewat window, boleh berat.
-      fakeNow = t0.add(const Duration(seconds: 200));
+      // 210s setelah t0 = 180s dari reset (t=30): tepat window, boleh berat.
+      fakeNow = t0.add(const Duration(seconds: 210));
       expect(
         debounce.shouldUseLight(npm),
         isFalse,
-        reason: '200s - 30s = 170s >= window',
+        reason: '210s - 30s = 180s >= window',
+      );
+    });
+
+    test('touch dari light juga geser jangkar (sliding)', () {
+      // T0 heavy → T0+30s light (touch) → cek T0+200s harus masih light
+      // karena jangkar sudah di T0+30s (sliding). Fixed lama jangkar tetap
+      // di T0 sehingga T0+200s akan dianggap heavy — sliding berbeda.
+      final t0 = DateTime(2026, 9, 5, 12, 0, 0);
+      debounce.touch(npm, t0);
+
+      // Light pull di T0+30s juga touch.
+      fakeNow = t0.add(const Duration(seconds: 30));
+      debounce.touch(npm, fakeNow);
+
+      // 200s dari T0 = 170s dari touch terakhir (T0+30) → masih < 180 → light.
+      fakeNow = t0.add(const Duration(seconds: 200));
+      expect(
+        debounce.shouldUseLight(npm),
+        isTrue,
+        reason: '200s - 30s = 170s < window (sliding)',
+      );
+
+      // 210s dari T0 = 180s dari touch terakhir → >= window → heavy.
+      fakeNow = t0.add(const Duration(seconds: 210));
+      expect(
+        debounce.shouldUseLight(npm),
+        isFalse,
+        reason: '210s - 30s = 180s >= window → boleh berat',
       );
     });
 
     test('NPM berbeda terisolasi', () {
       final t0 = DateTime(2026, 9, 5, 12, 0, 0);
-      debounce.recordHeavy(npm, t0);
+      debounce.touch(npm, t0);
 
       fakeNow = t0.add(const Duration(seconds: 10));
       expect(debounce.shouldUseLight(npm), isTrue);
       expect(
         debounce.shouldUseLight(otherNpm),
         isFalse,
-        reason: 'otherNpm belum pernah recordHeavy',
+        reason: 'otherNpm belum pernah touch',
       );
     });
 
-    test('recordHeavy setelah lewat window → boleh berat (false)', () {
-      final t0 = DateTime(2026, 9, 5, 12, 0, 0);
-      debounce.recordHeavy(npm, t0);
+    test(
+      'touch setelah lewat window → shouldUseLight false lalu true lagi setelah touch',
+      () {
+        final t0 = DateTime(2026, 9, 5, 12, 0, 0);
+        debounce.touch(npm, t0);
 
-      fakeNow = t0.add(const Duration(minutes: 2));
-      expect(debounce.shouldUseLight(npm), isFalse);
-    });
+        fakeNow = t0.add(const Duration(minutes: 3));
+        expect(debounce.shouldUseLight(npm), isFalse);
+
+        // Touch lagi di tepat window → geser jangkar.
+        debounce.touch(npm, fakeNow);
+        fakeNow = fakeNow.add(const Duration(seconds: 10));
+        expect(debounce.shouldUseLight(npm), isTrue);
+      },
+    );
   });
 }

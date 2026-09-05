@@ -1,11 +1,13 @@
-/// Pelacak debounce pull-refresh: 1 jalur berat per 2 menit per NPM.
+/// Pelacak debounce pull-refresh: sliding 3 menit, setiap pull touch.
 ///
-/// - [shouldUseLight] true bila ada catatan jalur berat dalam 120 detik
+/// - [shouldUseLight] true bila ada catatan pull dalam 180 detik
 ///   terakhir. NULL (belum pernah trigger) = tidak throttled.
-/// - [recordHeavy] dipanggil saat jalur berat DIMULAI; update timestamp
-///   ke waktu trigger itu (debounce reset).
+/// - [touch] dipanggil di AWAL setiap pull-refresh (heavy maupun light,
+///   A1 — bahkan jika pipeline gagal/offline/timeout) untuk menggeser
+///   jangkar window ke `now` (sliding reset). Heavy hanya terjadi bila
+///   sudah ≥ 3 menit tanpa pull sama sekali.
 /// - In-memory saja ([Map], bukan Hive/SharedPreferences); restart app
-///   me-reset semua catatan. Wajar untuk jendela 2 menit dan menghindari
+///   me-reset semua catatan. Wajar untuk jendela 3 menit dan menghindari
 ///   I/O persistensi.
 /// - Jam bisa di-inject lewat constructor ([clock]) atau parameter [now]
 ///   agar unit test deterministik tanpa [Future.delayed].
@@ -14,31 +16,32 @@ class PullRefreshDebounce {
     : _clock = clock ?? DateTime.now;
 
   final DateTime Function() _clock;
-  final Map<String, DateTime> _lastHeavyHit = {};
+  final Map<String, DateTime> _lastTouch = {};
 
-  /// Jendela debounce 2 menit. Trigger dalam window ini memakai jalur
-  /// ringan; trigger setelah window (atau tidak ada catatan) memakai
-  /// jalur berat dan memperbarui timestamp.
-  static const window = Duration(minutes: 2);
+  /// Jendela debounce 3 menit (sliding). Setiap pull menggeser jangkar;
+  /// pull dalam window memakai jalur ringan, pull setelah idle ≥ window
+  /// memakai jalur berat.
+  static const window = Duration(minutes: 3);
 
   /// True bila jalur ringan harus dipakai untuk [npm] pada [now].
   ///
-  /// `last == null` (belum pernah trigger) → false (jalur berat).
+  /// `last == null` (belum pernah pull) → false (jalur berat).
   /// `now - last < window` → true (jalur ringan, debounce aktif).
   /// `now - last >= window` → false (jalur berat, window sudah lewat).
   bool shouldUseLight(String npm, [DateTime? now]) {
     final t = now ?? _clock();
-    final last = _lastHeavyHit[npm];
+    final last = _lastTouch[npm];
     if (last == null) return false;
     return t.difference(last) < window;
   }
 
-  /// Mencatat timestamp jalur berat untuk [npm] pada [now].
+  /// Menggeser jangkar debounce untuk [npm] ke [now] (sliding reset).
   ///
-  /// Dipanggil tepat sebelum jalur berat dieksekusi. Overwrite timestamp
-  /// (debounce reset): trigger berikutnya dalam window dihitung dari
-  /// waktu [now] ini, bukan dari trigger sebelumnya.
-  void recordHeavy(String npm, [DateTime? now]) {
-    _lastHeavyHit[npm] = now ?? _clock();
+  /// Dipanggil di AWAL setiap pull-refresh sebelum branching heavy/light
+  /// (A1). Overwrite timestamp: pull berikutnya dalam window dihitung dari
+  /// waktu [now] ini, bukan dari pull sebelumnya. Fresh login
+  /// (`isPullRefresh:false`) TIDAK memanggil ini.
+  void touch(String npm, [DateTime? now]) {
+    _lastTouch[npm] = now ?? _clock();
   }
 }

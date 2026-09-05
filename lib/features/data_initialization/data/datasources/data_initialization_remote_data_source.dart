@@ -37,11 +37,12 @@ import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull
 /// Total: 11 endpoint hits.
 ///
 /// Pull-refresh debouncing: [initialize] dispatches on [isPullRefresh] +
-/// [PullRefreshDebounce] — refreshes within the 2-minute window take
-/// [_initializeLight] (get-only, skips scrape/download/extract); the
-/// first refresh (or any after a 2-minute idle) records a timestamp and
-/// takes [_initializeHeavy] (the full pipeline above, unchanged). Fresh
-/// login (isPullRefresh=false) is never consulted by the debounce.
+/// [PullRefreshDebounce] — sliding 3-minute window, every pull [touch]es
+/// the anchor at the START (A1) before branching. Pulls within 3m of the
+/// last pull take [_initializeLight] (get-only, skips scrape/download/
+/// extract); the first pull or any after ≥3m idle takes [_initializeHeavy]
+/// (full pipeline, unchanged). Fresh login (isPullRefresh=false) never
+/// consults or touches the debounce.
 class DataInitializationRemoteDataSource {
   final GetKrs _getKrs;
   final GetKhs _getKhs;
@@ -67,10 +68,11 @@ class DataInitializationRemoteDataSource {
        _avatarCubit = avatarCubit ?? Services.get<AvatarCubit>(),
        _debounce = debounce ?? Services.get<PullRefreshDebounce>();
 
-  /// Dispatcher: pull-refresh dalam window debounce → [_initializeLight]
-  /// (tanpa recordHeavy); pull-refresh pertama / setelah window → catat
-  /// timestamp lalu [_initializeHeavy]; fresh login → [_initializeHeavy]
-  /// tanpa pernah dicek debounce.
+  /// Dispatcher: sliding 3m, check-then-touch (A1).
+  ///
+  /// Ordering kritis: `shouldUseLight` dulu terhadap jangkar LAMA, baru
+  /// `touch` geser ke now. Jika dibalik, setiap pull jadi light selamanya.
+  /// `touch` di AWAL bahkan bila pipeline gagal (A1). Fresh login tanpa cek/touch.
   Stream<DataInitProgress> initialize({
     required String npm,
     required String password,
@@ -81,15 +83,18 @@ class DataInitializationRemoteDataSource {
       '[DATA_INIT_DS] initialize() START — npm=$npm, forceRefresh=$forceRefresh, isPullRefresh=$isPullRefresh',
     );
 
-    if (isPullRefresh && _debounce.shouldUseLight(npm)) {
-      debugPrint('[DATA_INIT_DS] initialize() → LIGHT branch (debounced)');
-      yield* _initializeLight(npm: npm, password: password);
-      return;
-    }
     if (isPullRefresh) {
-      _debounce.recordHeavy(npm);
+      final useLight = _debounce.shouldUseLight(npm);
+      _debounce.touch(npm);
+      if (useLight) {
+        debugPrint(
+          '[DATA_INIT_DS] initialize() → LIGHT branch (debounced, sliding 3m)',
+        );
+        yield* _initializeLight(npm: npm, password: password);
+        return;
+      }
       debugPrint(
-        '[DATA_INIT_DS] initialize() → HEAVY branch (pull-refresh, recorded)',
+        '[DATA_INIT_DS] initialize() → HEAVY branch (pull-refresh, sliding 3m)',
       );
     } else {
       debugPrint('[DATA_INIT_DS] initialize() → HEAVY branch (fresh login)');

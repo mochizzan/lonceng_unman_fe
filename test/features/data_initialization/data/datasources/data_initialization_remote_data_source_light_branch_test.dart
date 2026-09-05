@@ -112,15 +112,15 @@ const _oneSemester = [
 // ─── Fakes ────────────────────────────────────────────────────────────────
 
 /// Fake debounce where the test controls [shouldUseLight] and observes
-/// [recordHeavy] / [shouldUseLight] call counts.
+/// [touch] / [shouldUseLight] call counts.
 class _FakeDebounce extends PullRefreshDebounce {
   _FakeDebounce();
 
   bool useLight = false;
   int shouldUseLightCalls = 0;
-  int recordHeavyCalls = 0;
+  int touchCalls = 0;
   String? lastShouldUseLightNpm;
-  String? lastRecordHeavyNpm;
+  String? lastTouchNpm;
 
   @override
   bool shouldUseLight(String npm, [DateTime? now]) {
@@ -130,9 +130,9 @@ class _FakeDebounce extends PullRefreshDebounce {
   }
 
   @override
-  void recordHeavy(String npm, [DateTime? now]) {
-    recordHeavyCalls++;
-    lastRecordHeavyNpm = npm;
+  void touch(String npm, [DateTime? now]) {
+    touchCalls++;
+    lastTouchNpm = npm;
   }
 }
 
@@ -371,7 +371,7 @@ void main() {
   group('DataInitializationRemoteDataSource pull-refresh branches', () {
     group('cabang ringan (debounced)', () {
       test('skip scrape/download/extract, emit urutan ringan lalu completed, '
-          'tanpa recordHeavy', () async {
+          'sliding touch (A1)', () async {
         final f = _Fixture();
         f.debounce.useLight = true;
 
@@ -414,10 +414,12 @@ void main() {
             .toList();
         expect(khsDetails, ['2024/2025 Ganjil', '2024/2025 Genap']);
 
-        // Pembukuan debounce: dicek sekali, tidak dicatat.
+        // Pembukuan debounce sliding 3m (A1, check-then-touch): dicek sekali
+        // terhadap jangkar lama, lalu touch geser ke now — baik light maupun heavy.
         expect(f.debounce.shouldUseLightCalls, 1);
         expect(f.debounce.lastShouldUseLightNpm, _npm);
-        expect(f.debounce.recordHeavyCalls, 0);
+        expect(f.debounce.touchCalls, 1);
+        expect(f.debounce.lastTouchNpm, _npm);
 
         // Tail pipeline (cache foto) tetap jalan.
         expect(f.avatarCache.saveCalls, 1);
@@ -425,7 +427,7 @@ void main() {
     });
 
     group('jalur berat (tidak debounced)', () {
-      test('urutan berat utuh + recordHeavy tepat sekali saat '
+      test('urutan berat utuh + touch tepat sekali saat '
           'isPullRefresh true', () async {
         final f = _Fixture();
         f.debounce.useLight = false;
@@ -463,14 +465,14 @@ void main() {
         expect(f.khsRepo.extractCalls, 1);
 
         expect(f.debounce.shouldUseLightCalls, 1);
-        expect(f.debounce.recordHeavyCalls, 1);
-        expect(f.debounce.lastRecordHeavyNpm, _npm);
+        expect(f.debounce.touchCalls, 1);
+        expect(f.debounce.lastTouchNpm, _npm);
       });
     });
 
     group('fresh login (isPullRefresh false)', () {
       test('debounce tidak dicek sama sekali, jalur berat jalan, '
-          'recordHeavy tidak dipanggil', () async {
+          'touch tidak dipanggil', () async {
         final f = _Fixture();
         f.khsRepo.semesters = _oneSemester;
 
@@ -493,7 +495,7 @@ void main() {
         ]);
 
         expect(f.debounce.shouldUseLightCalls, 0);
-        expect(f.debounce.recordHeavyCalls, 0);
+        expect(f.debounce.touchCalls, 0);
         expect(f.profileDs.scrapeCalls, 2);
       });
     });
@@ -516,11 +518,12 @@ void main() {
           ),
         );
 
-        // Pipeline berhenti: tidak ada get lanjutan, tidak ada record.
+        // Pipeline berhenti: tidak ada get lanjutan. A1: touch sudah
+        // terjadi di awal dispatcher sebelum outcome diketahui.
         expect(f.photo.fetchCalls, 0);
         expect(f.krsRepo.getDataCalls, 0);
         expect(f.khsRepo.semestersCalls, 0);
-        expect(f.debounce.recordHeavyCalls, 0);
+        expect(f.debounce.touchCalls, 1);
       });
 
       test('getKrsData throw → krsEmpty lalu lanjut ke KHS', () async {

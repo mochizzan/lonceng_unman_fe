@@ -83,7 +83,7 @@ File map:
 | Ubah total | `lib/features/notification/presentation/pages/notification_history_page.dart` | Rewrite: grouping, `_DeliveredTile`, `Dismissible`, AppBar `Hapus semua`, `initState → markAllRead()`. |
 | Ubah | `lib/features/home/presentation/widgets/home_header.dart` | Bell `Badge` dari `unreadCount`. |
 | Ubah | `lib/main.dart` | Wiring FCM listeners → deliveredRepo, panggil `reconcileDelivered()` setelah Hive open + di `didChangeAppLifecycleState`. |
-| Tambah | `lib/features/notification/domain/entities/notification_source.dart` | Enum `NotificationSource { classReminder, fcm }` (atau di file entity). |
+| Tambah (opsional) | `lib/features/notification/domain/entities/notification_source.dart` | Enum `NotificationSource { classReminder, fcm }` — prefer inline di `notification_delivered_entity.dart` untuk hindari file baru; jika inline maka tidak tambah file. |
 | Tidak diubah | `lib/features/notification/data/datasources/notification_local_data_source.dart`, `lib/features/notification/data/repositories/notification_repository_impl.dart`, `lib/core/constants/notification_config.dart` (box names), `lib/features/settings/presentation/pages/settings_page.dart` | ScheduledBox & toggle tetap. |
 
 ID strategy (agar weekly tidak overwrite):
@@ -115,7 +115,7 @@ class NotificationDeliveredEntity {
 }
 ```
 
-HiveModel tambah `@HiveField(7) source`, `@HiveField(8) isRead`, `@HiveField(9) scheduledId`, `@HiveField(10) title`, `@HiveField(11) body` — urutan field bebas asal konsisten `read/write`.
+HiveModel tambah `@HiveField(7) sourceIndex` (int, index enum `NotificationSource`), `@HiveField(8) isRead`, `@HiveField(9) scheduledId`, `@HiveField(10) title`, `@HiveField(11) body` — lanjut dari `0..6` yang sudah ada; `read` wajib fallback `fields[7] as int? ?? 0`, `fields[8] as bool? ?? false`, `fields[9] as int?`, `fields[10] as String?`, `fields[11] as String?` agar box lama (7 field) tidak pecah.
 
 **NotificationLocalDataSource (delivered) — method baru:**
 
@@ -154,11 +154,12 @@ scheduleAllDays(items) / scheduleForDay(jadwal) / scheduleSingle(entity) / resch
 // di main() setelah Services.register<NotificationDeliveredRepository>
 final deliveredRepo = Services.get<NotificationDeliveredRepository>();
 FcmService.instance.onForegroundMessage.listen((msg) async {
+  final now = DateTime.now();
   await deliveredRepo.save(NotificationDeliveredEntity(
-    id: hash("fcm_${msg.messageId}_${DateTime.now().millis}"),
+    id: hash("fcm_${msg.messageId ?? now.millisecondsSinceEpoch}_${now.millisecondsSinceEpoch}"),
     scheduledId: null, source: NotificationSource.fcm, isRead: false,
-    deliveredAt: DateTime.now(), title: msg.notification?.title, body: msg.notification?.body,
-    courseName: msg.notification?.title ?? "Notifikasi", dayOfWeek: "", classTime: DateTime.now(), room: "", lecturer: null,
+    deliveredAt: now, title: msg.notification?.title, body: msg.notification?.body,
+    courseName: msg.notification?.title ?? msg.notification?.body ?? "Notifikasi", dayOfWeek: "", classTime: now, room: "", lecturer: null,
   ));
   // optional: trigger cubit.loadDelivered() via Services.get<NotificationCubit>() jika sudah create
 });
@@ -251,10 +252,10 @@ Key: `Key('notification_history_page')`, `Key('delivered_tile_$id')`, `Key('dele
 
 | Risiko | Mitigasi |
 |--------|----------|
-| Hive typeId 1 field baru pecah `read` lama (field missing) | `NotificationDeliveredModelAdapter.read` pakai `fields[7] as bool? ?? false` default, `fields[8] as String?` fallback. |
+| Hive typeId 1 field baru pecah `read` lama (field missing) | `NotificationDeliveredModelAdapter.read` pakai `fields[7] as int? ?? 0`, `fields[8] as bool? ?? false`, `fields[9] as int?`, `fields[10/11] as String?` fallback (lihat §4.2). |
 | `deliveredId` per-occurrence beda dengan `ScheduledId` → `getById` lama tidak relevan | `deliveredBox` pakai `deliveredId` baru; `scheduledId` simpan terpisah sebagai FK, tidak pakai `getById(scheduledId)`. |
-| Weekly `tzTrigger` hitung beda dengan `_scheduleAlarm` (drift) | Ekstrak `computeTrigger(scheduled)` shared helper dipakai scheduler + reconciliation. |
-| FCM `messageId` null → hash collision | Fallback `now.millis` + random suffix. |
+| Weekly `tzTrigger` hitung beda dengan `_scheduleAlarm` (drift) | Ekstrak `computeTrigger(ScheduledNotificationEntity)` shared helper di `notification_scheduler.dart` (atau util `day_name_mapper.dart` wrapper) dipakai scheduler + reconciliation — bukan file baru. |
+| FCM `messageId` null → hash collision | Fallback `now.millisecondsSinceEpoch` (sudah di Flow 2) — cukup, tanpa random. |
 | `flutter analyze` / `build_runner` gagal setelah HiveField baru | `dart run build_runner build --delete-conflicting-outputs` untuk regen `notification_delivered_model.g.dart`. |
 
 **File map final (ringkas):**

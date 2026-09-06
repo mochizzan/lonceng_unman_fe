@@ -36,7 +36,7 @@ AppRouter ShellRoute BlocListener<DataInitBloc> (tetap: refresh Home/Jadwal/Prof
 
 ### Sentuh / tidak
 
-- **Tidak ubah:** `DataInitBloc`, `DataInitStatus`/`DataInitProgress`/`DataInitStepOutcome`, `DataInitializationRemoteDataSource` (heavy/light), `PullRefreshDebounce`, `AppRouter` ShellRoute listener, `dataInitStatusText`.
+- **Tidak ubah:** `DataInitBloc`, `DataInitStatus`/`DataInitProgress`/`DataInitStepOutcome`, `DataInitializationRemoteDataSource` (heavy/light), `PullRefreshDebounce`, `AppRouter` ShellRoute listener, `dataInitStatusText`, `DataInitStepOutcome` logging (tetap jalan).
 - **Baru:**
   - `lib/features/data_initialization/presentation/widgets/khs_timeline_view.dart` — `KhsTimelineView` stateless + model lokal `KhsSemesterTimeline` + `KhsSemesterSubStepStatus { idle, progress, success, error, skipped }`.
   - `lib/features/data_initialization/presentation/widgets/wakelock_controller.dart` — `WakelockController` (wrapper `wakelock_plus`, enable/disable + try/catch `PlatformException` + debugPrint). Alternatif: inline `WakelockPlus.enable/disable` di listener.
@@ -59,17 +59,30 @@ AppRouter ShellRoute BlocListener<DataInitBloc> (tetap: refresh Home/Jadwal/Prof
 
 ```dart
 // di _DataInitProgressViewState
-final Map<String, KhsSemesterTimeline> _khsMap = {};
+final Map<String, KhsSemesterTimeline> _khsMap = {}; // ordered (LinkedHashMap) — urut insert sesuai pipeline
 // KhsSemesterTimeline { String tahunAjaran, semester, label; KhsSemesterSubStepStatus download, extract, fetch; }
+
+/// Parse `detail` "$tahunAjaran $semester" (contoh "2022/2023 Ganjil").
+/// Tahun ajaran mengandung '/', semester tidak mengandung spasi — split di spasi TERAKHIR.
+/// Return (tahunAjaran, semester) atau null jika detail null/kosong.
+(String tahunAjaran, String semester)? parseKhsDetail(String? detail) {
+  if (detail == null || detail.trim().isEmpty) return null;
+  final idx = detail.lastIndexOf(' ');
+  if (idx <= 0) return null;
+  return (detail.substring(0, idx), detail.substring(idx + 1));
+}
 
 void _accumulate(DataInitInProgress s) {
   if (s.detail == null) return;
-  // parse detail "$tahunAjaran $semester" → key "$tahunAjaran|$semester"
+  final parsed = parseKhsDetail(s.detail); if (parsed == null) return;
+  final key = '${parsed.$1}|${parsed.$2}';
   // switch s.status:
   //   downloadingKhs → download = progress
   //   extractingKhs  → download = success (implisit selesai), extract = progress
   //   fetchingKhsData → extract = success (implisit), fetch = progress
-  // On next semester's downloadingKhs, previous semester fetch stays success unless globally flagged error (see below).
+  // On next semester's downloadingKhs, previous semester fetch: jika masih progress → auto success (implisit selesai).
+  // On DataInitSuccess/completed → semua entry yang masih progress → finalize jadi success.
+  // On global khsEmpty (tanpa detail) → tidak ubah map; banner konteks di §5 yang handle.
 }
 ```
 
@@ -91,8 +104,8 @@ Gunakan token existing saja (`cs.primary`, `cs.error`, `cs.errorContainer`, `cs.
 
 ### Reset
 
-- `BlocListener` clear `_khsMap` saat `state is DataInitIdle` atau `DataInitReset` di-emit (LoginPage emit `DataInitReset` sebelum `DataInitStarted`).
-- `dispose` → `_khsMap.clear()`, cancel `_autoContinueTimer` dan scroll controller jika ada, `WakelockPlus.disable()` safety.
+- `BlocListener` clear `_khsMap` saat `state is DataInitIdle` (hasil dari `DataInitReset` event — `LoginPage` emit `DataInitReset` sebelum `DataInitStarted`; bloc yield `DataInitIdle`) atau saat `state is DataInitInProgress && status==scrapingProfile` untuk fresh start pipeline baru.
+- `dispose` → `_khsMap.clear()`, cancel `_autoContinueTimer` dan scroll controller jika ada, `WakelockController.disable()` safety (sekali, idempotent via `_held`).
 
 ## 4) Keep Alive
 
@@ -121,8 +134,8 @@ class WakelockController {
 
 ### Layout hybrid
 
-- **Atas — FlatStepsView:** tetap seperti sekarang: `BellLogo` + `Text(dataInitStatusText(currentStatus))` + `CircularProgressIndicator` saat `InProgress`. Tidak diubah.
-- **Bawah — KhsTimelineView:** muncul hanya setelah `fetchingKhsSemesters` selesai dan `_khsMap.isNotEmpty` atau `semesters.length > 0`. Jika `semesters.isEmpty` atau global `khsEmpty` tanpa semester → ganti timeline dengan banner `KHS belum tersedia` (reuse `cs.errorContainer`/`outlineVariant`).
+- **Atas — FlatStepsView:** tetap seperti sekarang: `BellLogo` + `Text(dataInitStatusText(currentStatus))` + `CircularProgressIndicator` saat `InProgress`. Tidak diubah. Flat area sticky di atas, tidak ikut scroll timeline.
+- **Bawah — KhsTimelineView:** render **inkremental** — muncul segera saat entry pertama `_khsMap` terbentuk (yakni `downloadingKhs` semester pertama), bukan menunggu `fetchingKhsSemesters` selesai sepenuhnya. Jika pipeline selesai dan `_khsMap.isEmpty` (yakni `semesters.isEmpty` atau global `khsEmpty` tanpa semester) → ganti timeline dengan banner `KHS belum tersedia` (reuse `cs.errorContainer`/`outlineVariant`). Selama pipeline berjalan, `khsEmpty` per-semester belum final — banner hanya tampil di state `completed/khsEmpty` akhir.
 
 ### KhsTimelineView detail
 
@@ -141,7 +154,7 @@ class WakelockController {
   - Jika `_khsMap.length > 1` → tahan **1.5s** sebelum `pop` (pull-refresh) / `onComplete → authStatusNotifier.setStatus(authenticated)` (fresh login). Selama jeda, timeline tetap scrollable agar user bisa lihat hijau/merah.
   - Jika `_khsMap.length <= 1` → tetap **500ms** seperti sekarang.
 - **Error:** tetap **3s** auto-close di overlay; fresh login tetap tampil error view dengan tombol `Retry`/`Cancel` (tidak auto-pop) — plus auto-continue 15s non-profile error seperti existing `kStepErrorAutoContinue`.
-- Implementasi: `DataRefreshOverlay._DataRefreshOverlayState` dan `DataInitProgressView` masing-masing cek `widget._khsMapLength` via callback atau `context.read` / lift state — paling simpel: `DataInitProgressView` expose `hasTimeline` via `onTimelineChanged(bool)` atau `DataRefreshOverlay` baca `_khsMap` dari `DataInitProgressView` via `GlobalKey`.
+- **Kepemilikan delay (eksplisit):** `DataInitProgressView` adalah pemilik `_khsMap` dan pemilik keputusan durasi. Ia expose `ValueNotifier<int> khsCount` (atau callback `onKhsCountChanged(int)`). `DataRefreshOverlay` hanya membaca nilai tersebut via `GlobalKey<_DataInitProgressViewState>` atau callback — tidak menghitung sendiri. `LoginPage` (fresh login) juga membaca via `GlobalKey` untuk menunda `onComplete`. Tidak ada duplikasi hitung `length` di overlay.
 
 ## 6) Error, Edge Case & Testing
 
@@ -161,9 +174,10 @@ class WakelockController {
 
 ### Testing
 
+- **Unit test `parseKhsDetail`:** `"2022/2023 Ganjil" → ("2022/2023","Ganjil")`, `"2022/2023 Genap" → ("2022/2023","Genap")`, null/empty/`"Ganjil"` tanpa tahun → null.
 - **Widget test `KhsTimelineView`:** render 2 semester mix `success/error/skipped`, warna map benar (primary/success/error/outlineVariant), chip label `Dilewati` di light path, auto-scroll dipanggil.
-- **Widget test `DataInitProgressView` accumulator:** emit sequence `downloadingKhs(detail:A) → extractingKhs(A) → fetchingKhsData(A) → downloadingKhs(B) → error B` → map terbentuk benar; light sequence `fetchingKhsSemesters → fetchingKhsData(A) → fetchingKhsData(B)` → skip badge; `DataInitReset` → map clear.
-- **WakelockController test:** fake `WakelockPlus` (mock), enable di `scrapingProfile`, disable di `Success/Failure/dispose`, no-enable di `no_connection`.
+- **Widget test `DataInitProgressView` accumulator:** emit sequence `downloadingKhs(detail:A) → extractingKhs(A) → fetchingKhsData(A) → downloadingKhs(B) → error B` → map terbentuk benar (previous fetch auto-success); light sequence `fetchingKhsSemesters → fetchingKhsData(A) → fetchingKhsData(B)` → skip badge; `DataInitIdle`/`scrapingProfile` → map clear; `completed` → remaining `progress` finalize ke `success`.
+- **WakelockController test:** fake `WakelockPlus` (mock), enable di `scrapingProfile`, disable di `Success/Failure/dispose`, no-enable di `no_connection`, `PlatformException` di enable/disable tidak throw.
 - **Existing `blocTest` DataInitBloc:** tetap hijau (BLoC tidak berubah).
 - **Manual QA checklist:** fresh login heavy (real backend/local), pull heavy (≥3m idle), pull light (<3m), offline fail-fast, timeout, 6–8 semester, light path mix.
 

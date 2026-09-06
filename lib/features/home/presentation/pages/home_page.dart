@@ -143,11 +143,10 @@ class _HomePageViewState extends State<_HomePageView>
   Widget _buildContent(BuildContext context, HomeLoaded state) {
     final data = state.data;
     final notifState = context.watch<NotificationCubit>().state;
-    final hasUnseen =
-        notifState.unreadCount > 0 ||
-        (notifState.visibleDelivered.isEmpty &&
-            notifState.notifications.any((n) => n.isActive) &&
-            !notifState.historyViewed);
+    // Dot hanya dari unread visible (deliveredAt <= now && !isRead).
+    // Legacy fallback (visibleEmpty && active && !historyViewed) dihapus
+    // karena bikin dot selalu merah saat optimistic future / fresh install.
+    final hasUnseen = notifState.unreadCount > 0;
 
     return RefreshIndicator(
       onRefresh: () async {

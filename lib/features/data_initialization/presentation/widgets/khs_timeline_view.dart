@@ -162,7 +162,8 @@ class KhsTimelineView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final appColors = Theme.of(context).extension<AppColors>()!;
+    final appColors =
+        Theme.of(context).extension<AppColors>() ?? AppColors.light;
 
     if (items.isEmpty) return const SizedBox.shrink();
 

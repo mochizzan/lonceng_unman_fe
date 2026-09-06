@@ -276,32 +276,46 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
             return _buildErrorView(context, cs, state);
           }
 
+          // Header stays centered (original layout). Timeline has its own
+          // wrapping container so it does not affect header centering,
+          // indicator sizing, or cause Column(mainAxis:center) drift.
           return SingleChildScrollView(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(sp(context, AppDimens.space32)),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const BellLogo(),
-                    SizedBox(height: sp(context, AppDimens.space32)),
-                    Text(
-                      isCompleted ? 'Data akademik siap' : statusText,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: cs.onSurface,
-                        fontSize: responsiveFontSize(context, AppDimens.textMD),
-                      ),
-                      textAlign: TextAlign.center,
+            child: Padding(
+              padding: EdgeInsets.all(sp(context, AppDimens.space32)),
+              child: Column(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const BellLogo(),
+                        SizedBox(height: sp(context, AppDimens.space32)),
+                        Text(
+                          isCompleted ? 'Data akademik siap' : statusText,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: cs.onSurface,
+                                fontSize: responsiveFontSize(
+                                  context,
+                                  AppDimens.textMD,
+                                ),
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: sp(context, AppDimens.space24)),
+                        if (!isCompleted && state is! DataInitFailure)
+                          CircularProgressIndicator(color: cs.primary),
+                      ],
                     ),
+                  ),
+                  if (_khsMap.isNotEmpty) ...[
                     SizedBox(height: sp(context, AppDimens.space24)),
-                    if (!isCompleted && state is! DataInitFailure)
-                      CircularProgressIndicator(color: cs.primary),
-                    if (_khsMap.isNotEmpty) ...[
-                      SizedBox(height: sp(context, AppDimens.space24)),
-                      KhsTimelineView(items: _khsMap, controller: _scrollCtrl),
-                    ],
+                    _KhsTimelineContainer(
+                      items: _khsMap,
+                      controller: _scrollCtrl,
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           );
@@ -319,103 +333,134 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
     final hasActions = widget.onRetry != null || widget.onClose != null;
 
     return SingleChildScrollView(
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.all(sp(context, AppDimens.space32)),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: AppDimens.iconError,
-                color: cs.error,
-              ),
-              SizedBox(height: sp(context, AppDimens.space16)),
-              Text(
-                AppStrings.refreshErrorTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: cs.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: sp(context, AppDimens.space16)),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: sp(context, AppDimens.space16),
-                  vertical: sp(context, AppDimens.space8),
-                ),
-                decoration: BoxDecoration(
-                  color: cs.errorContainer,
-                  borderRadius: BorderRadius.circular(
-                    sp(context, AppDimens.radiusMD),
+      child: Padding(
+        padding: EdgeInsets.all(sp(context, AppDimens.space32)),
+        child: Column(
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: AppDimens.iconError,
+                    color: cs.error,
                   ),
-                ),
-                child: Text(
-                  '${AppStrings.refreshErrorStepPrefix} $stepLabel',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: cs.onErrorContainer,
-                    fontWeight: FontWeight.w500,
+                  SizedBox(height: sp(context, AppDimens.space16)),
+                  Text(
+                    AppStrings.refreshErrorTitle,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              SizedBox(height: sp(context, AppDimens.space16)),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: sp(context, AppDimens.space8),
-                ),
-                child: Text(
-                  state.message,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              SizedBox(height: sp(context, AppDimens.space12)),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: sp(context, AppDimens.space16),
-                ),
-                child: Text(
-                  AppStrings.refreshErrorHint,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              if (hasActions) ...[
-                SizedBox(height: sp(context, AppDimens.space28)),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.onRetry != null)
-                      FilledButton.icon(
-                        onPressed: widget.onRetry,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text(AppStrings.refreshErrorRetry),
+                  SizedBox(height: sp(context, AppDimens.space16)),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: sp(context, AppDimens.space16),
+                      vertical: sp(context, AppDimens.space8),
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.errorContainer,
+                      borderRadius: BorderRadius.circular(
+                        sp(context, AppDimens.radiusMD),
                       ),
-                    if (widget.onRetry != null && widget.onClose != null)
-                      SizedBox(width: sp(context, AppDimens.space12)),
-                    if (widget.onClose != null)
-                      OutlinedButton(
-                        onPressed: widget.onClose,
-                        child: const Text(AppStrings.refreshErrorClose),
+                    ),
+                    child: Text(
+                      '${AppStrings.refreshErrorStepPrefix} $stepLabel',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onErrorContainer,
+                        fontWeight: FontWeight.w500,
                       ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  SizedBox(height: sp(context, AppDimens.space16)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: sp(context, AppDimens.space8),
+                    ),
+                    child: Text(
+                      state.message,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  SizedBox(height: sp(context, AppDimens.space12)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: sp(context, AppDimens.space16),
+                    ),
+                    child: Text(
+                      AppStrings.refreshErrorHint,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  if (hasActions) ...[
+                    SizedBox(height: sp(context, AppDimens.space28)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.onRetry != null)
+                          FilledButton.icon(
+                            onPressed: widget.onRetry,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text(AppStrings.refreshErrorRetry),
+                          ),
+                        if (widget.onRetry != null && widget.onClose != null)
+                          SizedBox(width: sp(context, AppDimens.space12)),
+                        if (widget.onClose != null)
+                          OutlinedButton(
+                            onPressed: widget.onClose,
+                            child: const Text(AppStrings.refreshErrorClose),
+                          ),
+                      ],
+                    ),
                   ],
-                ),
-              ],
-              // Keep timeline context visible under error for debugging.
-              if (_khsMap.isNotEmpty) ...[
-                SizedBox(height: sp(context, AppDimens.space24)),
-                KhsTimelineView(items: _khsMap, controller: _scrollCtrl),
-              ],
+                ],
+              ),
+            ),
+            // Keep timeline context visible under error — outside the
+            // centered header so it does not affect centering.
+            if (_khsMap.isNotEmpty) ...[
+              SizedBox(height: sp(context, AppDimens.space24)),
+              _KhsTimelineContainer(items: _khsMap, controller: _scrollCtrl),
             ],
-          ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+/// Own container wrapping the entire KHS timeline list.
+/// Isolates timeline scrolling/layout from the header's centered
+/// [BellLogo]/[CircularProgressIndicator] and error icon — restoring
+/// the original overlay centering that was lost when the timeline
+/// was injected directly into the same [Column].
+class _KhsTimelineContainer extends StatelessWidget {
+  const _KhsTimelineContainer({required this.items, this.controller});
+
+  final Map<String, KhsSemesterTimeline> items;
+  final ScrollController? controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.space12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+      ),
+      child: KhsTimelineView(items: items, controller: controller),
     );
   }
 }

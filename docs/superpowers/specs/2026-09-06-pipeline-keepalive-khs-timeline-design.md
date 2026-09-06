@@ -100,7 +100,7 @@ Gunakan token existing saja (`cs.primary`, `cs.error`, `cs.errorContainer`, `cs.
 
 - **Enable:** transisi `!isRunning → isRunning` — status pertama `DataInitStatus.scrapingProfile` diamati di `BlocListener<DataInitBloc>` (di `MainShellScaffold` atau di `DataInitProgressView`). Guard `if (state is DataInitInProgress && state.status == DataInitStatus.scrapingProfile && !_wakelockHeld)`.
   - Implementasi paling aman: listener di `DataInitProgressView` + juga di `MainShellScaffold`/`DataRefreshOverlay` sebagai fallback — intinya ikat ke BLoC, bukan ke `showGeneralDialog` mount, agar survive jika user background app atau overlay di-pop manual.
-- **Disable:** transisi `isRunning → !isRunning` — `state is DataInitSuccess` atau `state is DataInitFailure` (termasuk `no_connection`, `timeout`, `unknown`). Juga di `dispose` view dan `finally { _isRunning=false }` di bloc (bloc sudah set false di finally).
+- **Disable:** transisi `isRunning → !isRunning` — `state is DataInitSuccess` atau `state is DataInitFailure` (termasuk `no_connection`, `timeout`, `unknown`). Juga di `dispose` view dan `finally { _isRunning=false }` di bloc (bloc sudah set false di finally). Guard `_held` di `WakelockController` mencegah double-enable/disable bila dua listener (view + ShellRoute) sama-sama trigger.
 - **Offline fail-fast:** bila `ConnectivityService.isOnline==false` langsung emit `DataInitFailure(no_connection)` tanpa pernah enable wakelock — tidak bocor.
 
 ### Implementasi

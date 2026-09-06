@@ -113,9 +113,14 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
   /// [dispose] and defensively in the success branch.
   Timer? _autoCloseTimer;
 
+  /// KHS semester count reported by [DataInitProgressView] via
+  /// [onKhsCountChanged]. Used to vary the success dismiss delay.
+  final ValueNotifier<int> _khsCount = ValueNotifier<int>(0);
+
   @override
   void dispose() {
     _autoCloseTimer?.cancel();
+    _khsCount.dispose();
     super.dispose();
   }
 
@@ -152,7 +157,12 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
           // Defensive: cancel any pending auto-close in case a Success
           // arrives after a Failure (would not happen today, but safe).
           _autoCloseTimer?.cancel();
-          debugPrint('[DATA_REFRESH] Success — dismissing overlay in 500ms');
+          final delay = _khsCount.value > 1
+              ? const Duration(milliseconds: 1500)
+              : const Duration(milliseconds: 500);
+          debugPrint(
+            '[DATA_REFRESH] Success — dismissing overlay in ${delay.inMilliseconds}ms (khsCount=${_khsCount.value})',
+          );
           // BLoC refetch is owned by the ShellRoute's BlocListener
           // (see app_router.dart: BlocListener<DataInitBloc> around
           // MainShellScaffold). The overlay is a showGeneralDialog route
@@ -162,7 +172,7 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
           // the dispatch from the overlay.
           // Notify optional success listener before dismissing.
           widget.onPipelineSuccess?.call();
-          Future.delayed(const Duration(milliseconds: 500), () {
+          Future.delayed(delay, () {
             if (listenerContext.mounted) {
               Navigator.of(listenerContext).pop();
             }
@@ -202,6 +212,7 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
               isFreshLogin: false,
               onRetry: null,
               onClose: null,
+              onKhsCountChanged: (c) => _khsCount.value = c,
             ),
           );
         },

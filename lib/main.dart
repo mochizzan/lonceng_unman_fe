@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
+import 'package:lonceng_unman_fe/core/services/fiam_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
@@ -350,6 +352,25 @@ Future<void> main() async {
       // ── Auth Status Notifier (global, drives router redirect) ──
       final authStatusNotifier = AuthStatusNotifier();
       Services.register<AuthStatusNotifier>(authStatusNotifier);
+
+      final fiamService = FiamService();
+      try {
+        await fiamService.bind(authStatusNotifier);
+      } catch (e) {
+        debugPrint('[MAIN] FiamService bind FAILED: $e');
+      }
+      Services.register<FiamService>(fiamService);
+
+      // Installation ID for FIAM Test on device (Firebase Console > In-App Messaging).
+      // Copy the printed ID; do not confuse with FCM token.
+      try {
+        // ignore: depend_on_referenced_packages
+        // firebase_app_installations is a direct dep; analyzer false-positive when editing in-place
+        final fid = await FirebaseInstallations.instance.getId();
+        debugPrint('[FIAM-INSTALLATION-ID] $fid');
+      } catch (e) {
+        debugPrint('[FIAM-INSTALLATION-ID] FAILED: $e');
+      }
 
       // ── Connectivity Service (singleton — wrapped plugin, consumed by
       //    ConnectivityCubit at the root, LoginPage, and DataInitBloc) ──

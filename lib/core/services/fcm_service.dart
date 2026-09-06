@@ -1,8 +1,13 @@
 // lib/core/services/fcm_service.dart
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/services/notification_service.dart';
+// ignore: depend_on_referenced_packages
+import 'package:meta/meta.dart';
 
 /// VAPID key for web push notifications.
 /// Obtain from Firebase Console → Settings → Cloud Messaging → Web Push certificates.
@@ -22,7 +27,28 @@ class FcmService {
   static final FcmService _instance = FcmService._();
   static FcmService get instance => _instance;
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // ignore: invalid_visibility_annotation
+  @visibleForTesting
+  NotificationService? _testNotificationService;
+
+  @visibleForTesting
+  void setNotificationServiceForTest(NotificationService? svc) =>
+      _testNotificationService = svc;
+
+  NotificationService get _notif =>
+      _testNotificationService ?? Services.get<NotificationService>();
+
+  @visibleForTesting
+  void handleForegroundMessageForTest(RemoteMessage m) =>
+      _handleForegroundMessage(m);
+
+  FirebaseMessaging? _messagingOverride;
+
+  FirebaseMessaging get _messaging =>
+      _messagingOverride ?? FirebaseMessaging.instance;
+
+  @visibleForTesting
+  void setMessagingForTest(FirebaseMessaging? m) => _messagingOverride = m;
 
   /// Controller for broadcasting foreground messages to listeners.
   final StreamController<RemoteMessage> _messageController =
@@ -254,6 +280,28 @@ class FcmService {
     debugPrint('[FCM]   Data: ${message.data}');
     debugPrint('[FCM] --------------------------------------------');
     _messageController.add(message);
+    if (kIsWeb) return;
+    final notif = message.notification;
+    if (notif == null) return;
+    try {
+      final id =
+          (message.messageId ?? DateTime.now().toIso8601String()).hashCode &
+          0x7FFFFFFF;
+      unawaited(
+        _notif
+            .show(
+              id: id,
+              title: notif.title ?? 'Lonceng UnMan',
+              body: notif.body ?? '',
+              channel: NotificationChannel.classReminders,
+            )
+            .catchError((Object e) {
+              debugPrint('[FCM] foreground show FAILED: $e');
+            }),
+      );
+    } catch (e) {
+      debugPrint('[FCM] foreground show FAILED: $e');
+    }
   }
 
   /// Release all stream subscriptions and the message controller.

@@ -27,7 +27,7 @@ class ApiClient {
 
   /// Called when a 401 Unauthorized response is received.
   /// Used to trigger global logout flow (clear credentials, redirect to login).
-  final void Function()? onAuthError;
+  final Future<void> Function()? onAuthError;
 
   /// Send a POST request.
   ///
@@ -84,7 +84,7 @@ class ApiClient {
   ) async {
     try {
       final response = await request();
-      return _parseResponse(response);
+      return await _parseResponse(response);
     } on AppException {
       rethrow;
     } on SocketException catch (e) {
@@ -122,7 +122,7 @@ class ApiClient {
   ///
   /// Throws the appropriate [AppException] subclass based on HTTP status code
   /// and the envelope's `status` field.
-  Map<String, dynamic> _parseResponse(http.Response response) {
+  Future<Map<String, dynamic>> _parseResponse(http.Response response) async {
     final statusCode = response.statusCode;
 
     // Attempt to decode the envelope
@@ -150,17 +150,21 @@ class ApiClient {
     }
 
     // Error mapping by HTTP status code
-    throw _mapError(statusCode, message);
+    throw await _mapError(statusCode, message);
   }
 
-  AppException _mapError(int statusCode, String message) {
+  Future<AppException> _mapError(int statusCode, String message) async {
     switch (statusCode) {
       case 400:
         return ValidationException(message);
       case 401:
         debugPrint('[API] HTTP 401 detected - unauthorized');
         debugPrint('[API]   Triggering auth error callback...');
-        onAuthError?.call();
+        try {
+          await onAuthError?.call();
+        } catch (e) {
+          debugPrint('[API] onAuthError failed: $e');
+        }
         return AuthException(message);
       case 403:
         return ServerException(message, statusCode: 403);

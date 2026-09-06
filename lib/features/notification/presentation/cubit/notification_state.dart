@@ -1,3 +1,4 @@
+import 'package:lonceng_unman_fe/features/notification/domain/entities/notification_delivered_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 
@@ -7,6 +8,7 @@ class NotificationState {
   const NotificationState({
     this.status = NotificationStatus.initial,
     this.notifications = const [],
+    this.delivered = const [],
     this.reminderIntervalMinutes = NotificationConfig.defaultReminderMinutes,
     this.errorMessage,
     this.notificationPermissionDenied = false,
@@ -15,18 +17,33 @@ class NotificationState {
 
   final NotificationStatus status;
   final List<ScheduledNotificationEntity> notifications;
+  final List<NotificationDeliveredEntity> delivered;
   final int reminderIntervalMinutes;
   final String? errorMessage;
   final bool notificationPermissionDenied;
 
   /// Whether the user has opened the notification history page since
   /// the last time notifications changed. Used to show the red dot
-  /// only when there are new/unseen notifications.
+  /// only when there are new/unseen notifications (legacy fallback).
   final bool historyViewed;
+
+  /// Visible delivered = deliveredAt <= now, newest first.
+  List<NotificationDeliveredEntity> get visibleDelivered {
+    final now = DateTime.now();
+    final filtered = delivered
+        .where((d) => !d.deliveredAt.isAfter(now))
+        .toList();
+    filtered.sort((a, b) => b.deliveredAt.compareTo(a.deliveredAt));
+    return filtered;
+  }
+
+  /// Unread count among visible.
+  int get unreadCount => visibleDelivered.where((d) => !d.isRead).length;
 
   NotificationState copyWith({
     NotificationStatus? status,
     List<ScheduledNotificationEntity>? notifications,
+    List<NotificationDeliveredEntity>? delivered,
     int? reminderIntervalMinutes,
     String? errorMessage,
     bool clearErrorMessage = false,
@@ -36,6 +53,7 @@ class NotificationState {
     return NotificationState(
       status: status ?? this.status,
       notifications: notifications ?? this.notifications,
+      delivered: delivered ?? this.delivered,
       reminderIntervalMinutes:
           reminderIntervalMinutes ?? this.reminderIntervalMinutes,
       errorMessage: clearErrorMessage
@@ -54,6 +72,7 @@ class NotificationState {
           runtimeType == other.runtimeType &&
           status == other.status &&
           notifications == other.notifications &&
+          delivered == other.delivered &&
           reminderIntervalMinutes == other.reminderIntervalMinutes &&
           errorMessage == other.errorMessage &&
           notificationPermissionDenied == other.notificationPermissionDenied &&
@@ -63,6 +82,7 @@ class NotificationState {
   int get hashCode => Object.hash(
     status,
     notifications,
+    delivered,
     reminderIntervalMinutes,
     errorMessage,
     notificationPermissionDenied,

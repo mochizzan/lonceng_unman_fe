@@ -7,6 +7,7 @@
 // (bukan ApiClient yang hanya handle JSON).
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -51,7 +52,7 @@ class PhotoService {
               'Content-Type': 'application/json',
               'Accept': 'image/jpeg',
             },
-            body: '{"npm": "$npm", "password": "$password"}',
+            body: jsonEncode({'npm': npm, 'password': password}),
           )
           .timeout(_timeout);
 

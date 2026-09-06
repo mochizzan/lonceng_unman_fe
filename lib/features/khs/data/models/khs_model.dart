@@ -171,7 +171,7 @@ class KhsSemesterModel extends KhsSemesterEntity {
   });
 
   factory KhsSemesterModel.fromJson(Map<String, dynamic> json) {
-    final ta = json['tahun_ajaran'];
+    final ta = json['tahunAjaran'] ?? json['tahun_ajaran'];
     return KhsSemesterModel(
       tahunAjaran: ta is Map<String, dynamic>
           ? '${ta['awal']}/${ta['akhir']}'

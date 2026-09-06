@@ -100,6 +100,23 @@ class MockNotificationService implements NotificationService {
 
   @override
   Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationChannel channel,
+    String? payload,
+    bool ongoing = false,
+    bool autoCancel = true,
+    List<AndroidNotificationAction>? actions,
+  }) async {}
+
+  @override
+  void setExternalResponseHandler(
+    void Function(NotificationResponse p1)? handler,
+  ) {}
 }
 
 // ---------------------------------------------------------------------------

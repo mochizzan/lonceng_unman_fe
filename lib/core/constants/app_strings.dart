@@ -223,6 +223,27 @@ abstract final class AppStrings {
       'Izin penyimpanan diperlukan untuk menyimpan PDF.';
   static const String khsNoCachedData = 'Data tidak tersimpan di perangkat';
 
+  // ── KHS Download — Notification & Dialog ───────────────────────────
+  static const String khsDownloadNotificationOngoingTitle = 'Mengunduh KHS…';
+  static const String khsDownloadNotificationCompletedTitle = 'Unduhan selesai';
+  static const String khsDownloadNotificationCompletedLocation =
+      'Tersimpan di Documents/LoncengUnMan/KHS';
+  static const String khsDownloadNotificationHint = 'Tap Buka untuk melihat';
+  static const String khsDownloadNotificationErrorTitle = 'Unduhan gagal';
+  static const String khsDownloadActionOpen = 'Buka';
+  static const String khsDownloadActionShare = 'Bagikan';
+  static const String khsDownloadActionRetry = 'Coba Lagi';
+  static const String khsDownloadDialogTitle = 'Unduhan selesai';
+  static const String khsDownloadDialogLocation =
+      'Tersimpan di Documents/LoncengUnMan/KHS';
+  static const String khsDownloadDialogHint = 'Tap Buka untuk melihat';
+  static const String khsDownloadDialogClose = 'Tutup';
+  static const String khsDownloadNoViewer =
+      'Tidak ada aplikasi untuk membuka PDF. Install pembaca PDF terlebih dahulu.';
+  static const String khsDownloadFileNotFound =
+      'Berkas tidak ditemukan. Coba unduh kembali.';
+  static const String khsDownloadShareFailed = 'Gagal membagikan berkas.';
+
   // ── Data Refresh Overlay (pull-to-refresh errors) ────────────
   static const String refreshErrorTitle = 'Gagal Memperbarui Data';
   static const String refreshErrorRetry = 'Coba Lagi';

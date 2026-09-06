@@ -281,6 +281,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  ffi_leak_tracker:
+    dependency: transitive
+    description:
+      name: ffi_leak_tracker
+      sha256: "4093d4ef9ca06ffe2786e73bfb25e22aa92112b9bb4ec941f11e3e6b61489a97"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   file:
     dependency: transitive
     description:
@@ -345,6 +353,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.1+12"
+  firebase_app_installations:
+    dependency: "direct main"
+    description:
+      name: firebase_app_installations
+      sha256: "746d59f33264547bac356b9394745d8551c5ec0393f58bebe15364d0627f90f1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.2+7"
+  firebase_app_installations_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_app_installations_platform_interface
+      sha256: "4c272dd5b0b76a91a7812c78caa07993344efb700d65723239241997bbaece88"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.4+75"
+  firebase_app_installations_web:
+    dependency: transitive
+    description:
+      name: firebase_app_installations_web
+      sha256: e330fa07e1fefa453d5d7510f19d4044cf26827f2e123225a412ad8c9c644a60
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.7+12"
   firebase_core:
     dependency: "direct main"
     description:
@@ -864,6 +896,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.5.0"
+  open_filex:
+    dependency: "direct main"
+    description:
+      name: open_filex
+      sha256: "9976da61b6a72302cf3b1efbce259200cd40232643a467aac7370addf94d6900"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.7.0"
   package_config:
     dependency: transitive
     description:
@@ -1048,6 +1088,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.0"
+  share_plus:
+    dependency: "direct main"
+    description:
+      name: share_plus
+      sha256: "34f00f9becd2743c1fb05363d624f9f70d37f7ccdcdda47450bc0b8c9d327b8c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "13.3.0"
+  share_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: share_plus_platform_interface
+      sha256: "365ef7379fc22507256adda3385152942ffce08935452bc972c2e52a0bebae41"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.2.0"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1269,6 +1325,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.1"
+  url_launcher_linux:
+    dependency: transitive
+    description:
+      name: url_launcher_linux
+      sha256: "10f86fef4c2c43563fa6c211ff9cf757adf4d3ab762c56bd430664a947d70cd0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.3"
+  url_launcher_platform_interface:
+    dependency: transitive
+    description:
+      name: url_launcher_platform_interface
+      sha256: "552f8a1e663569be95a8190206a38187b531910283c3e982193e4f2733f01029"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.2"
+  url_launcher_web:
+    dependency: transitive
+    description:
+      name: url_launcher_web
+      sha256: "85c81589622fbc87c1c683aaea164d3604a7777495a79d91e39ffcdec39ddb34"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.3"
+  url_launcher_windows:
+    dependency: transitive
+    description:
+      name: url_launcher_windows
+      sha256: "6c5ad3f22cd4c38e089b81963b3cd7bb83b111b2df5dce008bb066162f42e429"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.6"
+  uuid:
+    dependency: transitive
+    description:
+      name: uuid
+      sha256: "9b129329f58692f6e6578329498a8fe9fbe98f090beb764ffbb8ee2eadd01dcd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.6.0"
   vector_math:
     dependency: transitive
     description:
@@ -1325,6 +1421,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  win32:
+    dependency: transitive
+    description:
+      name: win32
+      sha256: a0b93865d5644f11cf6a8c3f6db909f1ec168958b5805f6cc684adea957cd63d
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.4.0"
   xdg_directories:
     dependency: transitive
     description:

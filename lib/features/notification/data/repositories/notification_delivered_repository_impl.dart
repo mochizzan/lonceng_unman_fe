@@ -23,7 +23,28 @@ class NotificationDeliveredRepositoryImpl
   }
 
   @override
+  Future<void> delete(int id) async {
+    await localDataSource.delete(id);
+  }
+
+  @override
   Future<void> deleteAll() async {
     await localDataSource.deleteAll();
   }
+
+  @override
+  Future<void> markAsRead(int id) async {
+    await localDataSource.markAsRead(id);
+  }
+
+  @override
+  Future<void> markAllRead() async {
+    await localDataSource.markAllRead();
+  }
+
+  @override
+  int getUnreadCount() => localDataSource.getUnreadCount();
+
+  @override
+  bool containsKey(int id) => localDataSource.containsKey(id);
 }

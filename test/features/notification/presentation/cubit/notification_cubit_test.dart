@@ -58,6 +58,11 @@ class MockNotificationRepository implements NotificationRepository {
 
 // Minimal mock scheduler
 class MockNotificationScheduler implements NotificationScheduler {
+  @override
+  tz.TZDateTime computeTrigger(ScheduledNotificationEntity entity) {
+    return tz.TZDateTime(tz.local, 2026, 1, 5, 8, 0);
+  }
+
   bool scheduled = false;
   bool allCancelled = false;
   List<ScheduleItemEntity>? lastScheduleAllItems;
@@ -115,6 +120,23 @@ class MockNotificationService implements NotificationService {
 
   @override
   Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationChannel channel,
+    String? payload,
+    bool ongoing = false,
+    bool autoCancel = true,
+    List<AndroidNotificationAction>? actions,
+  }) async {}
+
+  @override
+  void setExternalResponseHandler(
+    void Function(NotificationResponse p1)? handler,
+  ) {}
 }
 
 void main() {
@@ -378,4 +400,21 @@ class _DeniedPermissionService implements NotificationService {
     AndroidScheduleMode androidScheduleMode =
         AndroidScheduleMode.exactAllowWhileIdle,
   }) async {}
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationChannel channel,
+    String? payload,
+    bool ongoing = false,
+    bool autoCancel = true,
+    List<AndroidNotificationAction>? actions,
+  }) async {}
+
+  @override
+  void setExternalResponseHandler(
+    void Function(NotificationResponse p1)? handler,
+  ) {}
 }

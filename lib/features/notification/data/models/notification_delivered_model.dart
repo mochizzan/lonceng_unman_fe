@@ -16,6 +16,11 @@ class NotificationDeliveredModel extends HiveObject {
     required this.deliveredAt,
     required this.room,
     this.lecturer,
+    this.isRead = false,
+    this.sourceIndex = 0,
+    this.scheduledId,
+    this.title,
+    this.body,
   });
 
   @HiveField(0)
@@ -39,6 +44,51 @@ class NotificationDeliveredModel extends HiveObject {
   @HiveField(6)
   final String? lecturer;
 
+  @HiveField(7)
+  final int sourceIndex;
+
+  @HiveField(8)
+  final bool isRead;
+
+  @HiveField(9)
+  final int? scheduledId;
+
+  @HiveField(10)
+  final String? title;
+
+  @HiveField(11)
+  final String? body;
+
+  NotificationDeliveredModel copyWith({
+    int? id,
+    String? courseName,
+    String? dayOfWeek,
+    DateTime? classTime,
+    DateTime? deliveredAt,
+    String? room,
+    String? lecturer,
+    int? sourceIndex,
+    bool? isRead,
+    int? scheduledId,
+    String? title,
+    String? body,
+  }) {
+    return NotificationDeliveredModel(
+      id: id ?? this.id,
+      courseName: courseName ?? this.courseName,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      classTime: classTime ?? this.classTime,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      room: room ?? this.room,
+      lecturer: lecturer ?? this.lecturer,
+      sourceIndex: sourceIndex ?? this.sourceIndex,
+      isRead: isRead ?? this.isRead,
+      scheduledId: scheduledId ?? this.scheduledId,
+      title: title ?? this.title,
+      body: body ?? this.body,
+    );
+  }
+
   factory NotificationDeliveredModel.fromEntity(
     NotificationDeliveredEntity entity,
   ) {
@@ -50,6 +100,11 @@ class NotificationDeliveredModel extends HiveObject {
       deliveredAt: entity.deliveredAt,
       room: entity.room,
       lecturer: entity.lecturer,
+      sourceIndex: entity.source.index,
+      isRead: entity.isRead,
+      scheduledId: entity.scheduledId,
+      title: entity.title,
+      body: entity.body,
     );
   }
 
@@ -62,6 +117,12 @@ class NotificationDeliveredModel extends HiveObject {
       deliveredAt: deliveredAt,
       room: room,
       lecturer: lecturer,
+      source: NotificationSource
+          .values[sourceIndex.clamp(0, NotificationSource.values.length - 1)],
+      isRead: isRead,
+      scheduledId: scheduledId,
+      title: title,
+      body: body,
     );
   }
 }

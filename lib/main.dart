@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -17,11 +18,13 @@ import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/cache/bio_cache_service.dart';
 import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/core/services/fcm_service.dart';
+import 'package:lonceng_unman_fe/core/services/fiam_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
 import 'package:lonceng_unman_fe/core/theme/theme_notifier.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/constants/notification_config.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
+import 'package:lonceng_unman_fe/core/utils/delivered_id.dart';
 import 'package:lonceng_unman_fe/firebase_options.dart';
 import 'package:lonceng_unman_fe/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/auth/data/repositories/auth_repository_impl.dart';
@@ -46,6 +49,7 @@ import 'package:lonceng_unman_fe/features/khs/domain/usecases/get_khs.dart';
 import 'package:lonceng_unman_fe/features/khs/data/datasources/khs_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/khs/data/repositories/khs_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/khs/data/services/khs_pdf_service.dart';
+import 'package:lonceng_unman_fe/features/khs/data/services/khs_download_notification_controller.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/datasources/data_initialization_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
@@ -64,6 +68,7 @@ import 'package:lonceng_unman_fe/core/services/notification_scheduler_noop.dart'
 import 'package:lonceng_unman_fe/features/notification/data/models/notification_delivered_model.dart';
 import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_delivered_local_data_source.dart';
 import 'package:lonceng_unman_fe/features/notification/data/repositories/notification_delivered_repository_impl.dart';
+import 'package:lonceng_unman_fe/features/notification/domain/entities/notification_delivered_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_delivered_repository.dart';
 import 'package:lonceng_unman_fe/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:lonceng_unman_fe/features/onboarding/data/repositories/onboarding_repository_impl.dart';
@@ -179,8 +184,12 @@ Future<void> main() async {
         } else {
           await Hive.initFlutter();
         }
-        Hive.registerAdapter(ScheduledNotificationModelAdapter());
-        Hive.registerAdapter(NotificationDeliveredModelAdapter());
+        if (!Hive.isAdapterRegistered(0)) {
+          Hive.registerAdapter(ScheduledNotificationModelAdapter());
+        }
+        if (!Hive.isAdapterRegistered(1)) {
+          Hive.registerAdapter(NotificationDeliveredModelAdapter());
+        }
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
         );
@@ -211,8 +220,12 @@ Future<void> main() async {
         } catch (_) {
           // Ignore — fresh start if disk cleanup also fails
         }
-        Hive.registerAdapter(ScheduledNotificationModelAdapter());
-        Hive.registerAdapter(NotificationDeliveredModelAdapter());
+        if (!Hive.isAdapterRegistered(0)) {
+          Hive.registerAdapter(ScheduledNotificationModelAdapter());
+        }
+        if (!Hive.isAdapterRegistered(1)) {
+          Hive.registerAdapter(NotificationDeliveredModelAdapter());
+        }
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
         );
@@ -253,6 +266,22 @@ Future<void> main() async {
         );
       }
 
+      // ── KHS Download Notification Controller (decoupled) ──
+      // Wires notification tap actions (open/share/retry) via NotificationService.
+      try {
+        final downloadController = KhsDownloadNotificationController(
+          notificationService: Services.get<NotificationService>(),
+        );
+        Services.register<KhsDownloadNotificationController>(
+          downloadController,
+        );
+        Services.get<NotificationService>().setExternalResponseHandler(
+          downloadController.handleResponse,
+        );
+      } catch (e) {
+        debugPrint('[MAIN] Download controller register failed: $e');
+      }
+
       // ── Notification repository ──
       Services.register<NotificationRepository>(
         NotificationRepositoryImpl(
@@ -276,6 +305,8 @@ Future<void> main() async {
           NotificationScheduler(
             repository: Services.get<NotificationRepository>(),
             notificationService: Services.get<NotificationService>(),
+            deliveredRepository:
+                Services.get<NotificationDeliveredRepository>(),
           ),
         );
       } else {
@@ -321,6 +352,25 @@ Future<void> main() async {
       // ── Auth Status Notifier (global, drives router redirect) ──
       final authStatusNotifier = AuthStatusNotifier();
       Services.register<AuthStatusNotifier>(authStatusNotifier);
+
+      final fiamService = FiamService();
+      try {
+        await fiamService.bind(authStatusNotifier);
+      } catch (e) {
+        debugPrint('[MAIN] FiamService bind FAILED: $e');
+      }
+      Services.register<FiamService>(fiamService);
+
+      // Installation ID for FIAM Test on device (Firebase Console > In-App Messaging).
+      // Copy the printed ID; do not confuse with FCM token.
+      try {
+        // ignore: depend_on_referenced_packages
+        // firebase_app_installations is a direct dep; analyzer false-positive when editing in-place
+        final fid = await FirebaseInstallations.instance.getId();
+        debugPrint('[FIAM-INSTALLATION-ID] $fid');
+      } catch (e) {
+        debugPrint('[FIAM-INSTALLATION-ID] FAILED: $e');
+      }
 
       // ── Connectivity Service (singleton — wrapped plugin, consumed by
       //    ConnectivityCubit at the root, LoginPage, and DataInitBloc) ──
@@ -447,6 +497,27 @@ Future<void> main() async {
         ),
       );
 
+      // ── FCM → delivered history wiring (pure Dart) ──
+      _wireFcmDelivered();
+
+      // Reconcile delivered history on cold start (also runs on resume in didChangeAppLifecycleState).
+      try {
+        final deliveredRepo = Services.get<NotificationDeliveredRepository>();
+        final scheduler = Services.get<NotificationScheduler>();
+        final scheduledRepo = Services.get<NotificationRepository>();
+        unawaited(
+          _reconcileDelivered(
+            deliveredRepo,
+            scheduler,
+            scheduledRepo,
+          ).catchError((e) {
+            debugPrint('[MAIN] Cold-start reconcile failed: $e');
+          }),
+        );
+      } catch (e) {
+        debugPrint('[MAIN] Cold-start reconcile skipped: $e');
+      }
+
       // Validate credentials locally (no backend call) to avoid blocking runApp().
       final cache = Services.get<AcademicCacheService>();
       final credentials = await cache.loadCredentials();
@@ -475,6 +546,115 @@ Future<void> main() async {
       debugPrint('[ERROR] Stack: $stackTrace');
     },
   );
+}
+
+void _wireFcmDelivered() {
+  try {
+    final deliveredRepo = Services.get<NotificationDeliveredRepository>();
+    Future<void> saveFcm(RemoteMessage msg) async {
+      final now = DateTime.now();
+      final id =
+          'fcm_${msg.messageId ?? now.millisecondsSinceEpoch}_${now.millisecondsSinceEpoch}'
+              .hashCode &
+          0x7FFFFFFF;
+      if (deliveredRepo.containsKey(id)) return;
+      try {
+        await deliveredRepo.save(
+          NotificationDeliveredEntity(
+            id: id,
+            courseName:
+                msg.notification?.title ??
+                msg.notification?.body ??
+                'Notifikasi',
+            dayOfWeek: '',
+            classTime: now,
+            deliveredAt: now,
+            room: '',
+            lecturer: null,
+            isRead: false,
+            source: NotificationSource.fcm,
+            title: msg.notification?.title,
+            body: msg.notification?.body,
+          ),
+        );
+      } catch (e) {
+        debugPrint('[FCM-DELIVERED] save failed: $e');
+      }
+    }
+
+    FcmService.instance.onForegroundMessage.listen(saveFcm);
+    FcmService.instance.onMessageOpenedApp.listen(saveFcm);
+    FirebaseMessaging.instance.getInitialMessage().then((msg) {
+      if (msg != null) saveFcm(msg);
+    });
+    debugPrint('[MAIN] FCM delivered wiring OK');
+  } catch (e) {
+    debugPrint('[MAIN] FCM delivered wiring skipped: $e');
+  }
+}
+
+Future<void> _reconcileDelivered(
+  NotificationDeliveredRepository deliveredRepo,
+  NotificationScheduler scheduler,
+  NotificationRepository scheduledRepo,
+) async {
+  final scheduled = await scheduledRepo.getAll();
+  if (scheduled.isEmpty) return;
+  final deliveredAll = await deliveredRepo.getAll();
+  final now = DateTime.now();
+  for (final s in scheduled) {
+    try {
+      if (!s.isActive) continue;
+      final tzTrigger = scheduler.computeTrigger(s);
+      final triggerDt = DateTime(
+        tzTrigger.year,
+        tzTrigger.month,
+        tzTrigger.day,
+        tzTrigger.hour,
+        tzTrigger.minute,
+      );
+      final lastTrigger = now.isBefore(triggerDt)
+          ? triggerDt.subtract(const Duration(days: 7))
+          : triggerDt;
+      final forId = deliveredAll.where((d) => d.scheduledId == s.id).toList()
+        ..sort((a, b) => b.deliveredAt.compareTo(a.deliveredAt));
+      final lastSaved = forId.isEmpty ? null : forId.first.deliveredAt;
+      DateTime startCursor;
+      if (lastSaved == null) {
+        // Backfill up to 12 weeks for fresh install
+        startCursor = lastTrigger.subtract(const Duration(days: 7 * 11));
+      } else {
+        startCursor = lastSaved.add(const Duration(days: 7));
+      }
+      DateTime cursor = startCursor;
+      // Legacy 7-field rows have scheduledId==null — ignored for grouping to avoid duplicate
+      while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
+        final deliveredId = deliveredIdFor(s.id, cursor);
+        if (!deliveredRepo.containsKey(deliveredId)) {
+          await deliveredRepo.save(
+            NotificationDeliveredEntity(
+              id: deliveredId,
+              courseName: s.courseName,
+              dayOfWeek: s.dayOfWeek,
+              classTime: s.classTime,
+              deliveredAt: cursor,
+              room: s.room,
+              lecturer: s.lecturer,
+              isRead: false,
+              source: NotificationSource.classReminder,
+              scheduledId: s.id,
+            ),
+          );
+        }
+        final next = cursor.add(const Duration(days: 7));
+        if (next.isAfter(lastTrigger)) break;
+        cursor = next;
+      }
+    } catch (e) {
+      debugPrint('[reconcile] Skip ${s.courseName}: $e');
+      continue;
+    }
+  }
 }
 
 class LoncengUnmanApp extends StatefulWidget {
@@ -541,6 +721,20 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp>
         Services.get<ConnectivityService>().refresh();
       } catch (e) {
         debugPrint('[LIFECYCLE] Connectivity refresh failed: $e');
+      }
+      // Reconciliation for weekly delivered history
+      try {
+        final repo = Services.get<NotificationDeliveredRepository>();
+        final scheduler = Services.get<NotificationScheduler>();
+        final scheduledRepo = Services.get<NotificationRepository>();
+        // Fire-and-forget: reuse cubit logic without needing cubit instance
+        unawaited(
+          _reconcileDelivered(repo, scheduler, scheduledRepo).catchError((e) {
+            debugPrint('[LIFECYCLE] reconcileDelivered failed: $e');
+          }),
+        );
+      } catch (e) {
+        debugPrint('[LIFECYCLE] reconcileDelivered failed: $e');
       }
     }
   }

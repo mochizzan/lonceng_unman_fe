@@ -4,6 +4,7 @@ import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.d
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// No-op subclass used when NotificationService fails to initialize.
 /// Extends real class to maintain type safety in DI.
@@ -31,6 +32,11 @@ class NotificationSchedulerNoop extends NotificationScheduler {
 
   @override
   Future<void> rescheduleAllWithNewOffset(int newOffsetMinutes) async {}
+
+  @override
+  tz.TZDateTime computeTrigger(ScheduledNotificationEntity entity) {
+    throw UnimplementedError('computeTrigger not available in Noop');
+  }
 }
 
 /// Minimal no-op repository for constructor compliance.

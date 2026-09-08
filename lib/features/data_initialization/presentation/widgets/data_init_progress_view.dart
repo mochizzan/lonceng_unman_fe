@@ -110,14 +110,27 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
         status != DataInitStatus.fetchingKhsData) {
       return;
     }
-    final parsed = parseKhsDetail(state.detail);
+    final rawDetail = state.detail;
+    if (rawDetail == null) return;
+    // Sentinel: "$tahunAjaran $semester ::error::<download|extract|fetch>"
+    // DataInitStatus frozen -> detail reuse. Strip suffix before parse.
+    final isSentinel = rawDetail.contains(' ::error::');
+    String baseDetail = rawDetail;
+    String? failSub;
+    if (isSentinel) {
+      final sep = rawDetail.indexOf(' ::error::');
+      baseDetail = rawDetail.substring(0, sep);
+      failSub = rawDetail.substring(sep + ' ::error::'.length).trim();
+    }
+    final parsed = parseKhsDetail(baseDetail);
     if (parsed == null) return;
     final key = '${parsed.tahunAjaran}|${parsed.semester}';
     final existingKeys = _khsMap.keys.toList();
     final isNewKey = !_khsMap.containsKey(key);
 
-    // Finalize previous semester when a new one starts downloading.
-    if (isNewKey && status == DataInitStatus.downloadingKhs) {
+    // Finalize previous semester when a new one starts downloading
+    // — but never overwrite an error.
+    if (isNewKey && status == DataInitStatus.downloadingKhs && !isSentinel) {
       for (final k in existingKeys) {
         final prev = _khsMap[k]!;
         if (prev.fetch == KhsSemesterSubStepStatus.progress) {
@@ -134,29 +147,56 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
       ),
     );
 
+    // Sentinel path: mark that sub-step merah, do not touch others.
+    if (isSentinel) {
+      switch (failSub) {
+        case 'download':
+          tl.download = KhsSemesterSubStepStatus.error;
+          break;
+        case 'extract':
+          tl.extract = KhsSemesterSubStepStatus.error;
+          break;
+        case 'fetch':
+        default:
+          tl.fetch = KhsSemesterSubStepStatus.error;
+          break;
+      }
+      // Ensure view rebuild counts this semester.
+      return;
+    }
+
+    // Normal progress path — never overwrite error.
     switch (status) {
       case DataInitStatus.downloadingKhs:
-        tl.download = KhsSemesterSubStepStatus.progress;
+        if (tl.download != KhsSemesterSubStepStatus.error) {
+          tl.download = KhsSemesterSubStepStatus.progress;
+        }
         break;
       case DataInitStatus.extractingKhs:
-        if (tl.download == KhsSemesterSubStepStatus.progress ||
-            tl.download == KhsSemesterSubStepStatus.idle) {
+        if (tl.download == KhsSemesterSubStepStatus.progress) {
           tl.download = KhsSemesterSubStepStatus.success;
+        } else if (tl.download == KhsSemesterSubStepStatus.error) {
+          // keep merah — do not touch
         }
-        tl.extract = KhsSemesterSubStepStatus.progress;
+        if (tl.extract != KhsSemesterSubStepStatus.error) {
+          tl.extract = KhsSemesterSubStepStatus.progress;
+        }
         break;
       case DataInitStatus.fetchingKhsData:
         if (tl.extract == KhsSemesterSubStepStatus.progress) {
           tl.extract = KhsSemesterSubStepStatus.success;
         }
-        // Light path: download/extract were skipped — mark skipped.
+        // Light path: download/extract were skipped — mark skipped
+        // but never overwrite error.
         if (tl.download == KhsSemesterSubStepStatus.idle) {
           tl.download = KhsSemesterSubStepStatus.skipped;
         }
         if (tl.extract == KhsSemesterSubStepStatus.idle) {
           tl.extract = KhsSemesterSubStepStatus.skipped;
         }
-        tl.fetch = KhsSemesterSubStepStatus.progress;
+        if (tl.fetch != KhsSemesterSubStepStatus.error) {
+          tl.fetch = KhsSemesterSubStepStatus.progress;
+        }
         break;
       default:
         break;
@@ -168,6 +208,7 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
       if (tl.download == KhsSemesterSubStepStatus.progress) {
         tl.download = KhsSemesterSubStepStatus.success;
       }
+      // error stays merah — never jadi hijau
       if (tl.extract == KhsSemesterSubStepStatus.progress) {
         tl.extract = KhsSemesterSubStepStatus.success;
       }
@@ -276,48 +317,76 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
             return _buildErrorView(context, cs, state);
           }
 
-          // Header stays centered (original layout). Timeline has its own
-          // wrapping container so it does not affect header centering,
-          // indicator sizing, or cause Column(mainAxis:center) drift.
-          return SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(sp(context, AppDimens.space32)),
-              child: Column(
+          // Layout restores original centered overlay: header (logo +
+          // status + spinner) stays centered in viewport; KHS timeline
+          // lives in its own bordered container below and does not
+          // shift the header's centering calculation.
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final header = Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Center(
+                  const BellLogo(),
+                  SizedBox(height: sp(context, AppDimens.space32)),
+                  Text(
+                    isCompleted ? 'Data akademik siap' : statusText,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: cs.onSurface,
+                      fontSize: responsiveFontSize(context, AppDimens.textMD),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: sp(context, AppDimens.space24)),
+                  if (!isCompleted && state is! DataInitFailure)
+                    CircularProgressIndicator(color: cs.primary),
+                ],
+              );
+
+              // Empty timeline: keep original exact centering (no extra
+              // container, no bottom gap — avoids the "hanging" wrap).
+              if (_khsMap.isEmpty) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(sp(context, AppDimens.space32)),
+                        child: header,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // With timeline: flex layout — vertical Column.
+              // Header preserved as centered band (Center + ConstrainedBox
+              // minHeight), timeline in its own wrapping Container below.
+              // No Expanded/Flexible on unbounded axis (inside
+              // SingleChildScrollView) — constraint-safety rule.
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: EdgeInsets.all(sp(context, AppDimens.space32)),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const BellLogo(),
-                        SizedBox(height: sp(context, AppDimens.space32)),
-                        Text(
-                          isCompleted ? 'Data akademik siap' : statusText,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: cs.onSurface,
-                                fontSize: responsiveFontSize(
-                                  context,
-                                  AppDimens.textMD,
-                                ),
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
+                        Center(child: header),
                         SizedBox(height: sp(context, AppDimens.space24)),
-                        if (!isCompleted && state is! DataInitFailure)
-                          CircularProgressIndicator(color: cs.primary),
+                        // Timeline — own container, bounded scroll inside
+                        _KhsTimelineContainer(
+                          items: _khsMap,
+                          controller: _scrollCtrl,
+                        ),
                       ],
                     ),
                   ),
-                  if (_khsMap.isNotEmpty) ...[
-                    SizedBox(height: sp(context, AppDimens.space24)),
-                    _KhsTimelineContainer(
-                      items: _khsMap,
-                      controller: _scrollCtrl,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -332,109 +401,133 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
     final stepLabel = _humanReadableFailedStep(state.failedStep);
     final hasActions = widget.onRetry != null || widget.onClose != null;
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(sp(context, AppDimens.space32)),
-        child: Column(
-          children: [
-            Center(
+    final errorHeader = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.error_outline, size: AppDimens.iconError, color: cs.error),
+        SizedBox(height: sp(context, AppDimens.space16)),
+        Text(
+          AppStrings.refreshErrorTitle,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: cs.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: sp(context, AppDimens.space16)),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: sp(context, AppDimens.space16),
+            vertical: sp(context, AppDimens.space8),
+          ),
+          decoration: BoxDecoration(
+            color: cs.errorContainer,
+            borderRadius: BorderRadius.circular(
+              sp(context, AppDimens.radiusMD),
+            ),
+          ),
+          child: Text(
+            '${AppStrings.refreshErrorStepPrefix} $stepLabel',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: cs.onErrorContainer,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        SizedBox(height: sp(context, AppDimens.space16)),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: sp(context, AppDimens.space8),
+          ),
+          child: Text(
+            state.message,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        SizedBox(height: sp(context, AppDimens.space12)),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: sp(context, AppDimens.space16),
+          ),
+          child: Text(
+            AppStrings.refreshErrorHint,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        if (hasActions) ...[
+          SizedBox(height: sp(context, AppDimens.space28)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (widget.onRetry != null)
+                FilledButton.icon(
+                  onPressed: widget.onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text(AppStrings.refreshErrorRetry),
+                ),
+              if (widget.onRetry != null && widget.onClose != null)
+                SizedBox(width: sp(context, AppDimens.space12)),
+              if (widget.onClose != null)
+                OutlinedButton(
+                  onPressed: widget.onClose,
+                  child: const Text(AppStrings.refreshErrorClose),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+
+    // Same hanging fix as success path. When KHS empty, just center
+    // the error header (no timeline container, no bottom gap).
+    if (_khsMap.isEmpty) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(sp(context, AppDimens.space32)),
+                  child: errorHeader,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: EdgeInsets.all(sp(context, AppDimens.space32)),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: AppDimens.iconError,
-                    color: cs.error,
+                  Center(child: errorHeader),
+                  SizedBox(height: sp(context, AppDimens.space24)),
+                  _KhsTimelineContainer(
+                    items: _khsMap,
+                    controller: _scrollCtrl,
                   ),
-                  SizedBox(height: sp(context, AppDimens.space16)),
-                  Text(
-                    AppStrings.refreshErrorTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: sp(context, AppDimens.space16)),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: sp(context, AppDimens.space16),
-                      vertical: sp(context, AppDimens.space8),
-                    ),
-                    decoration: BoxDecoration(
-                      color: cs.errorContainer,
-                      borderRadius: BorderRadius.circular(
-                        sp(context, AppDimens.radiusMD),
-                      ),
-                    ),
-                    child: Text(
-                      '${AppStrings.refreshErrorStepPrefix} $stepLabel',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: cs.onErrorContainer,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: sp(context, AppDimens.space16)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: sp(context, AppDimens.space8),
-                    ),
-                    child: Text(
-                      state.message,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: sp(context, AppDimens.space12)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: sp(context, AppDimens.space16),
-                    ),
-                    child: Text(
-                      AppStrings.refreshErrorHint,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  if (hasActions) ...[
-                    SizedBox(height: sp(context, AppDimens.space28)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (widget.onRetry != null)
-                          FilledButton.icon(
-                            onPressed: widget.onRetry,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text(AppStrings.refreshErrorRetry),
-                          ),
-                        if (widget.onRetry != null && widget.onClose != null)
-                          SizedBox(width: sp(context, AppDimens.space12)),
-                        if (widget.onClose != null)
-                          OutlinedButton(
-                            onPressed: widget.onClose,
-                            child: const Text(AppStrings.refreshErrorClose),
-                          ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),
-            // Keep timeline context visible under error — outside the
-            // centered header so it does not affect centering.
-            if (_khsMap.isNotEmpty) ...[
-              SizedBox(height: sp(context, AppDimens.space24)),
-              _KhsTimelineContainer(items: _khsMap, controller: _scrollCtrl),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

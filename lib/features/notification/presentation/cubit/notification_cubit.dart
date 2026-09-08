@@ -135,7 +135,17 @@ class NotificationCubit extends Cubit<NotificationState> {
           // Generate up to lastTrigger inclusive, but not future > now
           while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
             final deliveredId = deliveredIdFor(s.id, cursor);
-            if (!repo.containsKey(deliveredId)) {
+            bool isTombstoned = false;
+            try {
+              isTombstoned =
+                  (repo as dynamic).localDataSource.isTombstoned(deliveredId)
+                      as bool;
+            } catch (_) {}
+            if (isTombstoned) {
+              debugPrint(
+                '[NOTIF] reconcile skip tombstoned id=$deliveredId course=${s.courseName}',
+              );
+            } else if (!repo.containsKey(deliveredId)) {
               await repo.save(
                 NotificationDeliveredEntity(
                   id: deliveredId,
@@ -193,14 +203,63 @@ class NotificationCubit extends Cubit<NotificationState> {
   Future<void> deleteDelivered(int id) async {
     final repo = _deliveredRepository;
     if (repo == null) return;
+    debugPrint('[NOTIF] deleteDelivered($id) START');
     await repo.delete(id);
+    debugPrint(
+      '[NOTIF] deleteDelivered($id) OK contains=${repo.containsKey(id)}',
+    );
     await _emitDelivered();
   }
 
   Future<void> deleteAllDelivered() async {
     final repo = _deliveredRepository;
     if (repo == null) return;
+    debugPrint(
+      '[NOTIF] deleteAllDelivered() START count=${(await repo.getAll()).length}',
+    );
+    // Tombstone full reconcile window per scheduled so cold-start reconcile doesn't resurrect
+    // past 12 weeks (datasource only tombstones existing rows). We pre-tombstone window ids here.
+    try {
+      final scheduled = await _repository.getAll();
+      final now = DateTime.now();
+      for (final s in scheduled) {
+        if (!s.isActive) continue;
+        try {
+          final tzTrigger = _scheduler.computeTrigger(s);
+          final triggerDt = DateTime(
+            tzTrigger.year,
+            tzTrigger.month,
+            tzTrigger.day,
+            tzTrigger.hour,
+            tzTrigger.minute,
+          );
+          final lastTrigger = now.isBefore(triggerDt)
+              ? triggerDt.subtract(const Duration(days: 7))
+              : triggerDt;
+          DateTime cursor = lastTrigger.subtract(const Duration(days: 7 * 11));
+          while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
+            final tid = deliveredIdFor(s.id, cursor);
+            // Use save-then-delete tombstone via datasource helper if available
+            // Directly tombstone via repo contract: we expose via dynamic check
+            // Fallback: datasource save guard will respect tombstone; we force it
+            // by calling delete which tombstones (no-op if not exists still tombstones).
+            if (!repo.containsKey(tid)) {
+              // Need to tombstone even if never saved — use datasource extension
+              final ds = (repo as dynamic).localDataSource;
+              if (ds != null) {
+                // ignore: avoid_dynamic_calls
+                await ds.addTombstone(tid);
+              }
+            }
+            final next = cursor.add(const Duration(days: 7));
+            if (next.isAfter(lastTrigger)) break;
+            cursor = next;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
     await repo.deleteAll();
+    debugPrint('[NOTIF] deleteAllDelivered() OK');
     await _emitDelivered();
   }
 

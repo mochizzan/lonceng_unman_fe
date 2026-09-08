@@ -1,10 +1,11 @@
 flutter_native_splash:
   color: "#FFF8F2"
-  # Use app icon if available, otherwise just color
-  # image: assets/images/bell_logo.png  # Uncomment when asset exists
+  image: assets/images/app_logo.png
   android: true
   ios: true
   android_12:
     color: "#FFF8F2"
-    # image: assets/images/bell_logo.png  # Uncomment when asset exists
+    image: assets/images/app_logo.png
+    # Android 12+ branding (logo in center, not stretched)
+    branding: assets/images/app_logo.png
   web: false

@@ -34,6 +34,9 @@ class NotificationSchedulerNoop extends NotificationScheduler {
   Future<void> rescheduleAllWithNewOffset(int newOffsetMinutes) async {}
 
   @override
+  Future<int> restoreAll() async => 0;
+
+  @override
   tz.TZDateTime computeTrigger(ScheduledNotificationEntity entity) {
     throw UnimplementedError('computeTrigger not available in Noop');
   }

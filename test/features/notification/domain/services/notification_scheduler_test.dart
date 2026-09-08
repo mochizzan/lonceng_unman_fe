@@ -117,6 +117,10 @@ class MockNotificationService implements NotificationService {
   void setExternalResponseHandler(
     void Function(NotificationResponse p1)? handler,
   ) {}
+
+  @override
+  Future<List<PendingNotificationRequest>>
+  pendingNotificationRequests() async => [];
 }
 
 // ---------------------------------------------------------------------------

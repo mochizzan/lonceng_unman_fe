@@ -567,7 +567,7 @@ void main() {
       });
 
       test('satu semester getKhsData throw → semester lain tetap diproses + '
-          'khsEmpty di akhir', () async {
+          'khsEmpty di akhir (sentinel ::error::fetch view merah)', () async {
         final f = _Fixture();
         f.debounce.useLight = true;
         f.khsRepo.failingSemesters = {'Ganjil'};
@@ -582,11 +582,22 @@ void main() {
           DataInitStatus.fetchingKhsSemesters,
           DataInitStatus.fetchingKhsData,
           DataInitStatus.fetchingKhsData,
+          DataInitStatus.fetchingKhsData,
           DataInitStatus.khsEmpty,
           DataInitStatus.completed,
         ]);
         expect(f.khsRepo.getDataCalls, 2);
         expect(f.khsRepo.getDataSemesters, ['Ganjil', 'Genap']);
+        // Sentinel carries failed semester detail so view paints merah.
+        final errDetail = events
+            .where(
+              (e) =>
+                  e.status == DataInitStatus.fetchingKhsData &&
+                  (e.detail ?? '').contains('::error::fetch'),
+            )
+            .map((e) => e.detail)
+            .toList();
+        expect(errDetail, isNotEmpty);
       });
 
       test('AuthException dari getProfile ringan tetap rethrow '

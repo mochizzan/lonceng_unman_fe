@@ -87,6 +87,9 @@ class MockNotificationScheduler implements NotificationScheduler {
 
   @override
   Future<void> rescheduleAllWithNewOffset(int newOffsetMinutes) async {}
+
+  @override
+  Future<int> restoreAll() async => 0;
 }
 
 // Minimal mock notification service
@@ -137,6 +140,10 @@ class MockNotificationService implements NotificationService {
   void setExternalResponseHandler(
     void Function(NotificationResponse p1)? handler,
   ) {}
+
+  @override
+  Future<List<PendingNotificationRequest>>
+  pendingNotificationRequests() async => [];
 }
 
 void main() {
@@ -417,4 +424,8 @@ class _DeniedPermissionService implements NotificationService {
   void setExternalResponseHandler(
     void Function(NotificationResponse p1)? handler,
   ) {}
+
+  @override
+  Future<List<PendingNotificationRequest>>
+  pendingNotificationRequests() async => [];
 }

@@ -208,11 +208,13 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
 
           return Material(
             color: cs.surface,
-            child: DataInitProgressView(
-              isFreshLogin: false,
-              onRetry: null,
-              onClose: null,
-              onKhsCountChanged: (c) => _khsCount.value = c,
+            child: SafeArea(
+              child: DataInitProgressView(
+                isFreshLogin: false,
+                onRetry: null,
+                onClose: null,
+                onKhsCountChanged: (c) => _khsCount.value = c,
+              ),
             ),
           );
         },

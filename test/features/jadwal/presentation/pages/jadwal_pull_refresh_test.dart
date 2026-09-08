@@ -110,6 +110,9 @@ class _NoopNotificationScheduler implements NotificationScheduler {
 
   @override
   Future<void> rescheduleAllWithNewOffset(int newOffsetMinutes) async {}
+
+  @override
+  Future<int> restoreAll() async => 0;
 }
 
 class _NoopNotificationService implements NotificationService {
@@ -159,6 +162,10 @@ class _NoopNotificationService implements NotificationService {
   void setExternalResponseHandler(
     void Function(NotificationResponse p1)? handler,
   ) {}
+
+  @override
+  Future<List<PendingNotificationRequest>>
+  pendingNotificationRequests() async => [];
 }
 
 Future<({JadwalBloc bloc, NotificationCubit cubit})> _bootPage(

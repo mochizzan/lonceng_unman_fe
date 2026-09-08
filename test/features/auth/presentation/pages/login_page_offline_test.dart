@@ -1,8 +1,8 @@
-// Widget tests for [LoginPage]'s offline banner.
+// Widget tests for [LoginPage]'s offline modal sheet.
 //
-// The banner appears inside the LoginPage when [ConnectivityCubit] reports
-// isOnline == false. We inject a hand-written [ConnectivityService] fake
-// and toggle its state from the test driver.
+// The sheet appears as a modal bottom sheet overlapping with scrim when
+// [ConnectivityCubit] reports isOnline == false while on the login form.
+// We inject a hand-written [ConnectivityService] fake and toggle its state.
 //
 // Hand-written fakes only — no mockito, no mocktail, no codegen.
 
@@ -15,8 +15,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/auth/auth_status.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/core/theme/theme.dart';
+import 'package:lonceng_unman_fe/core/utils/offline_sheet_controller.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/entities/auth_entity.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lonceng_unman_fe/features/auth/domain/usecases/get_auth.dart';
@@ -30,7 +32,6 @@ import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
 
-/// No-op [AuthRepository] — never invoked because no test presses submit.
 class _NoopAuthRepo implements AuthRepository {
   @override
   Future<AuthEntity> login({
@@ -180,30 +181,55 @@ class _NoopAcademicCache implements AcademicCacheService {
   Future<void> clearAll() async {}
 }
 
-/// Hand-written [ConnectivityService] fake. Tests drive it via [setOnline].
 class _FakeConnectivityService implements ConnectivityService {
   _FakeConnectivityService({bool isOnline = true}) : _isOnline = isOnline;
-
   bool _isOnline;
   final _controller = StreamController<bool>.broadcast();
-
   @override
   bool get isOnline => _isOnline;
-
   @override
   Stream<bool> get onStatusChange => _controller.stream;
-
   @override
   Future<void> refresh() async {}
-
   void setOnline(bool v) {
     _isOnline = v;
     _controller.add(v);
   }
 }
 
+Widget _buildHarness({
+  required ConnectivityCubit connectivityCubit,
+  required AuthBloc authBloc,
+  required AuthStatusNotifier authNotifier,
+}) {
+  return MaterialApp(
+    theme: lightTheme,
+    home: MultiBlocProvider(
+      providers: [
+        BlocProvider<ConnectivityCubit>.value(value: connectivityCubit),
+        BlocProvider<AuthBloc>.value(value: authBloc),
+      ],
+      child: LoginPage(authStatusNotifier: authNotifier),
+    ),
+  );
+}
+
+Future<void> _pumpSettled(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
 void main() {
-  testWidgets('offline banner is NOT visible when online', (tester) async {
+  setUp(() {
+    Services.clear();
+    Services.register<OfflineSheetController>(OfflineSheetController());
+  });
+
+  tearDown(() {
+    Services.clear();
+  });
+
+  testWidgets('offline sheet is NOT visible when online', (tester) async {
     final fakeConn = _FakeConnectivityService(isOnline: true);
     final connectivityCubit = ConnectivityCubit(fakeConn);
     final authBloc = AuthBloc(
@@ -217,26 +243,25 @@ void main() {
     final authNotifier = AuthStatusNotifier();
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: lightTheme,
-        home: MultiBlocProvider(
-          providers: [
-            BlocProvider<ConnectivityCubit>.value(value: connectivityCubit),
-            BlocProvider<AuthBloc>.value(value: authBloc),
-          ],
-          child: LoginPage(authStatusNotifier: authNotifier),
-        ),
+      _buildHarness(
+        connectivityCubit: connectivityCubit,
+        authBloc: authBloc,
+        authNotifier: authNotifier,
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpSettled(tester);
     expect(find.text(AppStrings.loginOfflineBanner), findsNothing);
+    expect(
+      find.byKey(const Key('offline_sheet_understood_button')),
+      findsNothing,
+    );
 
-    await connectivityCubit.close();
-    await authBloc.close();
+    unawaited(connectivityCubit.close());
+    unawaited(authBloc.close());
     authNotifier.dispose();
   });
 
-  testWidgets('offline banner appears when connectivity flips to offline', (
+  testWidgets('offline sheet appears when connectivity flips to offline', (
     tester,
   ) async {
     final fakeConn = _FakeConnectivityService(isOnline: true);
@@ -252,27 +277,118 @@ void main() {
     final authNotifier = AuthStatusNotifier();
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: lightTheme,
-        home: MultiBlocProvider(
-          providers: [
-            BlocProvider<ConnectivityCubit>.value(value: connectivityCubit),
-            BlocProvider<AuthBloc>.value(value: authBloc),
-          ],
-          child: LoginPage(authStatusNotifier: authNotifier),
-        ),
+      _buildHarness(
+        connectivityCubit: connectivityCubit,
+        authBloc: authBloc,
+        authNotifier: authNotifier,
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpSettled(tester);
     expect(find.text(AppStrings.loginOfflineBanner), findsNothing);
 
     fakeConn.setOnline(false);
-    await tester.pumpAndSettle();
+    await _pumpSettled(tester);
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text(AppStrings.loginOfflineBanner), findsOneWidget);
+    expect(find.text(AppStrings.loginOfflineSheetTitle), findsOneWidget);
+    expect(
+      find.byKey(const Key('offline_sheet_understood_button')),
+      findsOneWidget,
+    );
 
-    await connectivityCubit.close();
-    await authBloc.close();
+    unawaited(connectivityCubit.close());
+    unawaited(authBloc.close());
+    authNotifier.dispose();
+  });
+
+  testWidgets('tap Mengerti dismisses sheet', (tester) async {
+    final fakeConn = _FakeConnectivityService(isOnline: true);
+    final connectivityCubit = ConnectivityCubit(fakeConn);
+    final authBloc = AuthBloc(
+      GetAuth(_NoopAuthRepo()),
+      saveCredentials: _NoopSaveCredentials(),
+      loadCredentials: _NoopLoadCredentials(),
+      profileDataSource: _NoopStudentProfileRemoteDS(),
+      profileCacheService: _NoopStudentProfileCache(),
+      academicCacheService: _NoopAcademicCache(),
+    );
+    final authNotifier = AuthStatusNotifier();
+
+    await tester.pumpWidget(
+      _buildHarness(
+        connectivityCubit: connectivityCubit,
+        authBloc: authBloc,
+        authNotifier: authNotifier,
+      ),
+    );
+    await _pumpSettled(tester);
+
+    fakeConn.setOnline(false);
+    await _pumpSettled(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.byKey(const Key('offline_sheet_understood_button')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('offline_sheet_understood_button')));
+    await _pumpSettled(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(AppStrings.loginOfflineBanner), findsNothing);
+    expect(
+      find.byKey(const Key('offline_sheet_understood_button')),
+      findsNothing,
+    );
+
+    unawaited(connectivityCubit.close());
+    unawaited(authBloc.close());
+    authNotifier.dispose();
+  });
+
+  testWidgets('auto-dismiss when connectivity returns online', (tester) async {
+    final fakeConn = _FakeConnectivityService(isOnline: true);
+    final connectivityCubit = ConnectivityCubit(fakeConn);
+    final authBloc = AuthBloc(
+      GetAuth(_NoopAuthRepo()),
+      saveCredentials: _NoopSaveCredentials(),
+      loadCredentials: _NoopLoadCredentials(),
+      profileDataSource: _NoopStudentProfileRemoteDS(),
+      profileCacheService: _NoopStudentProfileCache(),
+      academicCacheService: _NoopAcademicCache(),
+    );
+    final authNotifier = AuthStatusNotifier();
+
+    await tester.pumpWidget(
+      _buildHarness(
+        connectivityCubit: connectivityCubit,
+        authBloc: authBloc,
+        authNotifier: authNotifier,
+      ),
+    );
+    await _pumpSettled(tester);
+
+    fakeConn.setOnline(false);
+    await _pumpSettled(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.byKey(const Key('offline_sheet_understood_button')),
+      findsOneWidget,
+    );
+
+    fakeConn.setOnline(true);
+    await _pumpSettled(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(AppStrings.loginOfflineBanner), findsNothing);
+    expect(
+      find.byKey(const Key('offline_sheet_understood_button')),
+      findsNothing,
+    );
+
+    unawaited(connectivityCubit.close());
+    unawaited(authBloc.close());
     authNotifier.dispose();
   });
 }

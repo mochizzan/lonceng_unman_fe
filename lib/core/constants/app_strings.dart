@@ -19,6 +19,8 @@ abstract final class AppStrings {
   static const String loginHelpdeskLink = 'Helpdesk IT';
   static const String loginOfflineBanner =
       'Mode offline — masuk mungkin gagal. Periksa koneksi internet.';
+  static const String loginOfflineSheetTitle = 'Tidak Ada Koneksi';
+  static const String loginOfflineSheetAction = 'Mengerti';
 
   // ─── Home ─────────────────────────────────────────────
   static const String homeNextClassIn = 'Kelas berikutnya dalam';

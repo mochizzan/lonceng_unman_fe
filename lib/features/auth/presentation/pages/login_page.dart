@@ -19,7 +19,9 @@ import 'package:lonceng_unman_fe/shared/widgets/app_button.dart';
 import 'package:lonceng_unman_fe/shared/widgets/auth_background.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bell_logo.dart';
 import 'package:lonceng_unman_fe/features/auth/presentation/widgets/review_screen.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/theme/app_shadows.dart';
+import 'package:lonceng_unman_fe/core/utils/offline_sheet_controller.dart';
 import 'package:lonceng_unman_fe/core/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
@@ -54,6 +56,15 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void deactivate() {
+    try {
+      final ctrl = Services.get<OfflineSheetController>();
+      if (ctrl.isShowing) ctrl.dismissIfShowing(context);
+    } catch (_) {}
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _npmController.dispose();
     _passwordController.dispose();
@@ -65,123 +76,138 @@ class _LoginPageState extends State<LoginPage> {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<ConnectivityCubit, ConnectivityState>(
+      listenWhen: (prev, curr) => prev.isOnline != curr.isOnline,
       listener: (context, state) {
-        if (state is AuthAuthenticated) {
-          // Reset DataInitBloc state before triggering pipeline.
-          // This handles re-login after logout (state may be DataInitSuccess
-          // from previous session, which would block DataInitStarted).
-          context.read<DataInitBloc>().add(const DataInitReset());
-          // Trigger data-init pipeline on the login page.
-          context.read<DataInitBloc>().add(
-            DataInitStarted(
-              npm: _npmController.text,
-              password: _passwordController.text,
-              forceRefresh: true,
-            ),
+        try {
+          final authState = context.read<AuthBloc>().state;
+          final isLoginForm =
+              authState is AuthInitial || authState is AuthError;
+          Services.get<OfflineSheetController>().sync(
+            state.isOnline,
+            context,
+            isLoginForm: isLoginForm,
           );
-        } else if (state is AuthInitial) {
-          // Clear form controllers when returning to login form
-          // (e.g. after "bukan akun saya" rejection or logout).
-          // BLoC's internal _npm/_password are already cleared;
-          // controllers must match to avoid stale text + validation mismatch.
-          _npmController.clear();
-          _passwordController.clear();
-        } else if (state is AuthError) {
-          // Show Toast for network-level errors that can't display inline.
-          // All other errors display inline via BlocBuilder below.
-          if (state.error is NetworkException ||
-              state.error is ServerException) {
-            ErrorHandler.show(context, state.error!);
-          }
-        }
+        } catch (_) {}
       },
-      child: Scaffold(
-        body: AuthBackground(
-          child: SafeArea(
-            child: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, authState) {
-                // Shared content switches smoothly via AnimatedSwitcher.
-                // AuthBackground stays mounted — no background flash.
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: authState is AuthProfileReview
-                      ? ReviewScreen(
-                          key: const ValueKey('review'),
-                          data: authState.profile,
-                          onConfirm: () => context.read<AuthBloc>().add(
-                            const AuthProfileConfirmed(),
-                          ),
-                          onReject: () => context.read<AuthBloc>().add(
-                            const AuthProfileRejected(),
-                          ),
-                        )
-                      : authState is AuthAuthenticated
-                      ? DataInitProgressView(
-                          key: const ValueKey('progress'),
-                          isFreshLogin: true,
-                          onComplete: () {
-                            if (!mounted) return;
-                            widget.authStatusNotifier.setStatus(
-                              AuthStatus.authenticated,
-                            );
-                          },
-                          onRetry: () {
-                            context.read<DataInitBloc>().add(
-                              const DataInitReset(),
-                            );
-                            context.read<AuthBloc>().add(
-                              const AuthLogoutRequested(),
-                            );
-                          },
-                          onCancel: () {
-                            context.read<DataInitBloc>().add(
-                              const DataInitReset(),
-                            );
-                            context.read<AuthBloc>().add(
-                              const AuthLogoutRequested(),
-                            );
-                          },
-                        )
-                      : LayoutBuilder(
-                          key: const ValueKey('login'),
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              padding: EdgeInsets.fromLTRB(
-                                sp(context, AppDimens.space24),
-                                sp(context, AppDimens.space16),
-                                sp(context, AppDimens.space24),
-                                sp(context, AppDimens.space32) + bottomInset,
-                              ),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthAuthenticated) {
+            // Reset DataInitBloc state before triggering pipeline.
+            // This handles re-login after logout (state may be DataInitSuccess
+            // from previous session, which would block DataInitStarted).
+            context.read<DataInitBloc>().add(const DataInitReset());
+            // Trigger data-init pipeline on the login page.
+            context.read<DataInitBloc>().add(
+              DataInitStarted(
+                npm: _npmController.text,
+                password: _passwordController.text,
+                forceRefresh: true,
+              ),
+            );
+          } else if (state is AuthInitial) {
+            // Clear form controllers when returning to login form
+            // (e.g. after "bukan akun saya" rejection or logout).
+            // BLoC's internal _npm/_password are already cleared;
+            // controllers must match to avoid stale text + validation mismatch.
+            _npmController.clear();
+            _passwordController.clear();
+          } else if (state is AuthError) {
+            // Show Toast for network-level errors that can't display inline.
+            // All other errors display inline via BlocBuilder below.
+            if (state.error is NetworkException ||
+                state.error is ServerException) {
+              ErrorHandler.show(context, state.error!);
+            }
+          }
+        },
+        child: Scaffold(
+          body: AuthBackground(
+            child: SafeArea(
+              child: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, authState) {
+                  // Shared content switches smoothly via AnimatedSwitcher.
+                  // AuthBackground stays mounted — no background flash.
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: authState is AuthProfileReview
+                        ? ReviewScreen(
+                            key: const ValueKey('review'),
+                            data: authState.profile,
+                            onConfirm: () => context.read<AuthBloc>().add(
+                              const AuthProfileConfirmed(),
+                            ),
+                            onReject: () => context.read<AuthBloc>().add(
+                              const AuthProfileRejected(),
+                            ),
+                          )
+                        : authState is AuthAuthenticated
+                        ? DataInitProgressView(
+                            key: const ValueKey('progress'),
+                            isFreshLogin: true,
+                            onComplete: () {
+                              if (!mounted) return;
+                              widget.authStatusNotifier.setStatus(
+                                AuthStatus.authenticated,
+                              );
+                            },
+                            onRetry: () {
+                              context.read<DataInitBloc>().add(
+                                const DataInitReset(),
+                              );
+                              context.read<AuthBloc>().add(
+                                const AuthLogoutRequested(),
+                              );
+                            },
+                            onCancel: () {
+                              context.read<DataInitBloc>().add(
+                                const DataInitReset(),
+                              );
+                              context.read<AuthBloc>().add(
+                                const AuthLogoutRequested(),
+                              );
+                            },
+                          )
+                        : LayoutBuilder(
+                            key: const ValueKey('login'),
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                padding: EdgeInsets.fromLTRB(
+                                  sp(context, AppDimens.space24),
+                                  sp(context, AppDimens.space16),
+                                  sp(context, AppDimens.space24),
+                                  sp(context, AppDimens.space32) + bottomInset,
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    _buildGreeting(cs),
-                                    SizedBox(
-                                      height: sp(context, AppDimens.space32),
-                                    ),
-                                    _LoginCard(
-                                      npmController: _npmController,
-                                      passwordController: _passwordController,
-                                    ),
-                                    SizedBox(
-                                      height: sp(context, AppDimens.space24),
-                                    ),
-                                    _buildFooter(cs),
-                                  ],
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildGreeting(cs),
+                                      SizedBox(
+                                        height: sp(context, AppDimens.space32),
+                                      ),
+                                      _LoginCard(
+                                        npmController: _npmController,
+                                        passwordController: _passwordController,
+                                      ),
+                                      SizedBox(
+                                        height: sp(context, AppDimens.space24),
+                                      ),
+                                      _buildFooter(cs),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                );
-              },
+                              );
+                            },
+                          ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -280,6 +306,7 @@ class _LoginCardState extends State<_LoginCard> {
           // Card Header
           Text(
             AppStrings.loginButton,
+            textAlign: TextAlign.center,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontSize: responsiveFontSize(context, AppDimens.text4XL),
             ),
@@ -287,6 +314,7 @@ class _LoginCardState extends State<_LoginCard> {
           SizedBox(height: sp(context, AppDimens.space8)),
           Text(
             AppStrings.loginNpmHelper,
+            textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
               fontSize: responsiveFontSize(context, AppDimens.textMD),
@@ -350,18 +378,6 @@ class _LoginCardState extends State<_LoginCard> {
           ),
           SizedBox(height: sp(context, AppDimens.space8)),
 
-          // Offline banner — fixed-height slot prevents layout jump.
-          SizedBox(
-            height: sp(context, AppDimens.space48),
-            child: BlocBuilder<ConnectivityCubit, ConnectivityState>(
-              builder: (context, state) {
-                if (state.isOnline) return const SizedBox.shrink();
-                return const _OfflineBanner();
-              },
-            ),
-          ),
-          SizedBox(height: sp(context, AppDimens.space8)),
-
           // Submit Button — fixed-height area keeps card stable while loading
           SizedBox(
             height: sp(context, _submitAreaHeight),
@@ -398,42 +414,6 @@ class _LoginCardState extends State<_LoginCard> {
                   ),
                 );
               },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: sp(context, AppDimens.space12),
-        vertical: sp(context, AppDimens.space8),
-      ),
-      decoration: BoxDecoration(
-        color: cs.tertiaryContainer,
-        borderRadius: BorderRadius.circular(sp(context, AppDimens.radiusMD)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.cloud_off, size: 16, color: cs.onTertiaryContainer),
-          SizedBox(width: sp(context, AppDimens.space8)),
-          Expanded(
-            child: Text(
-              AppStrings.loginOfflineBanner,
-              style: TextStyle(
-                color: cs.onTertiaryContainer,
-                fontSize: responsiveFontSize(context, AppDimens.textSM),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

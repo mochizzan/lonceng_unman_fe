@@ -36,6 +36,7 @@ import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
+import 'package:lonceng_unman_fe/core/utils/offline_sheet_controller.dart';
 import 'package:lonceng_unman_fe/core/widgets/navbar_visibility_notifier.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/models/student_profile_model.dart';
@@ -448,6 +449,7 @@ void registerTestDependencies() {
   // `Services.get<FakeConnectivityService>().setOnline(false)` to simulate offline.
   final fakeConn = FakeConnectivityService(isOnline: true);
   Services.register<ConnectivityService>(fakeConn);
+  Services.register<OfflineSheetController>(OfflineSheetController());
   Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
 }
 

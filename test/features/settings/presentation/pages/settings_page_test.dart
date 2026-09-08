@@ -96,4 +96,22 @@ class _FakeNotificationCubit extends Cubit<NotificationState>
 
   @override
   void markHistoryViewed() {}
+
+  @override
+  Future<void> deleteAllDelivered() async {}
+
+  @override
+  Future<void> deleteDelivered(int id) async {}
+
+  @override
+  Future<void> loadDelivered() async {}
+
+  @override
+  Future<void> markAllRead() async {}
+
+  @override
+  Future<void> markAsRead(int id) async {}
+
+  @override
+  Future<void> reconcileDelivered() async {}
 }

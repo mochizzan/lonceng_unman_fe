@@ -298,6 +298,19 @@ class DataInitializationRemoteDataSource {
             forceRefresh: forceRefresh,
           );
         } catch (e) {
+          // Per-semester sentinel for view accumulator — DataInitStatus
+          // frozen, so reuse detail with suffix ::error::<substep>.
+          final stepName = e is DataInitStepException ? e.step : '';
+          final failSub = stepName.startsWith('khs_extract')
+              ? 'extract'
+              : stepName.startsWith('khs_download')
+              ? 'download'
+              : 'fetch';
+          // Emit sentinel before continue — view paints badge merah.
+          yield DataInitProgress(
+            DataInitStatus.fetchingKhsData,
+            detail: '$detail ::error::$failSub',
+          );
           khsErrors.add('Gagal memuat KHS ${semesterEntry.semester}: $e');
           _logStepOutcome(
             DataInitStepOutcome(
@@ -430,6 +443,10 @@ class DataInitializationRemoteDataSource {
             forceRefresh: true,
           );
         } catch (e) {
+          yield DataInitProgress(
+            DataInitStatus.fetchingKhsData,
+            detail: '$detail ::error::fetch',
+          );
           khsErrors.add('Gagal memuat KHS ${semesterEntry.semester}: $e');
           _logStepOutcome(
             DataInitStepOutcome(

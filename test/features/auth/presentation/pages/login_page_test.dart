@@ -281,7 +281,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byIcon(Icons.school), findsOneWidget);
     expect(find.text('Masuk Akun'), findsNWidgets(2)); // header + button
@@ -293,7 +294,7 @@ void main() {
     expect(find.textContaining('Butuh bantuan?'), findsOneWidget);
     expect(find.textContaining('Helpdesk IT'), findsOneWidget);
 
-    await connectivityCubit.close();
+    unawaited(connectivityCubit.close());
   });
 
   testWidgets('submit shows loading when pressed', (tester) async {
@@ -331,13 +332,15 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(theme: lightTheme, routerConfig: router),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     // Enter a valid 11-digit NPM
     await tester.enterText(find.byKey(const Key('npm_field')), '21081010001');
     // Enter password
     await tester.enterText(find.byKey(const Key('password_field')), 'testpass');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.text('Masuk Akun').last);
     await tester.pump();
 
@@ -350,7 +353,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await connectivityCubit.close();
+    unawaited(connectivityCubit.close());
   });
 
   testWidgets('submit navigates to home after successful login', (
@@ -392,14 +395,16 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(theme: lightTheme, routerConfig: router),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Halo Mahasiswa!'), findsOneWidget);
 
     // Enter valid NPM and password
     await tester.enterText(find.byKey(const Key('npm_field')), '21081010001');
     await tester.enterText(find.byKey(const Key('password_field')), 'testpass');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.text('Masuk Akun').last);
     // Profile scrape succeeds → AuthProfileReview → ReviewScreen appears.
     await tester.pump();
@@ -417,6 +422,11 @@ void main() {
     // ("Data akademik siap") — login form no longer visible.
     expect(find.text('Data akademik siap'), findsOneWidget);
 
-    await connectivityCubit.close();
+    // Allow DataInitProgressView's delayed onComplete (500ms) to fire
+    await tester.pump(const Duration(milliseconds: 600));
+    // Dispose tree to cancel any remaining timers
+    await tester.pumpWidget(Container());
+    await tester.pump();
+    unawaited(connectivityCubit.close());
   });
 }

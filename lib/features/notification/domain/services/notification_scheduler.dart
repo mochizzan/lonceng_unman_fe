@@ -161,6 +161,33 @@ class NotificationScheduler {
     await _repository.deleteAll();
   }
 
+  /// Re-register all active alarms from Hive into AlarmManager.
+  ///
+  /// Hive survives reboot, AlarmManager does not. Call this on every cold
+  /// start (after [NotificationService.initialize]) and on resume fallback.
+  /// Idempotent: `zonedSchedule` with same `id` overwrites existing entry.
+  /// Skips inactive entries and handles per-item failures gracefully.
+  Future<int> restoreAll() async {
+    final all = await _repository.getAll();
+    var restored = 0;
+    for (final e in all) {
+      if (!e.isActive) continue;
+      try {
+        await _scheduleAlarm(e);
+        restored++;
+      } catch (err) {
+        debugPrint(
+          '[NotificationScheduler] restore skip ${e.courseName}: $err',
+        );
+        continue;
+      }
+    }
+    debugPrint(
+      '[NotificationScheduler] restoreAll() restored $restored / ${all.length} active',
+    );
+    return restored;
+  }
+
   /// Reschedule all active notifications with a new reminder offset.
   Future<void> rescheduleAllWithNewOffset(int newOffsetMinutes) async {
     final allNotifications = await _repository.getAll();

@@ -239,6 +239,10 @@ class NotificationService {
     debugPrint('[NotificationService] Cancelled all notifications');
   }
 
+  /// Pending scheduled requests (for boot-restore fallback).
+  Future<List<PendingNotificationRequest>> pendingNotificationRequests() =>
+      _plugin.pendingNotificationRequests();
+
   /// Check if exact notifications can be scheduled (Android 12+).
   ///
   /// On Android 12+ (API 31+), SCHEDULE_EXACT_ALARM is a special permission

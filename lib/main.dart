@@ -76,6 +76,7 @@ import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboard
 import 'package:path_provider/path_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
+import 'package:lonceng_unman_fe/core/utils/offline_sheet_controller.dart';
 import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_cubit.dart';
 
 /// Background message handler — must be top-level (not inside a class).
@@ -377,6 +378,7 @@ Future<void> main() async {
       Services.register<ConnectivityService>(
         ConnectivityServiceImpl(Connectivity()),
       );
+      Services.register<OfflineSheetController>(OfflineSheetController());
 
       // ── Navbar Visibility Notifier (global, controls navbar during modals) ──
       Services.register<NavbarVisibilityNotifier>(NavbarVisibilityNotifier());
@@ -499,6 +501,21 @@ Future<void> main() async {
 
       // ── FCM → delivered history wiring (pure Dart) ──
       _wireFcmDelivered();
+
+      // ── Boot restore: AlarmManager hilang saat reboot, Hive tidak.
+      // Re-hydrate semua active alarms dari Hive (fire-and-forget).
+      try {
+        final scheduler = Services.get<NotificationScheduler>();
+        if (scheduler is! NotificationSchedulerNoop) {
+          unawaited(
+            scheduler.restoreAll().catchError((e) {
+              debugPrint('[MAIN] Cold-start restoreAll failed: $e');
+            }),
+          );
+        }
+      } catch (e) {
+        debugPrint('[MAIN] Cold-start restoreAll skipped: $e');
+      }
 
       // Reconcile delivered history on cold start (also runs on resume in didChangeAppLifecycleState).
       try {
@@ -630,7 +647,24 @@ Future<void> _reconcileDelivered(
       // Legacy 7-field rows have scheduledId==null — ignored for grouping to avoid duplicate
       while (!cursor.isAfter(lastTrigger) && !cursor.isAfter(now)) {
         final deliveredId = deliveredIdFor(s.id, cursor);
-        if (!deliveredRepo.containsKey(deliveredId)) {
+        // Tombstoned = user explicitly deleted — skip recreate to preserve delete
+        bool isTombstoned = false;
+        try {
+          isTombstoned = (deliveredRepo as dynamic).localDataSource != null
+              ? (deliveredRepo as dynamic).localDataSource.isTombstoned(
+                      deliveredId,
+                    )
+                    as bool
+              : false;
+        } catch (_) {}
+        if (isTombstoned) {
+          debugPrint(
+            '[reconcile] skip tombstoned id=$deliveredId course=${s.courseName} cursor=$cursor',
+          );
+        } else if (!deliveredRepo.containsKey(deliveredId)) {
+          debugPrint(
+            '[reconcile] recreate id=$deliveredId course=${s.courseName} cursor=$cursor',
+          );
           await deliveredRepo.save(
             NotificationDeliveredEntity(
               id: deliveredId,
@@ -721,6 +755,39 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp>
         Services.get<ConnectivityService>().refresh();
       } catch (e) {
         debugPrint('[LIFECYCLE] Connectivity refresh failed: $e');
+      }
+      // Fallback: OEM / update bisa clear AlarmManager tanpa reboot.
+      // Jika OS sudah kosong tapi Hive masih ada isi, re-hydrate.
+      try {
+        final svc = Services.get<NotificationService>();
+        final scheduler = Services.get<NotificationScheduler>();
+        final repo = Services.get<NotificationRepository>();
+        if (scheduler is! NotificationSchedulerNoop) {
+          unawaited(
+            () async {
+              try {
+                final pending = await svc.pendingNotificationRequests();
+                if (pending.isEmpty) {
+                  final hiveCount = (await repo.getAll())
+                      .where((e) => e.isActive)
+                      .length;
+                  if (hiveCount > 0) {
+                    debugPrint(
+                      '[LIFECYCLE] pending empty but Hive has $hiveCount active — restoring',
+                    );
+                    await scheduler.restoreAll();
+                  }
+                }
+              } catch (e) {
+                debugPrint('[LIFECYCLE] restoreAll resume check failed: $e');
+              }
+            }().catchError((e) {
+              debugPrint('[LIFECYCLE] restoreAll resume failed: $e');
+            }),
+          );
+        }
+      } catch (e) {
+        debugPrint('[LIFECYCLE] restoreAll resume skipped: $e');
       }
       // Reconciliation for weekly delivered history
       try {

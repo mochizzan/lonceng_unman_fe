@@ -47,9 +47,12 @@ import 'package:lonceng_unman_fe/features/onboarding/presentation/pages/onboardi
 import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/avatar_crop_page.dart';
 import 'package:lonceng_unman_fe/features/student_profile/presentation/pages/profil_lengkap_page.dart';
+import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
+import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
 ///
@@ -151,7 +154,7 @@ List<RouteBase> _buildRoutes(
             ),
           ],
           child: BlocListener<DataInitBloc, DataInitBlocState>(
-            listener: (context, state) {
+            listener: (context, state) async {
               if (state is DataInitSuccess) {
                 debugPrint(
                   '[ROUTER] DataInitSuccess → dispatching refresh to all BLoCs',
@@ -159,6 +162,47 @@ List<RouteBase> _buildRoutes(
                 context.read<JadwalBloc>().add(const JadwalFetchRequested());
                 context.read<HomeBloc>().add(const HomeFetchRequested());
                 context.read<ProfileBloc>().add(const ProfileFetchRequested());
+                // Seed offline/lokal class reminders — the pipeline already
+                // cached KRS (2 mata kuliah in the fresh-login log). Before
+                // this fix nothing ever called NotificationScheduler, so
+                // Settings showed empty toggles and no alarms fired.
+                try {
+                  final cache = Services.get<AcademicCacheService>();
+                  final creds = await cache.loadCredentials();
+                  final npm = creds?['npm'];
+                  if (npm != null && npm.isNotEmpty) {
+                    final krsJson = await cache.loadKrsData(npm: npm);
+                    if (krsJson != null) {
+                      final krsData = KrsModel.fromJson(krsJson).krs;
+                      if (krsData.mataKuliah.isNotEmpty) {
+                        final now = DateTime.now();
+                        final today = DateTime(now.year, now.month, now.day);
+                        final items = krsData.mataKuliah
+                            .map((mk) => toScheduleItem(mk, today, now))
+                            .toList();
+                        debugPrint(
+                          '[ROUTER] DataInitSuccess → seeding ${items.length} offline notifications',
+                        );
+                        if (!context.mounted) return;
+                        await context.read<NotificationCubit>().scheduleAll(
+                          items,
+                        );
+                      } else {
+                        debugPrint(
+                          '[ROUTER] KRS has no mata kuliah — skip notification seeding',
+                        );
+                      }
+                    } else {
+                      debugPrint(
+                        '[ROUTER] KRS cache miss after DataInitSuccess — skip notification seeding',
+                      );
+                    }
+                  }
+                } catch (e) {
+                  debugPrint(
+                    '[ROUTER] Seeding offline notifications failed: $e',
+                  );
+                }
               }
             },
             child: MainShellScaffold(

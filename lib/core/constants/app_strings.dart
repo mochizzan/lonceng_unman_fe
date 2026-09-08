@@ -257,6 +257,10 @@ abstract final class AppStrings {
   static const String dataInitNoConnection =
       'Tidak ada koneksi internet. Coba lagi saat internet stabil.';
   static const String dataInitNoConnectionStep = 'Tidak ada koneksi';
+  static const String refreshErrorSkip = 'Lewati';
+  static const String refreshErrorBackToLogin = 'Kembali ke Login';
+  static const String refreshErrorPausedHintNetwork =
+      'Koneksi terputus. Periksa internet lalu coba lagi atau lewati.';
 
   // ── Notification History ────────────────────────────────────
   static const String notificationHistoryTitle = 'Riwayat Notifikasi';

@@ -177,15 +177,20 @@ class _DataRefreshOverlayState extends State<DataRefreshOverlay> {
               Navigator.of(listenerContext).pop();
             }
           });
-        } else if (state is DataInitFailure) {
-          // Pull-to-refresh failure path: show the error view for 3 seconds
-          // then auto-close. The overlay IS the error feedback; no SnackBar.
-          // Login flow is unaffected because LoginPage does not instantiate
-          // this widget — it mounts DataInitProgressView(isFreshLogin: true)
-          // directly and that view still shows Retry/Cancel buttons.
+        } else if (state is DataInitFailure || state is DataInitPaused) {
+          // Pull-to-refresh failure/paused path: show the error view for
+          // 3 seconds then auto-close. Login flow is unaffected because it
+          // mounts DataInitProgressView(isFreshLogin: true) directly with
+          // Retry/Skip/Back buttons.
+          final msg = state is DataInitPaused
+              ? state.message
+              : (state as DataInitFailure).message;
+          final step = state is DataInitPaused
+              ? state.failedStep
+              : (state as DataInitFailure).failedStep;
           debugPrint(
-            '[DATA_REFRESH] Failure (pull-to-refresh): ${state.message} '
-            'step=${state.failedStep} — auto-closing in 3s',
+            '[DATA_REFRESH] Failure/Paused (pull-to-refresh): $msg '
+            'step=$step — auto-closing in 3s',
           );
           _autoCloseTimer?.cancel();
           _autoCloseTimer = Timer(const Duration(seconds: 3), () {

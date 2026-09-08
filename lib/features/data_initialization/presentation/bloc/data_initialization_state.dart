@@ -35,14 +35,58 @@ class DataInitInProgress extends DataInitBlocState {
 }
 
 class DataInitSuccess extends DataInitBlocState {
-  const DataInitSuccess();
+  final bool isPartial;
+  final List<String> skippedSteps;
+
+  const DataInitSuccess({this.isPartial = false, this.skippedSteps = const []});
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is DataInitSuccess;
+      identical(this, other) ||
+      other is DataInitSuccess &&
+          runtimeType == other.runtimeType &&
+          isPartial == other.isPartial &&
+          _listEquals(skippedSteps, other.skippedSteps);
 
   @override
-  int get hashCode => runtimeType.hashCode;
+  int get hashCode => Object.hash(isPartial, Object.hashAll(skippedSteps));
+}
+
+bool _listEquals(List<String> a, List<String> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
+class DataInitPaused extends DataInitBlocState {
+  final String failedStep;
+  final String message;
+  final bool skippable;
+  final bool isNetworkError;
+
+  const DataInitPaused(
+    this.message, {
+    required this.failedStep,
+    required this.skippable,
+    this.isNetworkError = true,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DataInitPaused &&
+          runtimeType == other.runtimeType &&
+          message == other.message &&
+          failedStep == other.failedStep &&
+          skippable == other.skippable &&
+          isNetworkError == other.isNetworkError;
+
+  @override
+  int get hashCode =>
+      Object.hash(message, failedStep, skippable, isNetworkError);
 }
 
 class DataInitFailure extends DataInitBlocState {

@@ -11,6 +11,7 @@ import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_event.dart
 import 'package:lonceng_unman_fe/features/auth/presentation/bloc/auth_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_init_progress_view.dart';
 import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_cubit.dart';
 import 'package:lonceng_unman_fe/features/connectivity/cubit/connectivity_state.dart';
@@ -142,31 +143,39 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           )
                         : authState is AuthAuthenticated
-                        ? DataInitProgressView(
-                            key: const ValueKey('progress'),
-                            isFreshLogin: true,
-                            onComplete: () {
-                              if (!mounted) return;
-                              widget.authStatusNotifier.setStatus(
-                                AuthStatus.authenticated,
-                              );
+                        ? BlocListener<DataInitBloc, DataInitBlocState>(
+                            listener: (context, state) {
+                              if (state is DataInitSuccess) {
+                                if (!mounted) return;
+                                widget.authStatusNotifier.setStatus(
+                                  AuthStatus.authenticated,
+                                );
+                              }
                             },
-                            onRetry: () {
-                              context.read<DataInitBloc>().add(
-                                const DataInitReset(),
-                              );
-                              context.read<AuthBloc>().add(
-                                const AuthLogoutRequested(),
-                              );
-                            },
-                            onCancel: () {
-                              context.read<DataInitBloc>().add(
-                                const DataInitReset(),
-                              );
-                              context.read<AuthBloc>().add(
-                                const AuthLogoutRequested(),
-                              );
-                            },
+                            child: DataInitProgressView(
+                              key: const ValueKey('progress'),
+                              isFreshLogin: true,
+                              onComplete: () {
+                                if (!mounted) return;
+                                widget.authStatusNotifier.setStatus(
+                                  AuthStatus.authenticated,
+                                );
+                              },
+                              onRetry: () => context.read<DataInitBloc>().add(
+                                const DataInitRetry(),
+                              ),
+                              onSkip: () => context.read<DataInitBloc>().add(
+                                const DataInitSkip(),
+                              ),
+                              onCancel: () {
+                                context.read<DataInitBloc>().add(
+                                  const DataInitReset(),
+                                );
+                                context.read<AuthBloc>().add(
+                                  const AuthLogoutRequested(),
+                                );
+                              },
+                            ),
                           )
                         : LayoutBuilder(
                             key: const ValueKey('login'),

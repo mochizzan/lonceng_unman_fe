@@ -41,3 +41,25 @@ class DataInitReset extends DataInitEvent {
   @override
   int get hashCode => runtimeType.hashCode;
 }
+
+class DataInitRetry extends DataInitEvent {
+  const DataInitRetry();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is DataInitRetry;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+class DataInitSkip extends DataInitEvent {
+  const DataInitSkip();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is DataInitSkip;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}

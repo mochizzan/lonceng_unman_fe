@@ -90,7 +90,7 @@ class _NoOpRepo implements DataInitializationRepository {
 void main() {
   group('DataInitBloc offline fail-fast', () {
     test(
-      'offline → DataInitFailure(no_connection) + pipeline NOT called',
+      'offline → DataInitPaused(no_connection, skippable:false) + pipeline NOT called',
       () async {
         final fakeConn = _FakeConnectivityService(isOnline: false);
         final fakeGet = _FakeGetDataInit();
@@ -108,9 +108,10 @@ void main() {
         expect(
           emitted,
           contains(
-            const DataInitFailure(
+            const DataInitPaused(
               AppStrings.dataInitNoConnection,
               failedStep: 'no_connection',
+              skippable: false,
             ),
           ),
         );

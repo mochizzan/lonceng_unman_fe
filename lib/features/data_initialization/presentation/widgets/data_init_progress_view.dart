@@ -22,6 +22,7 @@ class DataInitProgressView extends StatefulWidget {
     this.onRetry,
     this.onCancel,
     this.onClose,
+    this.onSkip,
     this.isFreshLogin = false,
     this.onKhsCountChanged,
   });
@@ -30,6 +31,7 @@ class DataInitProgressView extends StatefulWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onCancel;
   final VoidCallback? onClose;
+  final VoidCallback? onSkip;
   final bool isFreshLogin;
   final ValueChanged<int>? onKhsCountChanged;
 
@@ -267,6 +269,11 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
           _finalizeAllProgress();
           _updateKhsCount();
           await _wakelock.disable();
+          _autoContinueTimer?.cancel();
+        } else if (state is DataInitPaused) {
+          await _wakelock.disable();
+          _autoContinueTimer?.cancel();
+          // Keep timeline — snapshot the error badge state.
         } else if (state is DataInitFailure) {
           await _wakelock.disable();
           if (state.failedStep != 'no_connection') {
@@ -274,16 +281,18 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
           }
         }
 
-        if (state is! DataInitFailure) {
+        if (state is! DataInitFailure && state is! DataInitPaused) {
           _autoContinueTimer?.cancel();
         }
       },
       child: BlocBuilder<DataInitBloc, DataInitBlocState>(
         builder: (context, state) {
           final isCompleted = state is DataInitSuccess;
+          final isPaused = state is DataInitPaused;
           final isFailure = state is DataInitFailure;
+          final showError = isPaused || isFailure;
 
-          final statusText = isFailure
+          final statusText = showError
               ? AppStrings.refreshErrorTitle
               : state is DataInitInProgress
               ? init.dataInitStatusText(state.status, detail: state.detail)
@@ -302,18 +311,7 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
             });
           }
 
-          if (isFailure && widget.isFreshLogin) {
-            final isProfileErr = _isProfileError(state.failedStep);
-            if (!isProfileErr && _autoContinueTimer == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _startAutoContinueTimer(() {
-                  widget.onRetry?.call();
-                });
-              });
-            }
-          }
-
-          if (isFailure) {
+          if (showError) {
             return _buildErrorView(context, cs, state);
           }
 
@@ -396,10 +394,21 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
   Widget _buildErrorView(
     BuildContext context,
     ColorScheme cs,
-    DataInitFailure state,
+    DataInitBlocState state,
   ) {
-    final stepLabel = _humanReadableFailedStep(state.failedStep);
-    final hasActions = widget.onRetry != null || widget.onClose != null;
+    final String? failedStep = state is DataInitPaused
+        ? state.failedStep
+        : (state as DataInitFailure).failedStep;
+    final String message = state is DataInitPaused
+        ? state.message
+        : (state as DataInitFailure).message;
+    final bool isPaused = state is DataInitPaused;
+    final bool skippable = state is DataInitPaused ? state.skippable : false;
+    final bool isProfile = _isProfileError(failedStep);
+    final String stepLabel = _humanReadableFailedStep(failedStep);
+    final String hint = (isPaused && (state as DataInitPaused).isNetworkError)
+        ? AppStrings.refreshErrorPausedHintNetwork
+        : AppStrings.refreshErrorHint;
 
     final errorHeader = Column(
       mainAxisSize: MainAxisSize.min,
@@ -441,7 +450,7 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
             horizontal: sp(context, AppDimens.space8),
           ),
           child: Text(
-            state.message,
+            message,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -454,34 +463,104 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
             horizontal: sp(context, AppDimens.space16),
           ),
           child: Text(
-            AppStrings.refreshErrorHint,
+            hint,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ),
-        if (hasActions) ...[
-          SizedBox(height: sp(context, AppDimens.space28)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (widget.onRetry != null)
-                FilledButton.icon(
-                  onPressed: widget.onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text(AppStrings.refreshErrorRetry),
+        Builder(
+          builder: (context) {
+            final hasRetry = widget.onRetry != null;
+            final hasSkip = widget.onSkip != null;
+            final hasCancel = widget.onCancel != null;
+            final hasClose = widget.onClose != null;
+            if (!hasRetry && !hasSkip && !hasCancel && !hasClose) {
+              return const SizedBox.shrink();
+            }
+            // Profile paused/failure → [Retry | Back to Login]
+            // Skippable paused → [Retry | Skip]
+            // Other failure → [Retry] / [Close] fallback
+            List<Widget> actions = [];
+            if (isProfile) {
+              if (hasRetry) {
+                actions.add(
+                  FilledButton.icon(
+                    onPressed: widget.onRetry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text(AppStrings.refreshErrorRetry),
+                  ),
+                );
+              }
+              if (hasCancel) {
+                actions.add(
+                  OutlinedButton(
+                    onPressed: widget.onCancel,
+                    child: const Text(AppStrings.refreshErrorBackToLogin),
+                  ),
+                );
+              }
+            } else if (isPaused && skippable) {
+              if (hasRetry) {
+                actions.add(
+                  FilledButton.icon(
+                    onPressed: widget.onRetry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text(AppStrings.refreshErrorRetry),
+                  ),
+                );
+              }
+              if (hasSkip) {
+                actions.add(
+                  OutlinedButton(
+                    onPressed: widget.onSkip,
+                    child: const Text(AppStrings.refreshErrorSkip),
+                  ),
+                );
+              }
+            } else {
+              // Non-profile failure or non-skippable paused
+              if (hasRetry) {
+                actions.add(
+                  FilledButton.icon(
+                    onPressed: widget.onRetry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text(AppStrings.refreshErrorRetry),
+                  ),
+                );
+              }
+              if (hasClose) {
+                actions.add(
+                  OutlinedButton(
+                    onPressed: widget.onClose,
+                    child: const Text(AppStrings.refreshErrorClose),
+                  ),
+                );
+              }
+            }
+            if (actions.isEmpty) return const SizedBox.shrink();
+            // Intermix spacing
+            final spaced = <Widget>[];
+            for (var i = 0; i < actions.length; i++) {
+              if (i > 0) {
+                spaced.add(SizedBox(width: sp(context, AppDimens.space12)));
+              }
+              spaced.add(actions[i]);
+            }
+            return Column(
+              children: [
+                SizedBox(height: sp(context, AppDimens.space28)),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: sp(context, AppDimens.space12),
+                  runSpacing: sp(context, AppDimens.space12),
+                  children: actions,
                 ),
-              if (widget.onRetry != null && widget.onClose != null)
-                SizedBox(width: sp(context, AppDimens.space12)),
-              if (widget.onClose != null)
-                OutlinedButton(
-                  onPressed: widget.onClose,
-                  child: const Text(AppStrings.refreshErrorClose),
-                ),
-            ],
-          ),
-        ],
+              ],
+            );
+          },
+        ),
       ],
     );
 

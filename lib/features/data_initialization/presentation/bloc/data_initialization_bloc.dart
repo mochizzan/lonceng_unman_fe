@@ -8,6 +8,7 @@ import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/network/connectivity_service.dart';
 import 'package:lonceng_unman_fe/core/utils/error_handler.dart';
+import 'package:lonceng_unman_fe/core/utils/network_error_classifier.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/entities/data_initialization_entity.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_event.dart';
@@ -21,11 +22,20 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
   final ConnectivityService? _connectivity;
   bool _isRunning = false;
 
+  String? _lastNpm;
+  String? _lastPassword;
+  bool _lastForceRefresh = true;
+  bool _lastIsPullRefresh = false;
+  String? _pausedStep;
+  bool _pausedSkippable = false;
+
   DataInitBloc(this._getDataInit, {ConnectivityService? connectivity})
     : _connectivity = connectivity ?? Services.get<ConnectivityService>(),
       super(const DataInitIdle()) {
     on<DataInitStarted>(_onStarted);
     on<DataInitReset>(_onReset);
+    on<DataInitRetry>(_onRetry);
+    on<DataInitSkip>(_onSkip);
   }
 
   /// Whether a pipeline run is currently in progress.
@@ -38,14 +48,18 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
     debugPrint(
       '[DATA_INIT] _onStarted called — forceRefresh=${event.forceRefresh}',
     );
-    // Fail-fast: if the device is offline, skip the entire pipeline.
-    // Avoids 30s/step × 8 step timeouts when there's no point trying.
+    // Fail-fast: if the device is offline, emit paused so the user can
+    // retry without a full logout. Profile has not been fetched yet, so
+    // skippable must be false (no Lewati for mandatory profile).
     if (_connectivity?.isOnline == false) {
-      debugPrint('[DATA_INIT] Offline detected — fail-fast');
+      debugPrint('[DATA_INIT] Offline detected — fail-fast (paused)');
+      _pausedStep = 'no_connection';
+      _pausedSkippable = false;
       emit(
-        const DataInitFailure(
+        const DataInitPaused(
           AppStrings.dataInitNoConnection,
           failedStep: 'no_connection',
+          skippable: false,
         ),
       );
       return;
@@ -55,6 +69,13 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
       debugPrint('[DATA_INIT] Already running — SKIP');
       return;
     }
+
+    _lastNpm = event.npm;
+    _lastPassword = event.password;
+    _lastForceRefresh = event.forceRefresh;
+    _lastIsPullRefresh = event.isPullRefresh;
+    _pausedStep = null;
+    _pausedSkippable = false;
 
     _isRunning = true;
     debugPrint('[DATA_INIT] Emitting scrapingProfile');
@@ -89,6 +110,8 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
         if (status == DataInitStatus.completed ||
             status == DataInitStatus.completedWithErrors) {
           debugPrint('[DATA_INIT] Emitting DataInitSuccess');
+          _pausedStep = null;
+          _pausedSkippable = false;
           emit(const DataInitSuccess());
         } else if (status == DataInitStatus.failed) {
           debugPrint('[DATA_INIT] Emitting DataInitFailure');
@@ -117,14 +140,57 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
       } else if (error is TimeoutException) {
         step = 'timeout';
       }
-      emit(DataInitFailure(friendlyMessage, failedStep: step));
+      final net = isNetworkError(error, failedStep: step);
+      if (net) {
+        final skippable = step == null ? false : !isProfileStep(step);
+        _pausedStep = step ?? 'unknown';
+        _pausedSkippable = skippable;
+        emit(
+          DataInitPaused(
+            friendlyMessage,
+            failedStep: _pausedStep!,
+            skippable: skippable,
+          ),
+        );
+      } else {
+        emit(DataInitFailure(friendlyMessage, failedStep: step));
+      }
     } finally {
       _isRunning = false;
     }
   }
 
+  Future<void> _onRetry(
+    DataInitRetry event,
+    Emitter<DataInitBlocState> emit,
+  ) async {
+    if (_isRunning) return;
+    if (_pausedStep == null) return;
+    if (_lastNpm == null || _lastPassword == null) return;
+    add(
+      DataInitStarted(
+        npm: _lastNpm!,
+        password: _lastPassword!,
+        forceRefresh: _lastForceRefresh,
+        isPullRefresh: _lastIsPullRefresh,
+      ),
+    );
+  }
+
+  void _onSkip(DataInitSkip event, Emitter<DataInitBlocState> emit) {
+    if (_isRunning) return;
+    if (_pausedStep == null) return;
+    if (!_pausedSkippable) return;
+    final step = _pausedStep!;
+    _pausedStep = null;
+    _pausedSkippable = false;
+    emit(DataInitSuccess(isPartial: true, skippedSteps: [step]));
+  }
+
   void _onReset(DataInitReset event, Emitter<DataInitBlocState> emit) {
     if (_isRunning) return;
+    _pausedStep = null;
+    _pausedSkippable = false;
     emit(const DataInitIdle());
   }
 }

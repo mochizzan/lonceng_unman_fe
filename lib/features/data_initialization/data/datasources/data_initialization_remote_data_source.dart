@@ -11,6 +11,7 @@ import 'package:lonceng_unman_fe/features/profile/data/services/photo_service.da
 import 'package:lonceng_unman_fe/features/profile/presentation/cubit/avatar_cubit.dart';
 import 'package:lonceng_unman_fe/core/cache/avatar_cache_service.dart';
 import 'package:lonceng_unman_fe/core/di/di.dart';
+import 'package:lonceng_unman_fe/core/utils/network_error_classifier.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull_refresh_debounce.dart';
 
 /// Orchestrates the post-login data initialization pipeline.
@@ -219,6 +220,7 @@ class DataInitializationRemoteDataSource {
         yield const DataInitProgress(DataInitStatus.krsEmpty);
       }
     } catch (e) {
+      if (isNetworkError(e)) rethrow;
       // KRS fetch failure is non-fatal — yield empty status
       _logStepOutcome(
         DataInitStepOutcome(
@@ -298,6 +300,7 @@ class DataInitializationRemoteDataSource {
             forceRefresh: forceRefresh,
           );
         } catch (e) {
+          if (isNetworkError(e)) rethrow;
           // Per-semester sentinel for view accumulator — DataInitStatus
           // frozen, so reuse detail with suffix ::error::<substep>.
           final stepName = e is DataInitStepException ? e.step : '';
@@ -330,6 +333,7 @@ class DataInitializationRemoteDataSource {
         yield const DataInitProgress(DataInitStatus.khsEmpty);
       }
     } catch (e) {
+      if (isNetworkError(e)) rethrow;
       // KHS fetch failure is non-fatal — yield empty status
       _logStepOutcome(
         DataInitStepOutcome(
@@ -404,6 +408,7 @@ class DataInitializationRemoteDataSource {
         yield const DataInitProgress(DataInitStatus.krsEmpty);
       }
     } catch (e) {
+      if (isNetworkError(e)) rethrow;
       // KRS fetch failure is non-fatal — yield empty status
       _logStepOutcome(
         DataInitStepOutcome(
@@ -443,6 +448,7 @@ class DataInitializationRemoteDataSource {
             forceRefresh: true,
           );
         } catch (e) {
+          if (isNetworkError(e)) rethrow;
           yield DataInitProgress(
             DataInitStatus.fetchingKhsData,
             detail: '$detail ::error::fetch',
@@ -466,6 +472,7 @@ class DataInitializationRemoteDataSource {
         yield const DataInitProgress(DataInitStatus.khsEmpty);
       }
     } catch (e) {
+      if (isNetworkError(e)) rethrow;
       // KHS fetch failure is non-fatal — yield empty status
       _logStepOutcome(
         DataInitStepOutcome(
@@ -650,6 +657,21 @@ class DataInitializationRemoteDataSource {
       debugPrint('[DataInitDS] Photo cached: ${photoBytes.length} bytes');
     }
   }
+
+  /// M2 granular resume hook — re-runs pipeline from [failedStep] onward.
+  /// M1 fallback is full-restart (not calling this); stub kept for API shape.
+  // coverage:ignore-start
+  // ignore: unused_element
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+    Uint8List? cachedPhotoBytes,
+  }) async* {
+    throw UnimplementedError('resumeFrom only in M2');
+  }
+  // coverage:ignore-end
 
   /// Wraps [fn] in a try/catch, converting errors into [DataInitStepException].
   Future<T> _runStep<T>(String step, Future<T> Function() fn) async {

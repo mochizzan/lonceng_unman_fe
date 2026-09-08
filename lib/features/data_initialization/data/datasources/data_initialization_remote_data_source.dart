@@ -674,12 +674,16 @@ class DataInitializationRemoteDataSource {
   // coverage:ignore-end
 
   /// Wraps [fn] in a try/catch, converting errors into [DataInitStepException].
+  /// Preserves the original [AppException] as [originalError] so
+  /// [isNetworkError] can classify network failures while keeping the step.
   Future<T> _runStep<T>(String step, Future<T> Function() fn) async {
     try {
       return await fn();
     } catch (e) {
-      // Preserve original exception type if it's already an AppException
-      if (e is AppException) rethrow;
+      if (e is DataInitStepException) rethrow;
+      if (e is AppException) {
+        throw DataInitStepException(step, e.message, e);
+      }
       throw DataInitStepException(step, e.toString(), e);
     }
   }

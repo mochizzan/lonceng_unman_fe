@@ -86,6 +86,16 @@ class _DataInitProgressViewState extends State<DataInitProgressView> {
   }
 
   DataInitStatus? _statusFromFailedStep(String step) {
+    // Handle parameterized KHS steps like khs_download_Ganjil
+    if (step.startsWith('khs_download')) return DataInitStatus.downloadingKhs;
+    if (step.startsWith('khs_extract')) return DataInitStatus.extractingKhs;
+    if (step.startsWith('khs_data')) return DataInitStatus.fetchingKhsData;
+    if (step.startsWith('khs_semesters')) {
+      return DataInitStatus.fetchingKhsSemesters;
+    }
+    if (step.startsWith('krs_download')) return DataInitStatus.downloadingKrs;
+    if (step.startsWith('krs_extract')) return DataInitStatus.extractingKrs;
+    if (step.startsWith('krs_data')) return DataInitStatus.fetchingKrsData;
     for (final s in DataInitStatus.values) {
       if (s.name == step) return s;
     }

@@ -48,7 +48,7 @@ Ekstrak `OfflineSheetController` (guard anti-duplikat + `sync`) + widget `Offlin
 ### Pendekatan 3 — Hybrid banner + sheet fallback
 Pertahankan inline banner sebagai fallback + sheet muncul sekali saat pertama offline. Kelebihan: tidak kehilangan affordance inline. Kekurangan: duplikat UI untuk pesan sama, maintenance 2×, bertentangan dengan "diubah menggunakan modal bottomsheet".
 
-**Keputusan:** Pendekatan 2. Selaras dengan `Services.register` procedural existing, Clean Architecture tetap (`presentation → domain → data` tidak dilanggar — perubahan hanya di `presentation` + `core`), dan YAGNI terpenuhi (hanya 2 file baru).
+**Keputusan:** Pendekatan 2. Selaras dengan `Services.register` procedural existing, Clean Architecture tetap (`presentation → domain → data` tidak dilanggar — perubahan hanya di `presentation` + `core`), dan YAGNI terpenuhi (2 file lib baru + 4 file test baru; tidak ada dependensi baru).
 
 ## Arsitektur & Penempatan File
 
@@ -229,11 +229,10 @@ class OfflineSheetController {
   Future<void> _show(BuildContext context) async {
     _isShowing = true;
     // Fire-and-forget di caller — jangan await di BlocListener.
-    unawaited(
-      showOfflineInfoBottomSheet(context).whenComplete(() {
-        _isShowing = false;
-      }),
-    );
+    // ignore: discarded_futures — sengaja fire-and-forget dengan guard _isShowing
+    showOfflineInfoBottomSheet(context).whenComplete(() {
+      _isShowing = false;
+    });
   }
 
   void _dismiss(BuildContext context) {
@@ -330,7 +329,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    // Best-effort dismiss sheet agar tidak bocor
+    // Best-effort dismiss sheet agar tidak bocor.
+    // Hati-hati: context di dispose sudah deactivated — guard mounted/canPop di controller
+    // akan membuat ini jadi no-op yang aman. Alternatif: simpan `BuildContext` valid di
+    // didChangeDependencies atau panggil dismiss dari listener saat authState berubah.
     try {
       Services.get<OfflineSheetController>().dismissIfShowing(context);
     } catch (_) {}

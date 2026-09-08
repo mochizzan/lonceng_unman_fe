@@ -200,11 +200,17 @@ class DataInitPaused extends DataInitBlocState {
   // ==/hashCode
 }
 
+class DataInitSuccess extends DataInitBlocState {
+  final bool isPartial;           // true jika via Lewati (M1/M2)
+  final List<String> skippedSteps; // step yang di-skip, kosong jika completed penuh
+  const DataInitSuccess({this.isPartial = false, this.skippedSteps = const []});
+}
+
 // Alternatif perluasan (kompatibel tapi kurang eksplisit):
 // class DataInitFailure { final bool isNetworkError; final bool skippable; }
 ```
 
-Pemilihan: **DataInitPaused terpisah** (prefer), `DataInitFailure` tetap untuk non-network.
+Pemilihan: **DataInitPaused terpisah** (prefer), `DataInitFailure` tetap untuk non-network. `DataInitSuccess` diperluas dengan `isPartial/skippedSteps` (default `false/[]` sehingga `const DataInitSuccess()` lama tetap kompatibel — tidak pecah test existing yang `expect(DataInitSuccess)`).
 
 ### Event baru
 
@@ -311,15 +317,15 @@ BlocListener<DataInitBloc, DataInitBlocState>(
 
 ### `AppStrings` baru
 
+`refreshErrorRetry = 'Coba Lagi'` **sudah ada** (`refreshErrorRetry`), jadi reuse — jangan duplikat. Tambahan baru:
+
 ```dart
-static const refreshErrorRetry = 'Coba Lagi'; // sudah ada?
 static const refreshErrorSkip = 'Lewati';
 static const refreshErrorBackToLogin = 'Kembali ke Login';
 static const refreshErrorPausedHintNetwork = 'Koneksi terputus. Periksa internet lalu coba lagi atau lewati.';
-static const refreshErrorPausedStepPrefix = 'Gagal di';
 ```
 
-Reuse `refreshErrorTitle`, `refreshErrorStepPrefix`, `refreshErrorHint` untuk non-paused; tambah hint khusus paused jika copy perlu beda.
+`refreshErrorSkip`/`BackToLogin`/`PausedHintNetwork` baru; `refreshErrorTitle`, `refreshErrorStepPrefix`, `refreshErrorHint`, `refreshErrorStepUnknown`, `dataInitNoConnection`, `dataInitNoConnectionStep` reuse. Tidak ada `refreshErrorPausedStepPrefix` terpisah — pakai `refreshErrorStepPrefix` yang ada.
 
 ### Theming & aksesibilitas
 
@@ -337,7 +343,7 @@ Prinsip repo: 100% hand-written fakes (tanpa mockito), `blocTest` untuk BLoC, `t
 
 | # | Given (fake throw) | When | Expect |
 |---|---|---|---|
-| B1 | `connectivity.isOnline=false` di awal | `add(DataInitStarted)` | `emits [DataInitPaused(no_connection, skippable=false, isNetwork=true)]` — belum ada profile, tombol Retry+Kembali |
+| B1 | `connectivity.isOnline=false` di awal (fail-fast) | `add(DataInitStarted)` | `emits [DataInitPaused(no_connection, skippable=false, isNetwork=true)]` — belum ada profile (scrape belum jalan), jadi Lewati tidak boleh (wajib profile dulu) → Retry+Kembali |
 | B2 | `profile_scrape_1` throw `NetworkException` | Started | `Paused(profile_scrape_1, skippable=false)` |
 | B3 | `profile_scrape_2` Network | Started | `Paused(profile_scrape_2, skippable=false)` |
 | B4 | `profile_get` Network | Started | `Paused(profile_get, skippable=false)` |

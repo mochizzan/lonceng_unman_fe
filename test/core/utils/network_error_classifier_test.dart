@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/network_error_classifier.dart';
 
@@ -37,6 +39,49 @@ void main() {
     test('failedStep no_connection -> true', () {
       const e = DataInitStepException('no_connection', 'msg');
       expect(isNetworkError(e, failedStep: 'no_connection'), isTrue);
+    });
+
+    test('HttpException -> true', () {
+      expect(isNetworkError(const HttpException('x')), isTrue);
+    });
+
+    test('HandshakeException -> true', () {
+      expect(isNetworkError(const HandshakeException('x')), isTrue);
+    });
+
+    test('IOException -> true', () {
+      expect(isNetworkError(const FileSystemException('x')), isTrue);
+    });
+
+    test('http.ClientException -> true', () {
+      expect(isNetworkError(http.ClientException('x')), isTrue);
+    });
+
+    test('DataInitStepException wrapping SocketException -> true', () {
+      const e = DataInitStepException(
+        'krs_download',
+        'msg',
+        SocketException('x'),
+      );
+      expect(isNetworkError(e), isTrue);
+    });
+
+    test('DataInitStepException wrapping http.ClientException -> true', () {
+      final e = DataInitStepException(
+        'khs_download_Ganjil',
+        'msg',
+        http.ClientException('x'),
+      );
+      expect(isNetworkError(e), isTrue);
+    });
+
+    test('DataInitStepException wrapping ServerException -> false', () {
+      const e = DataInitStepException(
+        'krs_download',
+        'msg',
+        ServerException('x'),
+      );
+      expect(isNetworkError(e), isFalse);
     });
   });
 

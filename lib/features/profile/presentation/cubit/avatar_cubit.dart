@@ -77,6 +77,20 @@ class AvatarCubit extends Cubit<AvatarState> {
     if (!isClosed) emit(s);
   }
 
+  /// Dipanggil DataInit setelah foto backend berhasil di-cache.
+  /// Jika cubit sudah terikat ke [npm] yang sama, ini tetap meng-emit bytes
+  /// tersebut (berbeda dari [bindNpm] yang no-op untuk npm sama). Jika cubit
+  /// belum terikat, ia mengikat dulu lalu emit.
+  void onPhotoCached(String npm, Uint8List bytes) {
+    if (bytes.isEmpty) return;
+    if (_npm == npm) {
+      _safeEmit(AvatarReady(bytes));
+      return;
+    }
+    _npm = npm;
+    _safeEmit(AvatarReady(bytes));
+  }
+
   /// Mengikat cubit ke [npm] dan memuat avatar miliknya.
   ///
   /// No-op bila [npm] sama dengan yang sedang terikat, supaya rebuild widget

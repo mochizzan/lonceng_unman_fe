@@ -608,7 +608,18 @@ void main() {
           'Sesi telah berakhir. Silakan login ulang.',
         );
 
-        await expectLater(_run(f), throwsA(isA<AuthException>()));
+        await expectLater(
+          _run(f),
+          throwsA(
+            isA<DataInitStepException>()
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<AuthException>(),
+                )
+                .having((e) => e.step, 'step', 'profile_get'),
+          ),
+        );
       });
     });
   });

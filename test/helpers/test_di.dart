@@ -230,6 +230,15 @@ class _FakeDataInitRepo implements DataInitializationRepository {
     bool forceRefresh = true,
     bool isPullRefresh = false,
   }) async* {}
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
+  }) async* {}
 }
 
 class _FakeNotificationRepo implements NotificationRepository {

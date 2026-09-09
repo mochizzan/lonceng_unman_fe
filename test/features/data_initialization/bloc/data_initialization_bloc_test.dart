@@ -6,6 +6,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
@@ -85,6 +86,15 @@ class _NoOpRepo implements DataInitializationRepository {
   }) {
     return const Stream<DataInitProgress>.empty();
   }
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
+  }) => const Stream<DataInitProgress>.empty();
 }
 
 void main() {

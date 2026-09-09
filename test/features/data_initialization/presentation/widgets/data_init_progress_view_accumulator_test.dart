@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,6 +37,15 @@ class _NoOpRepo implements DataInitializationRepository {
     required String password,
     bool forceRefresh = true,
     bool isPullRefresh = false,
+  }) => const Stream<DataInitProgress>.empty();
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
   }) => const Stream<DataInitProgress>.empty();
 }
 

@@ -45,11 +45,20 @@ class FiamService {
 
   Future<void> _apply(AuthStatus s) async {
     final suppress = s != AuthStatus.authenticated;
+    final enableCollection = !suppress;
     try {
       await _fiam.setMessagesSuppressed(suppress);
       debugPrint('[FIAM] suppressed=$suppress (status=$s)');
     } catch (e) {
-      debugPrint('[FIAM] _apply FAILED: $e (status=$s)');
+      debugPrint('[FIAM] _apply setMessagesSuppressed FAILED: $e (status=$s)');
+    }
+    try {
+      await _fiam.setAutomaticDataCollectionEnabled(enableCollection);
+      debugPrint('[FIAM] dataCollection=$enableCollection (status=$s)');
+    } catch (e) {
+      debugPrint(
+        '[FIAM] _apply setAutomaticDataCollectionEnabled FAILED: $e (status=$s)',
+      );
     }
   }
 

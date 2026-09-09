@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -242,6 +243,18 @@ class _FakeDataInitRepository implements DataInitializationRepository {
   }) async* {
     // Emit at least one progress event so DataInitProgressView shows
     // CircularProgressIndicator (it hides on DataInitSuccess/Failure).
+    yield const DataInitProgress(DataInitStatus.scrapingProfile);
+    yield const DataInitProgress(DataInitStatus.completed);
+  }
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
+  }) async* {
     yield const DataInitProgress(DataInitStatus.scrapingProfile);
     yield const DataInitProgress(DataInitStatus.completed);
   }

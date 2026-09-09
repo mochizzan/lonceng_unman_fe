@@ -49,9 +49,30 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
       '[DATA_INIT] _onStarted called — forceRefresh=${event.forceRefresh}',
     );
     // Fail-fast: if the device is offline, emit paused so the user can
-    // retry without a full logout. Profile has not been fetched yet, so
-    // skippable must be false (no Lewati for mandatory profile).
+    // retry without a full logout. If we are already paused on a
+    // skippable step (KRS/KHS), preserve that checkpoint — do NOT
+    // overwrite it with no_connection:false or Lewati will vanish.
     if (_connectivity?.isOnline == false) {
+      if (_pausedStep != null) {
+        debugPrint(
+          '[DATA_INIT] Offline detected while paused at $_pausedStep — preserve paused (skippable=$_pausedSkippable)',
+        );
+        // Re-emit same paused so UI stays; do not clear checkpoint.
+        final current = state;
+        if (current is DataInitPaused) {
+          // Already showing paused — keep as-is, no state change needed.
+          return;
+        }
+        // Fallback if state somehow not Paused but we have checkpoint.
+        emit(
+          DataInitPaused(
+            AppStrings.dataInitNoConnection,
+            failedStep: _pausedStep!,
+            skippable: _pausedSkippable,
+          ),
+        );
+        return;
+      }
       debugPrint('[DATA_INIT] Offline detected — fail-fast (paused)');
       _pausedStep = 'no_connection';
       _pausedSkippable = false;
@@ -165,16 +186,114 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
     Emitter<DataInitBlocState> emit,
   ) async {
     if (_isRunning) return;
-    if (_pausedStep == null) return;
+    final failedStep = _pausedStep;
+    if (failedStep == null) return;
     if (_lastNpm == null || _lastPassword == null) return;
-    add(
-      DataInitStarted(
-        npm: _lastNpm!,
-        password: _lastPassword!,
-        forceRefresh: _lastForceRefresh,
-        isPullRefresh: _lastIsPullRefresh,
-      ),
-    );
+
+    // Profile steps have no safe checkpoint — do full restart
+    final isKrsOrKhs =
+        failedStep.startsWith('krs') || failedStep.startsWith('khs');
+    if (!isKrsOrKhs) {
+      add(
+        DataInitStarted(
+          npm: _lastNpm!,
+          password: _lastPassword!,
+          forceRefresh: _lastForceRefresh,
+          isPullRefresh: _lastIsPullRefresh,
+        ),
+      );
+      return;
+    }
+
+    // Granular resume: reuse cached profile, skip scraping/gettingProfile/fetchingPhoto
+    if (_connectivity?.isOnline == false) {
+      // Still offline — keep paused, user can try again
+      return;
+    }
+    _isRunning = true;
+    // Emit the failed step as InProgress so UI shows correct status again
+    final resumeStatus = _statusForStep(failedStep);
+    emit(DataInitInProgress(resumeStatus));
+    try {
+      final stream = _getDataInit.repository
+          .resumeFrom(
+            failedStep: failedStep,
+            npm: _lastNpm!,
+            password: _lastPassword!,
+            forceRefresh: _lastForceRefresh,
+          )
+          .timeout(
+            kDataInitTimeout,
+            onTimeout: (sink) {
+              sink.addError(
+                TimeoutException(
+                  'Inisialisasi data melebihi batas waktu',
+                  kDataInitTimeout,
+                ),
+              );
+              sink.close();
+            },
+          );
+      await for (final progress in stream) {
+        final status = progress.status;
+        if (status == DataInitStatus.completed ||
+            status == DataInitStatus.completedWithErrors) {
+          _pausedStep = null;
+          _pausedSkippable = false;
+          emit(const DataInitSuccess());
+        } else if (status == DataInitStatus.failed) {
+          emit(const DataInitFailure('Gagal memuat data akademik'));
+        } else {
+          emit(DataInitInProgress(status, detail: progress.detail));
+        }
+      }
+      if (state is DataInitInProgress) {
+        emit(
+          const DataInitFailure(
+            'Pipeline selesai tanpa status completed',
+            failedStep: 'unknown',
+          ),
+        );
+      }
+    } catch (error) {
+      final friendlyMessage = ErrorHandler.toHumanReadable(error);
+      String? step;
+      if (error is DataInitStepException) {
+        step = error.step;
+      } else if (error is TimeoutException) {
+        step = 'timeout';
+      }
+      final net = isNetworkError(error, failedStep: step);
+      if (net) {
+        final skippable = step == null ? false : !isProfileStep(step);
+        _pausedStep = step ?? failedStep;
+        _pausedSkippable = skippable;
+        emit(
+          DataInitPaused(
+            friendlyMessage,
+            failedStep: _pausedStep!,
+            skippable: skippable,
+          ),
+        );
+      } else {
+        emit(DataInitFailure(friendlyMessage, failedStep: step));
+      }
+    } finally {
+      _isRunning = false;
+    }
+  }
+
+  DataInitStatus _statusForStep(String step) {
+    if (step.startsWith('krs_download')) return DataInitStatus.downloadingKrs;
+    if (step.startsWith('krs_extract')) return DataInitStatus.extractingKrs;
+    if (step.startsWith('krs_data')) return DataInitStatus.fetchingKrsData;
+    if (step.startsWith('khs_semesters')) {
+      return DataInitStatus.fetchingKhsSemesters;
+    }
+    if (step.startsWith('khs_download')) return DataInitStatus.downloadingKhs;
+    if (step.startsWith('khs_extract')) return DataInitStatus.extractingKhs;
+    if (step.startsWith('khs_data')) return DataInitStatus.fetchingKhsData;
+    return DataInitStatus.downloadingKrs;
   }
 
   void _onSkip(DataInitSkip event, Emitter<DataInitBlocState> emit) {

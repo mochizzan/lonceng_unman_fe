@@ -27,8 +27,7 @@ void main() {
       final service = FiamService(delegate: fake);
       await service.bind(notifier);
       expect(fake.lastSuppressed, isTrue);
-      // data collection must NOT be touched — only suppression
-      expect(fake.lastDataCollection, isNull);
+      expect(fake.lastDataCollection, isFalse);
       service.dispose();
       notifier.dispose();
     });
@@ -39,7 +38,7 @@ void main() {
       final service = FiamService(delegate: fake);
       await service.bind(notifier);
       expect(fake.lastSuppressed, isFalse);
-      expect(fake.lastDataCollection, isNull);
+      expect(fake.lastDataCollection, isTrue);
       service.dispose();
       notifier.dispose();
     });
@@ -52,11 +51,12 @@ void main() {
         final service = FiamService(delegate: fake);
         await service.bind(notifier);
         expect(fake.lastSuppressed, isTrue);
+        expect(fake.lastDataCollection, isFalse);
         notifier.setStatus(AuthStatus.authenticated);
         // allow stream microtask to deliver
         await Future<void>.delayed(Duration.zero);
         expect(fake.lastSuppressed, isFalse);
-        expect(fake.lastDataCollection, isNull);
+        expect(fake.lastDataCollection, isTrue);
         service.dispose();
         notifier.dispose();
       },

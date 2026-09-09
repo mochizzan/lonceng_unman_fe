@@ -198,6 +198,15 @@ class _CapturingRepo implements DataInitializationRepository {
   }) async* {
     calls.add(isPullRefresh);
   }
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
+  }) async* {}
 }
 
 // ─── Spy remote datasource untuk RepositoryImpl ───────────────────────────

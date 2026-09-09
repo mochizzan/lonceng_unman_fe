@@ -89,6 +89,14 @@ class ApiClient {
       rethrow;
     } on SocketException catch (e) {
       throw NetworkException('Tidak dapat terhubung ke server: ${e.message}');
+    } on HandshakeException catch (e) {
+      throw NetworkException('Koneksi tidak aman (TLS): ${e.message}');
+    } on HttpException catch (e) {
+      throw NetworkException('Koneksi terputus: ${e.message}');
+    } on IOException catch (e) {
+      throw NetworkException('Koneksi terputus: $e');
+    } on http.ClientException catch (e) {
+      throw NetworkException('Tidak dapat terhubung ke server: ${e.message}');
     } on TimeoutException catch (e) {
       throw NetworkException('Koneksi timeout: ${e.message}');
     } on FormatException catch (e) {

@@ -2,6 +2,10 @@
 // Hand-written fakes only.
 
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
@@ -34,6 +38,15 @@ class NoOpRepo implements DataInitializationRepository {
     bool forceRefresh = true,
     bool isPullRefresh = false,
   }) => const Stream.empty();
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
+  }) => const Stream.empty();
 }
 
 /// Repository that throws DataInitStepException per step label.
@@ -52,6 +65,18 @@ class ThrowingRepo implements DataInitializationRepository {
     yield const DataInitProgress(DataInitStatus.scrapingProfile);
     throw DataInitStepException(step, error.toString(), error);
   }
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
+  }) async* {
+    yield const DataInitProgress(DataInitStatus.scrapingProfile);
+    throw DataInitStepException(step, error.toString(), error);
+  }
 }
 
 class SuccessRepo implements DataInitializationRepository {
@@ -61,6 +86,18 @@ class SuccessRepo implements DataInitializationRepository {
     required String password,
     bool forceRefresh = true,
     bool isPullRefresh = false,
+  }) async* {
+    yield const DataInitProgress(DataInitStatus.scrapingProfile);
+    yield const DataInitProgress(DataInitStatus.completed);
+  }
+
+  @override
+  Stream<DataInitProgress> resumeFrom({
+    required String failedStep,
+    required String npm,
+    required String password,
+    bool forceRefresh = true,
+    Uint8List? cachedPhotoBytes,
   }) async* {
     yield const DataInitProgress(DataInitStatus.scrapingProfile);
     yield const DataInitProgress(DataInitStatus.completed);
@@ -262,6 +299,71 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(emitted.length, before);
       expect(emitted.last is DataInitPaused, isTrue);
+      await sub.cancel();
+      await bloc.close();
+    });
+
+    test(
+      'krs_download http.ClientException → Paused skippable true (not Success)',
+      () async {
+        final bloc = await _makeBloc(
+          ThrowingRepo(
+            'krs_download',
+            http.ClientException('Failed host lookup'),
+          ),
+        );
+        final emitted = <DataInitBlocState>[];
+        final sub = bloc.stream.listen(emitted.add);
+        bloc.add(const DataInitStarted(npm: '1', password: 'p'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(
+          emitted.any(
+            (s) =>
+                s is DataInitPaused &&
+                s.failedStep == 'krs_download' &&
+                s.skippable,
+          ),
+          isTrue,
+        );
+        expect(emitted.any((s) => s is DataInitSuccess), isFalse);
+        await sub.cancel();
+        await bloc.close();
+      },
+    );
+
+    test(
+      'khs_download_Ganjil HandshakeException → Paused skippable true',
+      () async {
+        final bloc = await _makeBloc(
+          ThrowingRepo('khs_download_Ganjil', const HandshakeException('TLS')),
+        );
+        final emitted = <DataInitBlocState>[];
+        final sub = bloc.stream.listen(emitted.add);
+        bloc.add(const DataInitStarted(npm: '1', password: 'p'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(emitted.any((s) => s is DataInitPaused && s.skippable), isTrue);
+        await sub.cancel();
+        await bloc.close();
+      },
+    );
+
+    test('profile_get ClientException → Paused skippable false', () async {
+      final bloc = await _makeBloc(
+        ThrowingRepo('profile_get', http.ClientException('offline')),
+      );
+      final emitted = <DataInitBlocState>[];
+      final sub = bloc.stream.listen(emitted.add);
+      bloc.add(const DataInitStarted(npm: '1', password: 'p'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        emitted.any(
+          (s) =>
+              s is DataInitPaused &&
+              s.failedStep == 'profile_get' &&
+              !s.skippable,
+        ),
+        isTrue,
+      );
       await sub.cancel();
       await bloc.close();
     });

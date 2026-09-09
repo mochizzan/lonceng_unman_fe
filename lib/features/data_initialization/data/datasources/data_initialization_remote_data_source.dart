@@ -107,8 +107,10 @@ class DataInitializationRemoteDataSource {
     );
   }
 
-  /// Jalur berat: pipeline penuh (pindahan body initialize() sebelumnya,
-  /// logika/urutan/nama step tidak berubah).
+  /// Jalur berat: pipeline penuh.
+  /// Fase profile+foto inline; fase KRS/KHS didelegasikan ke helper bersama
+  /// [_phaseKrs] / [_phaseKhsSemestersAndLoop] / [_khsSemesterSteps] agar
+  /// tidak duplikat dengan [resumeFrom].
   Stream<DataInitProgress> _initializeHeavy({
     required String npm,
     required String password,
@@ -118,13 +120,7 @@ class DataInitializationRemoteDataSource {
       '[DATA_INIT_DS] _initializeHeavy() START — npm=$npm, forceRefresh=$forceRefresh',
     );
 
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 1: FETCH ALL — profil wajib, sisanya opsional
-    // ═══════════════════════════════════════════════════════════════
-
-    // ── Profile (WAJIB — gagal = pipeline berhenti) ──
-
-    // Step 0a: Scrape Profile (first attempt)
+    // Step 0a/b + 1 + 1b inline — unik jalur berat
     debugPrint('[DATA_INIT_DS] Step 0a: scrapingProfile');
     yield const DataInitProgress(DataInitStatus.scrapingProfile);
     await _runStep(
@@ -135,8 +131,6 @@ class DataInitializationRemoteDataSource {
         forceRefresh: forceRefresh,
       ),
     );
-
-    // Step 0b: Scrape Profile (second attempt for reliability)
     debugPrint('[DATA_INIT_DS] Step 0b: scrapingProfile (2nd)');
     yield const DataInitProgress(DataInitStatus.scrapingProfile);
     await _runStep(
@@ -147,8 +141,6 @@ class DataInitializationRemoteDataSource {
         forceRefresh: forceRefresh,
       ),
     );
-
-    // Step 1: Get Profile — juga meng-cache secara internal
     debugPrint('[DATA_INIT_DS] Step 1: gettingProfile');
     yield const DataInitProgress(DataInitStatus.gettingProfile);
     await _fetchProfileOrThrow(
@@ -156,24 +148,22 @@ class DataInitializationRemoteDataSource {
       password: password,
       forceRefresh: forceRefresh,
     );
-
-    // ── Foto Profil (opsional) ──
-
-    // Step 1b: Fetch photo from LMS
     debugPrint('[DATA_INIT_DS] Step 1b: fetchingPhoto');
     yield const DataInitProgress(DataInitStatus.fetchingPhoto);
     final photoBytes = await _fetchPhotoBestEffort(
       npm: npm,
       password: password,
     );
+    final bool photoEagerCached = photoBytes != null && photoBytes.isNotEmpty;
     if (photoBytes == null || photoBytes.isEmpty) {
       yield const DataInitProgress(DataInitStatus.photoEmpty);
+    } else {
+      // OPSI B: eager cache — simpan segera agar pause di KRS/KHS tidak hilangkan foto
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
     }
 
-    // ── KRS (opsional) ──
-
+    // KRS — inline agar yield status tetap urut (heavy dedup tidak pakai helper di sini)
     try {
-      // Step 2: Download KRS PDF
       debugPrint('[DATA_INIT_DS] Step 2: downloadingKrs');
       yield const DataInitProgress(DataInitStatus.downloadingKrs);
       await _runStep(
@@ -190,8 +180,6 @@ class DataInitializationRemoteDataSource {
           result: DataInitStepResult.success,
         ),
       );
-
-      // Step 3: Extract KRS
       debugPrint('[DATA_INIT_DS] Step 3: extractingKrs');
       yield const DataInitProgress(DataInitStatus.extractingKrs);
       await _runStep(
@@ -208,8 +196,6 @@ class DataInitializationRemoteDataSource {
           result: DataInitStepResult.success,
         ),
       );
-
-      // Step 4: Fetch KRS data (cache internally by data source)
       debugPrint('[DATA_INIT_DS] Step 4: fetchingKrsData');
       yield const DataInitProgress(DataInitStatus.fetchingKrsData);
       final isKrsEmpty = await _fetchKrsDataOrEmpty(
@@ -221,7 +207,6 @@ class DataInitializationRemoteDataSource {
       }
     } catch (e) {
       if (isNetworkError(e)) rethrow;
-      // KRS fetch failure is non-fatal — yield empty status
       _logStepOutcome(
         DataInitStepOutcome(
           step: 'krs',
@@ -233,108 +218,20 @@ class DataInitializationRemoteDataSource {
       yield const DataInitProgress(DataInitStatus.krsEmpty);
     }
 
-    // ── KHS (opsional) ──
-
+    // KHS — via helper bersama
     try {
-      // Step 5: Get available KHS semesters
       debugPrint('[DATA_INIT_DS] Step 5: fetchingKhsSemesters');
       yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
-      final semesters = await _fetchKhsSemesters(npm: npm, password: password);
-
-      // Steps 6-8: Process ALL available KHS semesters
-      debugPrint(
-        '[DATA_INIT_DS] Steps 6-8: Processing ${semesters.length} KHS semesters',
-      );
-      final List<String> khsErrors = [];
-      for (final semesterEntry in semesters) {
-        final detail = '${semesterEntry.tahunAjaran} ${semesterEntry.semester}';
-        debugPrint('[DATA_INIT_DS] KHS semester: $detail');
-        try {
-          // Step 6: Download KHS PDF
-          yield DataInitProgress(DataInitStatus.downloadingKhs, detail: detail);
-          await _runStep(
-            'khs_download_${semesterEntry.semester}',
-            () => _getKhs.download(
-              npm: npm,
-              password: password,
-              tahunAjaran: semesterEntry.tahunAjaran,
-              semester: semesterEntry.semester,
-              forceRefresh: forceRefresh,
-            ),
-          );
-          _logStepOutcome(
-            DataInitStepOutcome(
-              step: 'khs_download_$detail',
-              result: DataInitStepResult.success,
-            ),
-          );
-
-          // Step 7: Extract KHS
-          yield DataInitProgress(DataInitStatus.extractingKhs, detail: detail);
-          await _runStep(
-            'khs_extract_${semesterEntry.semester}',
-            () => _getKhs.extract(
-              npm: npm,
-              password: password,
-              tahunAjaran: semesterEntry.tahunAjaran,
-              semester: semesterEntry.semester,
-              forceRefresh: forceRefresh,
-            ),
-          );
-          _logStepOutcome(
-            DataInitStepOutcome(
-              step: 'khs_extract_$detail',
-              result: DataInitStepResult.success,
-            ),
-          );
-
-          // Step 8: Fetch KHS data (cache internally by data source)
-          yield DataInitProgress(
-            DataInitStatus.fetchingKhsData,
-            detail: detail,
-          );
-          await _fetchKhsDataForSemester(
-            npm: npm,
-            tahunAjaran: semesterEntry.tahunAjaran,
-            semester: semesterEntry.semester,
-            forceRefresh: forceRefresh,
-          );
-        } catch (e) {
-          if (isNetworkError(e)) rethrow;
-          // Per-semester sentinel for view accumulator — DataInitStatus
-          // frozen, so reuse detail with suffix ::error::<substep>.
-          final stepName = e is DataInitStepException ? e.step : '';
-          final failSub = stepName.startsWith('khs_extract')
-              ? 'extract'
-              : stepName.startsWith('khs_download')
-              ? 'download'
-              : 'fetch';
-          // Emit sentinel before continue — view paints badge merah.
-          yield DataInitProgress(
-            DataInitStatus.fetchingKhsData,
-            detail: '$detail ::error::$failSub',
-          );
-          khsErrors.add('Gagal memuat KHS ${semesterEntry.semester}: $e');
-          _logStepOutcome(
-            DataInitStepOutcome(
-              step: 'khs_$detail',
-              result: DataInitStepResult.error,
-              message: e.toString(),
-            ),
-          );
-          // Continue to next semester — don't stop pipeline
-        }
-      }
-
-      if (khsErrors.isNotEmpty) {
-        debugPrint(
-          '[DATA_INIT_DS] KHS completed with ${khsErrors.length} errors',
-        );
-        yield const DataInitProgress(DataInitStatus.khsEmpty);
+      // Helper melakukan fetch semesters + loop per semester
+      await for (final p in _phaseKhsSemestersAndLoop(
+        npm: npm,
+        password: password,
+        forceRefresh: forceRefresh,
+      )) {
+        yield p;
       }
     } catch (e) {
       if (isNetworkError(e)) rethrow;
-      // KHS fetch failure is non-fatal — yield empty status
       _logStepOutcome(
         DataInitStepOutcome(
           step: 'khs',
@@ -346,17 +243,10 @@ class DataInitializationRemoteDataSource {
       yield const DataInitProgress(DataInitStatus.khsEmpty);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 2: CACHE FOTO — cache hanya foto di akhir pipeline
-    // ═══════════════════════════════════════════════════════════════
-
-    // KRS dan KHS sudah di-cache oleh data source masing-masing secara internal.
-    await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
-
-    // ═══════════════════════════════════════════════════════════════
-    // SELESAI
-    // ═══════════════════════════════════════════════════════════════
-
+    // Tail: skip jika sudah eager (hindari double save); tetap panggil bila foto null/empty tidak eager
+    if (!photoEagerCached) {
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+    }
     debugPrint('[DATA_INIT_DS] Pipeline completed');
     yield const DataInitProgress(DataInitStatus.completed);
   }
@@ -392,8 +282,12 @@ class DataInitializationRemoteDataSource {
       npm: npm,
       password: password,
     );
+    final bool photoEagerCachedLight =
+        photoBytes != null && photoBytes.isNotEmpty;
     if (photoBytes == null || photoBytes.isEmpty) {
       yield const DataInitProgress(DataInitStatus.photoEmpty);
+    } else {
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
     }
 
     // 3. Blok KRS ringan: langsung get data, skip download/extract (opsional)
@@ -485,8 +379,10 @@ class DataInitializationRemoteDataSource {
       yield const DataInitProgress(DataInitStatus.khsEmpty);
     }
 
-    // 5. Cache foto di akhir — identik jalur berat.
-    await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+    // 5. Cache foto di akhir — skip jika sudah eager
+    if (!photoEagerCachedLight) {
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+    }
 
     // 6. SELESAI
     debugPrint('[DATA_INIT_DS] Light pipeline completed');
@@ -653,25 +549,387 @@ class DataInitializationRemoteDataSource {
   }) async {
     if (photoBytes != null && photoBytes.isNotEmpty) {
       await _avatarCache.saveAvatar(npm: npm, bytes: photoBytes);
-      unawaited(_avatarCubit.bindNpm(npm));
+      _avatarCubit.onPhotoCached(npm, photoBytes);
       debugPrint('[DataInitDS] Photo cached: ${photoBytes.length} bytes');
     }
   }
 
-  /// M2 granular resume hook — re-runs pipeline from [failedStep] onward.
-  /// M1 fallback is full-restart (not calling this); stub kept for API shape.
-  // coverage:ignore-start
-  // ignore: unused_element
+  // Helpers to avoid duplicating heavy logic inside resumeFrom
+  Future<void> _phaseScrapeAndProfile({
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+  }) async {
+    await _runStep(
+      'profile_scrape_1',
+      () => _profileDataSource.scrapeProfile(
+        npm: npm,
+        password: password,
+        forceRefresh: forceRefresh,
+      ),
+    );
+    await _runStep(
+      'profile_scrape_2',
+      () => _profileDataSource.scrapeProfile(
+        npm: npm,
+        password: password,
+        forceRefresh: forceRefresh,
+      ),
+    );
+    await _fetchProfileOrThrow(
+      npm: npm,
+      password: password,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  Stream<DataInitProgress> _phaseKhsSemestersAndLoop({
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+    int startIndex = 0,
+    List<KhsSemesterEntity>? preFetchedSemesters,
+  }) async* {
+    final semesters =
+        preFetchedSemesters ??
+        await _fetchKhsSemesters(npm: npm, password: password);
+    final List<String> khsErrors = [];
+    for (var i = startIndex; i < semesters.length; i++) {
+      final semesterEntry = semesters[i];
+      final detail = '${semesterEntry.tahunAjaran} ${semesterEntry.semester}';
+      try {
+        yield* _khsSemesterSteps(
+          detail: detail,
+          semesterEntry: semesterEntry,
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        );
+      } catch (e) {
+        if (isNetworkError(e)) rethrow;
+        final stepName = e is DataInitStepException ? e.step : '';
+        final failSub = stepName.startsWith('khs_extract')
+            ? 'extract'
+            : stepName.startsWith('khs_download')
+            ? 'download'
+            : 'fetch';
+        khsErrors.add('Gagal memuat KHS ${semesterEntry.semester}: $e');
+        _logStepOutcome(
+          DataInitStepOutcome(
+            step: 'khs_$detail',
+            result: DataInitStepResult.error,
+            message: e.toString(),
+          ),
+        );
+        yield DataInitProgress(
+          DataInitStatus.fetchingKhsData,
+          detail: '$detail ::error::$failSub',
+        );
+      }
+    }
+    if (khsErrors.isNotEmpty) {
+      yield const DataInitProgress(DataInitStatus.khsEmpty);
+    }
+  }
+
+  Stream<DataInitProgress> _khsSemesterSteps({
+    required String detail,
+    required KhsSemesterEntity semesterEntry,
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+  }) async* {
+    yield DataInitProgress(DataInitStatus.downloadingKhs, detail: detail);
+    await _runStep(
+      'khs_download_${semesterEntry.semester}',
+      () => _getKhs.download(
+        npm: npm,
+        password: password,
+        tahunAjaran: semesterEntry.tahunAjaran,
+        semester: semesterEntry.semester,
+        forceRefresh: forceRefresh,
+      ),
+    );
+    yield DataInitProgress(DataInitStatus.extractingKhs, detail: detail);
+    await _runStep(
+      'khs_extract_${semesterEntry.semester}',
+      () => _getKhs.extract(
+        npm: npm,
+        password: password,
+        tahunAjaran: semesterEntry.tahunAjaran,
+        semester: semesterEntry.semester,
+        forceRefresh: forceRefresh,
+      ),
+    );
+    yield DataInitProgress(DataInitStatus.fetchingKhsData, detail: detail);
+    await _fetchKhsDataForSemester(
+      npm: npm,
+      tahunAjaran: semesterEntry.tahunAjaran,
+      semester: semesterEntry.semester,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  Future<void> _phaseKrs({
+    required String npm,
+    required String password,
+    required bool forceRefresh,
+    String startAt = 'download',
+  }) async {
+    if (startAt == 'download') {
+      await _runStep(
+        'krs_download',
+        () => _getKrs.download(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        ),
+      );
+      _logStepOutcome(
+        const DataInitStepOutcome(
+          step: 'krs_download',
+          result: DataInitStepResult.success,
+        ),
+      );
+      startAt = 'extract';
+    }
+    if (startAt == 'extract') {
+      await _runStep(
+        'krs_extract',
+        () => _getKrs.extract(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        ),
+      );
+      _logStepOutcome(
+        const DataInitStepOutcome(
+          step: 'krs_extract',
+          result: DataInitStepResult.success,
+        ),
+      );
+      startAt = 'data';
+    }
+    if (startAt == 'data') {
+      final isKrsEmpty = await _fetchKrsDataOrEmpty(
+        npm: npm,
+        forceRefresh: forceRefresh,
+      );
+      if (isKrsEmpty) {
+        // caller handles krsEmpty emit
+      }
+    }
+  }
+
+  /// M2 granular resume — continues from [failedStep] onward.
+  /// Profile already cached before KRS/KHS, so KRS/KHS resume safely skips it.
   Stream<DataInitProgress> resumeFrom({
     required String failedStep,
     required String npm,
     required String password,
-    required bool forceRefresh,
+    bool forceRefresh = true,
     Uint8List? cachedPhotoBytes,
   }) async* {
-    throw UnimplementedError('resumeFrom only in M2');
+    debugPrint('[DATA_INIT_DS] resumeFrom $failedStep — START');
+    Uint8List? photoBytes = cachedPhotoBytes;
+
+    // Phase gates
+    final isKrs = failedStep.startsWith('krs');
+    final isKhs = failedStep.startsWith('khs');
+
+    if (!isKrs && !isKhs) {
+      // Profile/timeout/unknown → full restart via phase helpers
+      debugPrint('[DATA_INIT_DS] resumeFrom → full restart (profile phase)');
+      yield const DataInitProgress(DataInitStatus.scrapingProfile);
+      await _phaseScrapeAndProfile(
+        npm: npm,
+        password: password,
+        forceRefresh: forceRefresh,
+      );
+      yield const DataInitProgress(DataInitStatus.gettingProfile);
+      yield const DataInitProgress(DataInitStatus.fetchingPhoto);
+      photoBytes = await _fetchPhotoBestEffort(npm: npm, password: password);
+      if (photoBytes == null || photoBytes.isEmpty) {
+        yield const DataInitProgress(DataInitStatus.photoEmpty);
+      }
+      // Fall through to KRS then KHS
+      try {
+        yield const DataInitProgress(DataInitStatus.downloadingKrs);
+        await _phaseKrs(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        );
+      } catch (e) {
+        if (isNetworkError(e)) rethrow;
+        yield const DataInitProgress(DataInitStatus.krsEmpty);
+      }
+      try {
+        yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
+        await for (final p in _phaseKhsSemestersAndLoop(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        )) {
+          yield p;
+        }
+      } catch (e) {
+        if (isNetworkError(e)) rethrow;
+        yield const DataInitProgress(DataInitStatus.khsEmpty);
+      }
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+      yield const DataInitProgress(DataInitStatus.completed);
+      return;
+    }
+
+    // KRS resume — profile already cached, skip it
+    if (isKrs) {
+      final start = failedStep == 'krs_extract'
+          ? 'extract'
+          : failedStep == 'krs_data'
+          ? 'data'
+          : 'download';
+      final status = start == 'extract'
+          ? DataInitStatus.extractingKrs
+          : start == 'data'
+          ? DataInitStatus.fetchingKrsData
+          : DataInitStatus.downloadingKrs;
+      yield DataInitProgress(status);
+      try {
+        await _phaseKrs(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+          startAt: start,
+        );
+      } catch (e) {
+        if (isNetworkError(e)) rethrow;
+        yield const DataInitProgress(DataInitStatus.krsEmpty);
+      }
+      // Continue KHS fully
+      try {
+        yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
+        await for (final p in _phaseKhsSemestersAndLoop(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        )) {
+          yield p;
+        }
+      } catch (e) {
+        if (isNetworkError(e)) rethrow;
+        yield const DataInitProgress(DataInitStatus.khsEmpty);
+      }
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+      yield const DataInitProgress(DataInitStatus.completed);
+      return;
+    }
+
+    // KHS resume — need semesters; locate failed semester index
+    if (failedStep == 'khs_semesters') {
+      try {
+        yield const DataInitProgress(DataInitStatus.fetchingKhsSemesters);
+        await for (final p in _phaseKhsSemestersAndLoop(
+          npm: npm,
+          password: password,
+          forceRefresh: forceRefresh,
+        )) {
+          yield p;
+        }
+      } catch (e) {
+        if (isNetworkError(e)) rethrow;
+        yield const DataInitProgress(DataInitStatus.khsEmpty);
+      }
+      await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+      yield const DataInitProgress(DataInitStatus.completed);
+      return;
+    }
+
+    // khs_{download,extract,data}_<Semester>
+    final semester = failedStep.split('_').last;
+    final semesters = await _fetchKhsSemesters(npm: npm, password: password);
+    var idx = semesters.indexWhere((s) => s.semester == semester);
+    if (idx < 0) idx = 0;
+    final failed = semesters[idx];
+    final detail = '${failed.tahunAjaran} ${failed.semester}';
+    final sub = failedStep.startsWith('khs_extract')
+        ? 'extract'
+        : failedStep.startsWith('khs_data')
+        ? 'data'
+        : 'download';
+    if (sub == 'download') {
+      yield DataInitProgress(DataInitStatus.downloadingKhs, detail: detail);
+      await _runStep(
+        'khs_download_${failed.semester}',
+        () => _getKhs.download(
+          npm: npm,
+          password: password,
+          tahunAjaran: failed.tahunAjaran,
+          semester: failed.semester,
+          forceRefresh: forceRefresh,
+        ),
+      );
+      yield DataInitProgress(DataInitStatus.extractingKhs, detail: detail);
+      await _runStep(
+        'khs_extract_${failed.semester}',
+        () => _getKhs.extract(
+          npm: npm,
+          password: password,
+          tahunAjaran: failed.tahunAjaran,
+          semester: failed.semester,
+          forceRefresh: forceRefresh,
+        ),
+      );
+      yield DataInitProgress(DataInitStatus.fetchingKhsData, detail: detail);
+      await _fetchKhsDataForSemester(
+        npm: npm,
+        tahunAjaran: failed.tahunAjaran,
+        semester: failed.semester,
+        forceRefresh: forceRefresh,
+      );
+    } else if (sub == 'extract') {
+      yield DataInitProgress(DataInitStatus.extractingKhs, detail: detail);
+      await _runStep(
+        'khs_extract_${failed.semester}',
+        () => _getKhs.extract(
+          npm: npm,
+          password: password,
+          tahunAjaran: failed.tahunAjaran,
+          semester: failed.semester,
+          forceRefresh: forceRefresh,
+        ),
+      );
+      yield DataInitProgress(DataInitStatus.fetchingKhsData, detail: detail);
+      await _fetchKhsDataForSemester(
+        npm: npm,
+        tahunAjaran: failed.tahunAjaran,
+        semester: failed.semester,
+        forceRefresh: forceRefresh,
+      );
+    } else {
+      yield DataInitProgress(DataInitStatus.fetchingKhsData, detail: detail);
+      await _fetchKhsDataForSemester(
+        npm: npm,
+        tahunAjaran: failed.tahunAjaran,
+        semester: failed.semester,
+        forceRefresh: forceRefresh,
+      );
+    }
+    // Remaining semesters
+    if (idx + 1 < semesters.length) {
+      await for (final p in _phaseKhsSemestersAndLoop(
+        npm: npm,
+        password: password,
+        forceRefresh: forceRefresh,
+        startIndex: idx + 1,
+        preFetchedSemesters: semesters,
+      )) {
+        yield p;
+      }
+    }
+    await _cachePhotoIfPresent(npm: npm, photoBytes: photoBytes);
+    yield const DataInitProgress(DataInitStatus.completed);
   }
-  // coverage:ignore-end
 
   /// Wraps [fn] in a try/catch, converting errors into [DataInitStepException].
   /// Preserves the original [AppException] as [originalError] so

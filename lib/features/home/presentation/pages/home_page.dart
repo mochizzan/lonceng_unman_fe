@@ -43,15 +43,13 @@ class _HomePageView extends StatefulWidget {
   State<_HomePageView> createState() => _HomePageViewState();
 }
 
-class _HomePageViewState extends State<_HomePageView>
-    with WidgetsBindingObserver {
+class _HomePageViewState extends State<_HomePageView> {
   var _fetchDispatched = false;
   Timer? _statusTimer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _statusTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) {
         context.read<HomeBloc>().add(const HomeRefreshRequested());
@@ -62,20 +60,7 @@ class _HomePageViewState extends State<_HomePageView>
   @override
   void dispose() {
     _statusTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selamat datang kembali'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   String _getDateText() {

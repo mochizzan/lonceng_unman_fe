@@ -13,7 +13,7 @@ class NotificationLocalDataSource {
   });
 
   final Box<ScheduledNotificationModel> notificationsBox;
-  final Box<int> settingsBox;
+  final Box<dynamic> settingsBox;
 
   static const _reminderIntervalKey = NotificationConfig.reminderIntervalKey;
   static const int _defaultReminderInterval =
@@ -54,7 +54,9 @@ class NotificationLocalDataSource {
 
   /// Get the reminder interval in minutes.
   int getReminderInterval() {
-    return settingsBox.get(_reminderIntervalKey) ?? _defaultReminderInterval;
+    final v = settingsBox.get(_reminderIntervalKey);
+    if (v is int) return v;
+    return _defaultReminderInterval;
   }
 
   /// Set the reminder interval in minutes.

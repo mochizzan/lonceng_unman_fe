@@ -259,7 +259,8 @@ void main() {
   testWidgets('V3-A: empty schedule (pre-fix)', (tester) async {
     await _bootPage(tester, items: const []);
     final works = await _probePullToRefresh(tester, label: 'V3-A empty');
-    expect(works, isTrue, reason: 'expected to work; will document actual');
+    // Empty schedule has no scrollable content, RefreshIndicator does not trigger
+    expect(works, isFalse, reason: 'empty list has no scroll — no refresh');
   });
 
   testWidgets('V3-B: 2 items (pre-fix)', (tester) async {

@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/app_strings.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
-import 'package:lonceng_unman_fe/core/utils/day_name_mapper.dart';
 import 'package:lonceng_unman_fe/core/utils/delivered_id.dart';
 import 'package:lonceng_unman_fe/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/notification_delivered_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/entities/scheduled_notification_entity.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_delivered_repository.dart';
@@ -280,6 +281,20 @@ class NotificationCubit extends Cubit<NotificationState> {
         return;
       }
       await _scheduler.scheduleAllDays(items);
+      // Persist pipeline dedup keys (single writer — also used by seeder dedup)
+      try {
+        final hash = _hashScheduleItems(items);
+        final box = Services.get<NotificationLocalDataSource>().settingsBox;
+        await box.put('pipeline_lastSeedHash', hash);
+        await box.put(
+          'pipeline_lastSeedAt',
+          DateTime.now().millisecondsSinceEpoch,
+        );
+        await box.put('pipeline_clearedManually', false);
+        debugPrint('[NOTIF] pipeline hash saved $hash');
+      } catch (e) {
+        debugPrint('[NOTIF] pipeline hash save failed: $e');
+      }
       final notifications = await _repository.getAll();
       final delivered = await _loadDelivered();
       debugPrint(
@@ -322,6 +337,27 @@ class NotificationCubit extends Cubit<NotificationState> {
         return;
       }
       await _scheduler.scheduleForDay(jadwal);
+      try {
+        final box = Services.get<NotificationLocalDataSource>().settingsBox;
+        final items =
+            jadwal.scheduleItems
+                .map(
+                  (e) =>
+                      '${e.courseName}|${e.dayOfWeek.isNotEmpty ? e.dayOfWeek : jadwal.selectedDay}|${e.startTime.hour.toString().padLeft(2, '0')}:${e.startTime.minute.toString().padLeft(2, '0')}',
+                )
+                .toList()
+              ..sort();
+        final hash = items.join(';').hashCode.toString();
+        await box.put('pipeline_lastSeedHash', hash);
+        await box.put(
+          'pipeline_lastSeedAt',
+          DateTime.now().millisecondsSinceEpoch,
+        );
+        await box.put('pipeline_clearedManually', false);
+        debugPrint('[NOTIF] pipeline hash (jadwal) saved $hash');
+      } catch (e) {
+        debugPrint('[NOTIF] pipeline hash (jadwal) save failed: $e');
+      }
       final notifications = await _repository.getAll();
       final delivered = await _loadDelivered();
       debugPrint(
@@ -439,6 +475,12 @@ class NotificationCubit extends Cubit<NotificationState> {
     debugPrint('[NOTIF] cancelAll() START');
     try {
       await _scheduler.cancelAll();
+      try {
+        final box = Services.get<NotificationLocalDataSource>().settingsBox;
+        await box.put('pipeline_clearedManually', true);
+      } catch (e) {
+        debugPrint('[NOTIF] clearedManually flag failed: $e');
+      }
       debugPrint('[NOTIF]   OK: semua notifikasi dibatalkan');
       emit(state.copyWith(notifications: [], clearErrorMessage: true));
     } catch (e) {
@@ -450,5 +492,17 @@ class NotificationCubit extends Cubit<NotificationState> {
         ),
       );
     }
+  }
+
+  String _hashScheduleItems(List<ScheduleItemEntity> items) {
+    final parts =
+        items
+            .map(
+              (e) =>
+                  '${e.courseName}|${e.dayOfWeek}|${e.startTime.hour.toString().padLeft(2, '0')}:${e.startTime.minute.toString().padLeft(2, '0')}',
+            )
+            .toList()
+          ..sort();
+    return parts.join(';').hashCode.toString();
   }
 }

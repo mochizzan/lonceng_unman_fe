@@ -9,12 +9,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lonceng_unman_fe/core/constants/constants.dart';
+import 'package:lonceng_unman_fe/core/di/di.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/widgets/data_refresh_overlay.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_bloc.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_state.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_day_selector.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_timeline.dart';
+import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
 import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_cubit.dart';
 import 'package:lonceng_unman_fe/shared/widgets/bloc_scaffold.dart';
 
@@ -52,6 +54,29 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
       body: BlocListener<JadwalBloc, JadwalState>(
         listener: (context, state) {
           if (state is JadwalLoaded) {
+            // Idempotent: skip if pipeline already seeded same hash
+            try {
+              final box =
+                  Services.get<NotificationLocalDataSource>().settingsBox;
+              final lastHash = box.get('pipeline_lastSeedHash') as String?;
+              if (lastHash != null && lastHash != 'empty') {
+                final items =
+                    state.data.scheduleItems
+                        .map(
+                          (e) =>
+                              '${e.courseName}|${e.dayOfWeek.isNotEmpty ? e.dayOfWeek : state.data.selectedDay}|${e.startTime.hour.toString().padLeft(2, '0')}:${e.startTime.minute.toString().padLeft(2, '0')}',
+                        )
+                        .toList()
+                      ..sort();
+                final hash = items.join(';').hashCode.toString();
+                if (hash == lastHash) {
+                  debugPrint(
+                    '[JADWAL] dedup skip scheduleFromJadwal hash=$hash',
+                  );
+                  return;
+                }
+              }
+            } catch (_) {}
             context.read<NotificationCubit>().scheduleFromJadwal(state.data);
           }
         },

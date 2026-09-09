@@ -24,10 +24,14 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('Pengaturan'), findsOneWidget);
     expect(find.text('Tema Aplikasi'), findsOneWidget);
     expect(find.text('Ingatkan Sebelum Kelas'), findsOneWidget);
+    // About section is below fold — scroll to reveal
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
     expect(find.text('Versi Aplikasi'), findsOneWidget);
   });
 

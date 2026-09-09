@@ -55,12 +55,14 @@ import 'package:lonceng_unman_fe/features/data_initialization/data/services/pull
 import 'package:lonceng_unman_fe/features/data_initialization/data/repositories/data_initialization_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/domain/usecases/get_data_initialization.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
+import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/student_profile/data/datasources/student_profile_remote_data_source.dart';
 import 'package:lonceng_unman_fe/core/cache/student_profile_cache_service.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:lonceng_unman_fe/core/services/notification_service.dart';
 import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
 import 'package:lonceng_unman_fe/features/notification/data/models/scheduled_notification_model.dart';
+import 'package:lonceng_unman_fe/features/notification/data/services/pipeline_notification_seeder.dart';
 import 'package:lonceng_unman_fe/features/notification/data/repositories/notification_repository_impl.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/repositories/notification_repository.dart';
 import 'package:lonceng_unman_fe/features/notification/domain/services/notification_scheduler.dart';
@@ -177,7 +179,7 @@ Future<void> main() async {
       }
 
       late Box<ScheduledNotificationModel> notificationsBox;
-      late Box<int> settingsBox;
+      late Box<dynamic> settingsBox;
       late Box<NotificationDeliveredModel> deliveredBox;
       try {
         if (hivePath != null) {
@@ -194,7 +196,7 @@ Future<void> main() async {
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
         );
-        settingsBox = await Hive.openBox<int>(
+        settingsBox = await Hive.openBox<dynamic>(
           NotificationConfig.notificationSettingsBox,
         );
         deliveredBox = await Hive.openBox<NotificationDeliveredModel>(
@@ -230,7 +232,7 @@ Future<void> main() async {
         notificationsBox = await Hive.openBox<ScheduledNotificationModel>(
           NotificationConfig.scheduledNotificationsBox,
         );
-        settingsBox = await Hive.openBox<int>(
+        settingsBox = await Hive.openBox<dynamic>(
           NotificationConfig.notificationSettingsBox,
         );
         deliveredBox = await Hive.openBox<NotificationDeliveredModel>(
@@ -313,6 +315,17 @@ Future<void> main() async {
       } else {
         // Register no-op fallback to prevent StateError on all main routes
         Services.register<NotificationScheduler>(NotificationSchedulerNoop());
+      }
+
+      // ── Pipeline → Notification seeder (hybrid Approach C) ──
+      // Pure service reading KRS cache → scheduleAll overwrite. Registered here
+      // so root BlocListener can access it even before ShellRoute mounts.
+      try {
+        final seeder = PipelineNotificationSeeder();
+        Services.register<PipelineNotificationSeeder>(seeder);
+        debugPrint('[MAIN] PipelineNotificationSeeder registered');
+      } catch (e) {
+        debugPrint('[MAIN] PipelineNotificationSeeder register failed: $e');
       }
 
       // ── Academic Cache Service ──
@@ -510,6 +523,7 @@ Future<void> main() async {
           unawaited(
             scheduler.restoreAll().catchError((e) {
               debugPrint('[MAIN] Cold-start restoreAll failed: $e');
+              return 0;
             }),
           );
         }
@@ -823,13 +837,32 @@ class _LoncengUnmanAppState extends State<LoncengUnmanApp>
       child: ListenableBuilder(
         listenable: _themeNotifier,
         builder: (context, child) {
-          return MaterialApp.router(
-            title: 'Lonceng UnMan',
-            theme: lightTheme,
-            darkTheme: darkTheme,
-            themeMode: _themeNotifier.themeMode,
-            routerConfig: _router,
-            debugShowCheckedModeBanner: false,
+          return BlocListener<DataInitBloc, DataInitBlocState>(
+            listener: (context, state) async {
+              if (state is DataInitSuccess) {
+                debugPrint(
+                  '[ROOT_SEED] DataInitSuccess → seeding notifications',
+                );
+                try {
+                  final seeder = Services.get<PipelineNotificationSeeder>();
+                  // Fire-and-forget but await to ensure hash saved before Shell guard check
+                  final result = await seeder.seedFromCache();
+                  debugPrint(
+                    '[ROOT_SEED] result=${result.kind} count=${result.count} reason=${result.reason}',
+                  );
+                } catch (e) {
+                  debugPrint('[ROOT_SEED] seed failed: $e');
+                }
+              }
+            },
+            child: MaterialApp.router(
+              title: 'Lonceng UnMan',
+              theme: lightTheme,
+              darkTheme: darkTheme,
+              themeMode: _themeNotifier.themeMode,
+              routerConfig: _router,
+              debugShowCheckedModeBanner: false,
+            ),
           );
         },
       ),

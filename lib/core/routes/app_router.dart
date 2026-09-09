@@ -48,11 +48,12 @@ import 'package:lonceng_unman_fe/features/onboarding/domain/repositories/onboard
 import 'package:lonceng_unman_fe/features/profile/presentation/pages/avatar_crop_page.dart';
 import 'package:lonceng_unman_fe/features/student_profile/presentation/pages/profil_lengkap_page.dart';
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
-import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_bloc.dart';
 import 'package:lonceng_unman_fe/features/data_initialization/presentation/bloc/data_initialization_state.dart';
 import 'package:lonceng_unman_fe/features/jadwal/presentation/bloc/jadwal_event.dart';
-import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
+import 'package:lonceng_unman_fe/features/notification/data/datasources/notification_local_data_source.dart';
+import 'package:lonceng_unman_fe/features/notification/data/services/pipeline_notification_seeder.dart';
+import 'package:lonceng_unman_fe/features/notification/presentation/cubit/notification_state.dart';
 
 /// Auth guard redirect logic. Returns a redirect path or null (no redirect).
 ///
@@ -162,42 +163,14 @@ List<RouteBase> _buildRoutes(
                 context.read<JadwalBloc>().add(const JadwalFetchRequested());
                 context.read<HomeBloc>().add(const HomeFetchRequested());
                 context.read<ProfileBloc>().add(const ProfileFetchRequested());
-                // Seed offline/lokal class reminders — the pipeline already
-                // cached KRS (2 mata kuliah in the fresh-login log). Before
-                // this fix nothing ever called NotificationScheduler, so
-                // Settings showed empty toggles and no alarms fired.
+                // Redundant safety seed — primary is root listener in main.dart.
+                // Seeder dedups via hash, so calling twice is safe.
                 try {
-                  final cache = Services.get<AcademicCacheService>();
-                  final creds = await cache.loadCredentials();
-                  final npm = creds?['npm'];
-                  if (npm != null && npm.isNotEmpty) {
-                    final krsJson = await cache.loadKrsData(npm: npm);
-                    if (krsJson != null) {
-                      final krsData = KrsModel.fromJson(krsJson).krs;
-                      if (krsData.mataKuliah.isNotEmpty) {
-                        final now = DateTime.now();
-                        final today = DateTime(now.year, now.month, now.day);
-                        final items = krsData.mataKuliah
-                            .map((mk) => toScheduleItem(mk, today, now))
-                            .toList();
-                        debugPrint(
-                          '[ROUTER] DataInitSuccess → seeding ${items.length} offline notifications',
-                        );
-                        if (!context.mounted) return;
-                        await context.read<NotificationCubit>().scheduleAll(
-                          items,
-                        );
-                      } else {
-                        debugPrint(
-                          '[ROUTER] KRS has no mata kuliah — skip notification seeding',
-                        );
-                      }
-                    } else {
-                      debugPrint(
-                        '[ROUTER] KRS cache miss after DataInitSuccess — skip notification seeding',
-                      );
-                    }
-                  }
+                  final seeder = Services.get<PipelineNotificationSeeder>();
+                  final result = await seeder.seedFromCache();
+                  debugPrint(
+                    '[ROUTER] seeding result=${result.kind} count=${result.count} reason=${result.reason}',
+                  );
                 } catch (e) {
                   debugPrint(
                     '[ROUTER] Seeding offline notifications failed: $e',
@@ -205,9 +178,11 @@ List<RouteBase> _buildRoutes(
                 }
               }
             },
-            child: MainShellScaffold(
-              currentIndex: _indexForRoute(state.topRoute?.name),
-              child: child,
+            child: _ShellSeedGuard(
+              child: MainShellScaffold(
+                currentIndex: _indexForRoute(state.topRoute?.name),
+                child: child,
+              ),
             ),
           ),
         );
@@ -313,4 +288,79 @@ final class AppRouter {
       debugLogDiagnostics: false,
     );
   }
+}
+
+/// Safety net for cold-start: when Shell mounts and notifications are empty
+/// but KRS cache exists, seed via [PipelineNotificationSeeder].
+/// Respects `pipeline_clearedManually` and dedup hash.
+class _ShellSeedGuard extends StatefulWidget {
+  const _ShellSeedGuard({required this.child});
+  final Widget child;
+
+  @override
+  State<_ShellSeedGuard> createState() => _ShellSeedGuardState();
+}
+
+class _ShellSeedGuardState extends State<_ShellSeedGuard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _seedIfNeeded());
+  }
+
+  Future<void> _seedIfNeeded() async {
+    if (!mounted) return;
+    try {
+      final cubit = context.read<NotificationCubit>();
+      // Wait a tick for loadNotifications to complete
+      if (cubit.state.status == NotificationStatus.loading) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+      }
+      if (cubit.state.notifications.isNotEmpty) return;
+      final cleared = () {
+        try {
+          return Services.get<NotificationLocalDataSource>().settingsBox.get(
+                'pipeline_clearedManually',
+              ) ==
+              true;
+        } catch (_) {
+          return false;
+        }
+      }();
+      if (cleared) {
+        debugPrint('[SHELL_GUARD] skip — pipeline_clearedManually');
+        return;
+      }
+      // Check KRS exists before seeding
+      bool hasKrs = false;
+      try {
+        final cache = Services.get<AcademicCacheService>();
+        final creds = await cache.loadCredentials();
+        final npm = creds?['npm'];
+        if (npm != null && npm.isNotEmpty) {
+          hasKrs = cache.hasKrsData(npm: npm);
+          if (!hasKrs) {
+            final krsJson = await cache.loadKrsData(npm: npm);
+            hasKrs = krsJson != null;
+          }
+        }
+      } catch (_) {}
+      if (!hasKrs) {
+        debugPrint('[SHELL_GUARD] no KRS — skip');
+        return;
+      }
+      debugPrint('[SHELL_GUARD] seeding from cold-start guard');
+      final seeder = Services.get<PipelineNotificationSeeder>();
+      final result = await seeder.seedFromCache();
+      debugPrint(
+        '[SHELL_GUARD] result=${result.kind} count=${result.count} reason=${result.reason}',
+      );
+    } catch (e) {
+      debugPrint('[SHELL_GUARD] _seedIfNeeded failed: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

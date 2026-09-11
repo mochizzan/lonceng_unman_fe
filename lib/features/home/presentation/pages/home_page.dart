@@ -178,6 +178,7 @@ class _HomePageViewState extends State<_HomePageView> {
                 const SizedBox(height: AppDimens.space28),
                 TodaySchedule(
                   items: data.scheduleItems,
+                  isAlumni: data.isAlumni,
                   onSeeAllTap: () => context.goNamed(RouteNames.jadwal),
                 ),
               ]),

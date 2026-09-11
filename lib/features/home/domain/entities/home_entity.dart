@@ -54,6 +54,7 @@ class HomeEntity {
     required this.studyProgram,
     required this.gpaGanjil,
     required this.gpaGenap,
+    this.isAlumni = false,
   });
 
   final String userName;
@@ -67,6 +68,7 @@ class HomeEntity {
   final String studyProgram;
   final double gpaGanjil;
   final double gpaGenap;
+  final bool isAlumni;
 
   @override
   bool operator ==(Object other) =>
@@ -83,7 +85,8 @@ class HomeEntity {
           tahunAjaran == other.tahunAjaran &&
           studyProgram == other.studyProgram &&
           gpaGanjil == other.gpaGanjil &&
-          gpaGenap == other.gpaGenap;
+          gpaGenap == other.gpaGenap &&
+          isAlumni == other.isAlumni;
 
   @override
   int get hashCode => Object.hash(
@@ -98,5 +101,6 @@ class HomeEntity {
     studyProgram,
     gpaGanjil,
     gpaGenap,
+    isAlumni,
   );
 }

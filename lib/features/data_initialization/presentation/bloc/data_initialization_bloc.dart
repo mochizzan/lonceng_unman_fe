@@ -186,11 +186,17 @@ class DataInitBloc extends Bloc<DataInitEvent, DataInitBlocState> {
     Emitter<DataInitBlocState> emit,
   ) async {
     if (_isRunning) return;
-    final failedStep = _pausedStep;
+    // Fresh login Failure (e.g. profile_scrape_2) has _pausedStep==null —
+    // still allow full restart if we have credentials.
+    var failedStep = _pausedStep;
+    if (failedStep == null) {
+      final s = state;
+      if (s is DataInitFailure) failedStep = s.failedStep;
+    }
     if (failedStep == null) return;
     if (_lastNpm == null || _lastPassword == null) return;
 
-    // Profile steps have no safe checkpoint — do full restart
+    // Profile steps (or any non-krs/khs) have no safe checkpoint — full restart.
     final isKrsOrKhs =
         failedStep.startsWith('krs') || failedStep.startsWith('khs');
     if (!isKrsOrKhs) {

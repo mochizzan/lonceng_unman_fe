@@ -8,10 +8,16 @@ import 'package:lonceng_unman_fe/features/jadwal/presentation/widgets/jadwal_car
 import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
 class JadwalTimeline extends StatelessWidget {
-  const JadwalTimeline({super.key, required this.items, this.selectedDay = ''});
+  const JadwalTimeline({
+    super.key,
+    required this.items,
+    this.selectedDay = '',
+    this.isAlumni = false,
+  });
 
   final List<ScheduleItemEntity> items;
   final String selectedDay;
+  final bool isAlumni;
 
   /// Returns the Indonesian day name for a given DateTime.
   String _dayName(DateTime date) {
@@ -198,6 +204,40 @@ class JadwalTimeline extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    if (isAlumni) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimens.space32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.school_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(height: AppDimens.space16),
+              Text(
+                'KRS/Jadwal Tidak tersedia (STATUS ALUMNI)',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppDimens.space8),
+              Text(
+                'Silakan cek KHS untuk melihat riwayat studi.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final message = (selectedDay == 'Semua' || selectedDay.isEmpty)
         ? 'Tidak ada jadwal kuliah minggu ini'
         : 'Tidak ada kelas hari $selectedDay';

@@ -39,6 +39,24 @@ final class ValidationException extends AppException {
   const ValidationException(super.message, {super.code = 'VALIDATION_ERROR'});
 }
 
+/// Alumni-specific 409 — BE gate `hasAlumniKRS` for `POST /krs/data`.
+/// Distinguishes ALUMNI from generic 4xx/5xx to allow cache invalidation.
+final class AlumniException extends AppException {
+  const AlumniException(
+    super.message, {
+    super.code = 'ALUMNI_ERROR',
+    this.statusCode = 409,
+  });
+
+  final int statusCode;
+}
+
+/// Helper to check alumni error via type or 409 status.
+bool isAlumniError(Object e) =>
+    e is AlumniException ||
+    (e is ServerException && e.statusCode == 409) ||
+    (e is AppException && (e as dynamic).statusCode == 409);
+
 /// Exception thrown when a pipeline step in data initialization fails.
 /// Carries the step name and original error for diagnostics.
 final class DataInitStepException extends AppException {

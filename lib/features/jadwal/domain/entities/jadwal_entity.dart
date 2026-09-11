@@ -11,11 +11,13 @@ class JadwalEntity {
     required this.selectedDay,
     required this.days,
     required this.scheduleItems,
+    this.isAlumni = false,
   });
 
   final String selectedDay;
   final List<String> days;
   final List<ScheduleItemEntity> scheduleItems;
+  final bool isAlumni;
 
   @override
   bool operator ==(Object other) =>
@@ -24,8 +26,9 @@ class JadwalEntity {
           runtimeType == other.runtimeType &&
           selectedDay == other.selectedDay &&
           days == other.days &&
-          scheduleItems == other.scheduleItems;
+          scheduleItems == other.scheduleItems &&
+          isAlumni == other.isAlumni;
 
   @override
-  int get hashCode => Object.hash(selectedDay, days, scheduleItems);
+  int get hashCode => Object.hash(selectedDay, days, scheduleItems, isAlumni);
 }

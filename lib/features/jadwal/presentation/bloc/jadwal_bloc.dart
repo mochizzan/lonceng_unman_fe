@@ -33,9 +33,40 @@ class JadwalBloc extends Bloc<JadwalEvent, JadwalState> with BlocErrorHandler {
       emit(
         JadwalLoaded(data: data, selectedDay: _selectedDay, days: data.days),
       );
+    } on AlumniException {
+      // ALUMNI is not an error — emit empty schedule via datasource's isAlumni model.
+      // Re-fetch via datasource already returns empty; this catches any pass-through.
+      try {
+        final data = await _getJadwal();
+        _selectedDay = data.selectedDay;
+        emit(
+          JadwalLoaded(data: data, selectedDay: _selectedDay, days: data.days),
+        );
+      } catch (_) {
+        emit(
+          JadwalError(
+            handleError(AlumniException('KRS tidak tersedia (STATUS ALUMNI)')),
+          ),
+        );
+      }
+      return;
     } on AuthException catch (_) {
       rethrow;
     } catch (e) {
+      if (isAlumniError(e)) {
+        try {
+          final data = await _getJadwal();
+          _selectedDay = data.selectedDay;
+          emit(
+            JadwalLoaded(
+              data: data,
+              selectedDay: _selectedDay,
+              days: data.days,
+            ),
+          );
+          return;
+        } catch (_) {}
+      }
       emit(JadwalError(handleError(e)));
     }
   }

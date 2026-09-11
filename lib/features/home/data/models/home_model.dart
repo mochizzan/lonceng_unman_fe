@@ -32,5 +32,6 @@ class HomeModel extends HomeEntity {
     required super.studyProgram,
     required super.gpaGanjil,
     required super.gpaGenap,
+    super.isAlumni = false,
   });
 }

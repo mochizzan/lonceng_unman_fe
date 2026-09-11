@@ -9,6 +9,7 @@ import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/utils/schedule_helpers.dart';
 import 'package:lonceng_unman_fe/core/domain/schedule_entity.dart';
 import 'package:lonceng_unman_fe/features/home/data/models/home_model.dart';
+import 'package:lonceng_unman_fe/features/home/domain/entities/home_entity.dart';
 
 import 'package:lonceng_unman_fe/features/khs/data/models/khs_model.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
@@ -44,68 +45,79 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       );
     }
 
-    // Read KRS data from cache (optional — may not be available yet)
-    final krsJson = await academicCacheService.loadKrsData(npm: npm);
-    KrsDataEntity? krsData;
-    if (krsJson != null) {
-      krsData = KrsModel.fromJson(krsJson).krs;
-    }
-
-    // Read KHS data from cache — load all available semesters for IPK
+    // 1. Tahun ajaran + IPK strict dari KHS (max khsList) — not from KRS.
+    final khsList = await academicCacheService.loadKhsList(npm: npm);
+    final latestYear = _latestTahunAjaran(khsList);
     double gpaGanjil = 0.0;
     double gpaGenap = 0.0;
-    String? khsSemester;
-    if (krsData != null) {
+    String? khsSemesterForLatest;
+    if (latestYear.isNotEmpty) {
       try {
-        // Try to load GANJIL KHS
         final ganjilKhs = await academicCacheService.loadKhsDataSemester(
           npm: npm,
-          tahunAjaran: krsData.periode.tahunAjaran,
+          tahunAjaran: latestYear,
           semester: 'GANJIL',
         );
         if (ganjilKhs != null) {
           final khsData = KhsModel.fromJson(ganjilKhs).khs;
           gpaGanjil = khsData.rekapitulasi.ipk;
-          khsSemester ??= khsData.periode.semester;
+          khsSemesterForLatest ??= khsData.periode.semester;
         }
-        // Try to load GENAP KHS
         final genapKhs = await academicCacheService.loadKhsDataSemester(
           npm: npm,
-          tahunAjaran: krsData.periode.tahunAjaran,
+          tahunAjaran: latestYear,
           semester: 'GENAP',
         );
         if (genapKhs != null) {
           final khsData = KhsModel.fromJson(genapKhs).khs;
           gpaGenap = khsData.rekapitulasi.ipk;
-          khsSemester ??= khsData.periode.semester;
+          khsSemesterForLatest ??= khsData.periode.semester;
         }
       } catch (_) {
-        // KHS may not be available yet if data-init hasn't completed.
+        // KHS per-semester may not be cached yet.
       }
     }
+    final tahunAjaran = latestYear; // "" if khsList empty → UI shows "-"
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final todayDayName = weekdayToDayName(now.weekday);
+    // 2. isAlumni flag — reader only (written by KrsDS on 409/200/404).
+    final isAlumni = await academicCacheService.loadIsAlumni(npm: npm);
 
-    // Build today's schedule from KRS mata_kuliah
-    final todaySchedule = krsData != null
-        ? (krsData.mataKuliah
-              .where((mk) => mk.hari == todayDayName)
-              .map((mk) => toScheduleItem(mk, today, now))
-              .toList()
-            ..sort((a, b) => a.startTime.compareTo(b.startTime)))
-        : <ScheduleItemEntity>[];
+    // 3. Jadwal from KRS — forced empty if alumni (even if stale cache remains race).
+    List<ScheduleItemEntity> todaySchedule = const [];
+    KrsDataEntity? krsData;
+    int sksTaken = 0;
+    NextClassEntity? nextClass;
+    if (!isAlumni) {
+      final krsJson = await academicCacheService.loadKrsData(npm: npm);
+      if (krsJson != null) {
+        try {
+          krsData = KrsModel.fromJson(krsJson).krs;
+        } catch (_) {}
+      }
+      if (krsData != null) {
+        sksTaken = krsData.totalSks;
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final todayDayName = weekdayToDayName(now.weekday);
+        todaySchedule =
+            (krsData.mataKuliah
+                .where((mk) => mk.hari == todayDayName)
+                .map((mk) => toScheduleItem(mk, today, now))
+                .toList()
+              ..sort((a, b) => a.startTime.compareTo(b.startTime)));
+        nextClass = _findNextClass(krsData.mataKuliah, today, now);
+      }
+    } else {
+      todaySchedule = const [];
+      nextClass = null;
+      sksTaken = 0;
+    }
 
-    // Find next upcoming/ongoing class
-    final nextClass = krsData != null
-        ? _findNextClass(krsData.mataKuliah, today, now)
-        : null;
-
-    // Try to load profile data from StudentProfileCacheService
+    // 4. Profile override for userName/studyProgram/semester label
+    // Priority: profile.semester > khsSemester(latestYear) > krs.semester
     String userName = krsData?.mahasiswa.nama ?? '';
     String studyProgram = krsData?.mahasiswa.programStudi ?? '';
-    String semester = khsSemester ?? krsData?.periode.semester ?? '';
+    String semester = khsSemesterForLatest ?? krsData?.periode.semester ?? '';
     try {
       final profileJson = await studentProfileCacheService.loadProfile(
         npm: npm,
@@ -130,14 +142,36 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       avatarUrl: '',
       nextClass: nextClass,
       scheduleItems: todaySchedule,
-      sksTaken: krsData?.totalSks ?? 0,
+      sksTaken: sksTaken,
       todayClassCount: todaySchedule.length,
       semester: semester.isNotEmpty ? semester : '-',
-      tahunAjaran: krsData?.periode.tahunAjaran ?? '',
+      tahunAjaran: tahunAjaran,
       studyProgram: studyProgram.isNotEmpty ? studyProgram : '-',
       gpaGanjil: gpaGanjil,
       gpaGenap: gpaGenap,
+      isAlumni: isAlumni,
     );
+  }
+
+  /// Latest tahunAjaran from khsList — max by akhir year, handles
+  /// both `tahunAjaran` and legacy `tahun_ajaran`.
+  String _latestTahunAjaran(List<dynamic>? khsList) {
+    if (khsList == null || khsList.isEmpty) return '';
+    String? best;
+    var bestAkhir = -1;
+    for (final item in khsList) {
+      if (item is! Map) continue;
+      final ta = (item['tahunAjaran'] ?? item['tahun_ajaran']) as String?;
+      if (ta == null || ta.isEmpty || !ta.contains('/')) continue;
+      final parts = ta.split('/');
+      final akhir = int.tryParse(parts.last.trim()) ?? -1;
+      if (akhir > bestAkhir ||
+          (akhir == bestAkhir && (best == null || ta.compareTo(best) > 0))) {
+        bestAkhir = akhir;
+        best = ta;
+      }
+    }
+    return best ?? '';
   }
 
   /// Finds the next upcoming/ongoing class across today and upcoming days.

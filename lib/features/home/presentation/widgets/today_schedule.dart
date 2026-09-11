@@ -11,10 +11,16 @@ import 'package:lonceng_unman_fe/core/utils/format_utils.dart';
 import 'package:lonceng_unman_fe/shared/widgets/pulsing_dot.dart';
 
 class TodaySchedule extends StatelessWidget {
-  const TodaySchedule({super.key, required this.items, this.onSeeAllTap});
+  const TodaySchedule({
+    super.key,
+    required this.items,
+    this.onSeeAllTap,
+    this.isAlumni = false,
+  });
 
   final List<ScheduleItemEntity> items;
   final VoidCallback? onSeeAllTap;
+  final bool isAlumni;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +73,9 @@ class TodaySchedule extends StatelessWidget {
         // Timeline items
         if (items.isEmpty)
           Text(
-            AppStrings.homeNoSchedule,
+            isAlumni
+                ? 'KRS/Jadwal Tidak tersedia (STATUS ALUMNI) — silakan cek KHS'
+                : AppStrings.homeNoSchedule,
             style: TextStyle(color: cs.onSurfaceVariant),
           )
         else

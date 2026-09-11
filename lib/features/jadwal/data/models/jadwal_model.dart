@@ -13,6 +13,7 @@ class JadwalModel extends JadwalEntity {
     required super.selectedDay,
     required super.days,
     required super.scheduleItems,
+    super.isAlumni = false,
   });
 
   factory JadwalModel.fromJson(Map<String, dynamic> json) {

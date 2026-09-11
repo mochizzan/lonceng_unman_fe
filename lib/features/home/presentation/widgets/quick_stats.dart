@@ -20,6 +20,39 @@ class QuickStats extends StatelessWidget {
 
     return Column(
       children: [
+        if (data.isAlumni)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: AppDimens.space12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space12,
+              vertical: AppDimens.space10,
+            ),
+            decoration: BoxDecoration(
+              color: cs.errorContainer.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.school_outlined,
+                  size: AppDimens.iconSM,
+                  color: cs.onErrorContainer,
+                ),
+                const SizedBox(width: AppDimens.space8),
+                Expanded(
+                  child: Text(
+                    'KRS/Jadwal Tidak tersedia (STATUS ALUMNI)',
+                    style: TextStyle(
+                      fontSize: AppDimens.textSM,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         // SKS and class count cards (2x1 grid)
         Row(
           children: [
@@ -88,7 +121,9 @@ class QuickStats extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Tahun Ajaran ${data.tahunAjaran}',
+                          data.tahunAjaran.isEmpty
+                              ? 'Tahun Ajaran -'
+                              : 'Tahun Ajaran ${data.tahunAjaran}',
                           style: TextStyle(
                             fontSize: AppDimens.textLG,
                             fontWeight: FontWeight.bold,

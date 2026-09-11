@@ -111,6 +111,7 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
 
   Widget _buildContent(BuildContext context, JadwalLoaded state) {
     final items = state.data.scheduleItems;
+    final isAlumni = state.data.isAlumni;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -126,6 +127,48 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
         ),
         child: Column(
           children: [
+            if (isAlumni)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.space24,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: AppDimens.space12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.space12,
+                    vertical: AppDimens.space10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.errorContainer.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.school_outlined,
+                        size: AppDimens.iconSM,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                      const SizedBox(width: AppDimens.space8),
+                      Expanded(
+                        child: Text(
+                          'KRS/Jadwal Tidak tersedia (STATUS ALUMNI)',
+                          style: TextStyle(
+                            fontSize: AppDimens.textSM,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             // Day selector pills (horizontal scrollable)
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -141,7 +184,11 @@ class _JadwalPageViewState extends State<_JadwalPageView> {
             ),
             const SizedBox(height: AppDimens.space16),
             // Timeline list — schedule cards
-            JadwalTimeline(items: items, selectedDay: state.selectedDay),
+            JadwalTimeline(
+              items: items,
+              selectedDay: state.selectedDay,
+              isAlumni: isAlumni,
+            ),
           ],
         ),
       ),

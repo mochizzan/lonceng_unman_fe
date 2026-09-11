@@ -37,8 +37,46 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
       );
     }
 
-    final krsResponse = await krsDataSource.getKrsData(npm: npm);
-    final mataKuliah = krsResponse.krs.mataKuliah;
+    // ALUMNI: KrsDS throws AlumniException(409) — surface as empty, not error.
+    // Also handle already-flagged offline case (loadIsAlumni) before network.
+    if (await academicCacheService.loadIsAlumni(npm: npm)) {
+      const allDaysAlumni = [
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+        'Minggu',
+      ];
+      return const JadwalModel(
+        selectedDay: 'Semua',
+        days: ['Semua', ...allDaysAlumni],
+        scheduleItems: [],
+        isAlumni: true,
+      );
+    }
+    late List<dynamic> mataKuliah;
+    try {
+      final krsResponse = await krsDataSource.getKrsData(npm: npm);
+      mataKuliah = krsResponse.krs.mataKuliah;
+    } on AlumniException {
+      const allDaysAlumni = [
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+        'Minggu',
+      ];
+      return const JadwalModel(
+        selectedDay: 'Semua',
+        days: ['Semua', ...allDaysAlumni],
+        scheduleItems: [],
+        isAlumni: true,
+      );
+    }
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

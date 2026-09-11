@@ -178,6 +178,8 @@ class ApiClient {
         return ServerException(message, statusCode: 403);
       case 404:
         return ServerException(message, statusCode: 404);
+      case 409:
+        return AlumniException(message);
       case 500:
         return ServerException(message, statusCode: 500);
       default:

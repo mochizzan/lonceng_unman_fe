@@ -553,19 +553,14 @@ Future<void> main() async {
       final cache = Services.get<AcademicCacheService>();
       final credentials = await cache.loadCredentials();
 
+      // Auth = kredensial saja. ALUMNI/KRS/KHS tidak mempengaruhi login.
+      // Jika kredensial ada → langsung Home (bisa pull-refresh jika KRS/KHS kosong).
       if (credentials != null &&
           credentials['npm'] != null &&
           credentials['npm']!.isNotEmpty &&
           credentials['password'] != null &&
           credentials['password']!.isNotEmpty) {
-        final hasKrs = cache.hasKrsData(npm: credentials['npm']!);
-        final hasKhsList = cache.hasKhsList(npm: credentials['npm']!);
-
-        if (hasKrs && hasKhsList) {
-          authStatusNotifier.setStatus(AuthStatus.authenticated);
-        } else {
-          authStatusNotifier.setStatus(AuthStatus.unauthenticated);
-        }
+        authStatusNotifier.setStatus(AuthStatus.authenticated);
       } else {
         authStatusNotifier.setStatus(AuthStatus.unauthenticated);
       }

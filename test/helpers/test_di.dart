@@ -187,6 +187,18 @@ class _FakeAcademicCacheService extends AcademicCacheService {
   bool hasKhsList({required String npm}) => false;
 
   @override
+  Future<void> saveIsAlumni({
+    required String npm,
+    required bool isAlumni,
+  }) async {}
+
+  @override
+  Future<bool> loadIsAlumni({required String npm}) async => false;
+
+  @override
+  Future<void> clearKrsDataFor({required String npm}) async {}
+
+  @override
   Future<void> clearKrsData() async {}
 
   @override

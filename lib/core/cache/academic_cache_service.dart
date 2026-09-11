@@ -229,6 +229,39 @@ class AcademicCacheService {
     return khs.containsKey(_khsKey(tahunAjaran, semester));
   }
 
+  // ALUMNI FLAG (per-NPM, transient — written only by KrsDS)
+  static const _isAlumniKey = 'isAlumni';
+
+  Future<void> saveIsAlumni({
+    required String npm,
+    required bool isAlumni,
+  }) async {
+    await _ensureReady();
+    final raw = _academic.get(npm);
+    final existing = raw != null
+        ? Map<String, dynamic>.from(raw as Map)
+        : <String, dynamic>{};
+    existing[_isAlumniKey] = isAlumni;
+    await _academic.put(npm, existing);
+  }
+
+  Future<bool> loadIsAlumni({required String npm}) async {
+    await _ensureReady();
+    final raw = _academic.get(npm);
+    if (raw == null) return false;
+    final data = raw as Map<dynamic, dynamic>;
+    return data[_isAlumniKey] as bool? ?? false;
+  }
+
+  Future<void> clearKrsDataFor({required String npm}) async {
+    await _ensureReady();
+    final raw = _academic.get(npm);
+    if (raw == null) return;
+    final data = Map<String, dynamic>.from(raw as Map);
+    data.remove('krs');
+    await _academic.put(npm, data);
+  }
+
   // CHECK DATA EXISTS
   bool hasAcademicData({required String npm}) {
     if (!_initialized || !_academic.isOpen) return false;

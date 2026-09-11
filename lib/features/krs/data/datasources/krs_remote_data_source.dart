@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:lonceng_unman_fe/core/cache/academic_cache_service.dart';
+import 'package:lonceng_unman_fe/core/errors/app_errors.dart';
 import 'package:lonceng_unman_fe/core/network/api_client.dart';
 import 'package:lonceng_unman_fe/core/utils/credential_body.dart';
 import 'package:lonceng_unman_fe/features/krs/data/models/krs_model.dart';
@@ -86,14 +87,30 @@ class KrsRemoteDataSourceImpl implements KrsRemoteDataSource {
     }
 
     // Cache miss — fetch from endpoint.
-    final response = await apiClient.post(
-      '/api/v1/lms/krs/data',
-      body: {'npm': npm},
-    );
+    try {
+      final response = await apiClient.post(
+        '/api/v1/lms/krs/data',
+        body: {'npm': npm},
+      );
 
-    // Save response to cache for future requests.
-    await academicCacheService.saveKrsData(npm: npm, data: response);
+      // Success → persist KRS + clear alumni flag (transient).
+      await academicCacheService.saveKrsData(npm: npm, data: response);
+      await academicCacheService.saveIsAlumni(npm: npm, isAlumni: false);
 
-    return KrsModel.fromJson(response);
+      return KrsModel.fromJson(response);
+    } on AlumniException {
+      // BE 409 ALUMNI gate — MUST be before AppException.
+      // Invalidate KRS cache now (not retain stale), set alumni flag.
+      await academicCacheService.clearKrsDataFor(npm: npm);
+      await academicCacheService.saveIsAlumni(npm: npm, isAlumni: true);
+      rethrow;
+    } on AppException {
+      // 404/500/403/network-wrapped — not alumni → flag false per spec transient.
+      // Do NOT clear KRS cache — retain existing for fallback.
+      try {
+        await academicCacheService.saveIsAlumni(npm: npm, isAlumni: false);
+      } catch (_) {}
+      rethrow;
+    }
   }
 }
